@@ -1314,7 +1314,7 @@ const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
 app.use(express.static(frontendDistPath));
 
 // Catch-all route for client-side routing (React Router)
-app.get('/{path}*', (req, res) => {
+app.use((req, res) => {
     res.sendFile(path.join(frontendDistPath, 'index.html'));
 });
 
