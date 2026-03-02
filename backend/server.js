@@ -1,0 +1,1315 @@
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
+const crypto = require('crypto');
+const db = require('./database');
+const http = require('http');
+const { Server } = require('socket.io');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
+
+io.on('connection', (socket) => {
+    socket.on('join_project', (projectId) => {
+        socket.join(`project_${projectId}`);
+    });
+});
+
+app.use(cors());
+app.use(express.json());
+
+// Set up static serving for uploaded images
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+app.use('/uploads', express.static(uploadDir));
+
+// Configure multer for image uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/');
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only images are allowed'));
+        }
+    }
+});
+
+// --- Users API ---
+const hashPassword = (pw) => crypto.createHash('sha256').update(pw).digest('hex');
+
+// POST /api/users — legacy quick-create (kept for back-compat)
+app.post('/api/users', (req, res) => {
+    const { username } = req.body;
+    if (!username || username.trim() === '') {
+        return res.status(400).json({ error: 'Username is required' });
+    }
+    try {
+        const insert = db.prepare('INSERT INTO users (username) VALUES (?)');
+        const result = insert.run(username.trim());
+        res.json({ id: result.lastInsertRowid, username: username.trim() });
+    } catch (error) {
+        if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+            const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username.trim());
+            return res.json(user);
+        }
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// POST /api/auth/register
+app.post('/api/auth/register', (req, res) => {
+    const { identifier, password, display_name } = req.body; // identifier = email / phone / username
+    if (!identifier || !password) return res.status(400).json({ error: 'חסרים פרטים' });
+    const isEmail = /^[^@]+@[^@]+\.[^@]+$/.test(identifier);
+    const isPhone = /^[0-9+\-() ]{7,15}$/.test(identifier.replace(/\s/g, ''));
+    const username = display_name || identifier.split('@')[0].replace(/[^a-zA-Z0-9א-ת]/g, '');
+    const email = isEmail ? identifier : null;
+    const phone = isPhone && !isEmail ? identifier : null;
+    const hash = hashPassword(password);
+    try {
+        const result = db.prepare(
+            'INSERT INTO users (username, email, phone, password_hash) VALUES (?, ?, ?, ?)'
+        ).run(username, email, phone, hash);
+
+        const newUserId = result.lastInsertRowid;
+        try {
+            db.prepare('INSERT INTO user_logs (user_id, admin_id, action, details) VALUES (?, ?, ?, ?)').run(
+                newUserId, null, 'ACCOUNT_CREATED', 'חשבון המשתמש נוצר בהצלחה'
+            );
+        } catch (e) {
+            console.error('Failed to log account creation', e);
+        }
+
+        const user = db.prepare('SELECT id, username, email, phone, profile_image FROM users WHERE id = ?').get(newUserId);
+        res.json({ success: true, user });
+    } catch (err) {
+        if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+            return res.status(409).json({ error: 'המשתמש כבר קיים. נסה להתחבר.' });
+        }
+        res.status(500).json({ error: 'שגיאת שרת' });
+    }
+});
+
+// POST /api/auth/login
+app.post('/api/auth/login', (req, res) => {
+    const { identifier, password } = req.body;
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+
+    if (!identifier || !password) return res.status(400).json({ error: 'חסרים פרטים' });
+    const hash = hashPassword(password);
+
+    const potentialUser = db.prepare('SELECT id FROM users WHERE email = ? OR phone = ? OR username = ?').get(identifier, identifier, identifier);
+
+    const user = db.prepare(
+        `SELECT id, username, email, phone, profile_image FROM users
+         WHERE password_hash = ? AND (email = ? OR phone = ? OR username = ?)`
+    ).get(hash, identifier, identifier, identifier);
+
+    if (!user) {
+        try {
+            db.prepare('INSERT INTO login_logs (user_id, identifier_attempted, status, ip_address) VALUES (?, ?, ?, ?)').run(
+                potentialUser ? potentialUser.id : null,
+                identifier,
+                'failed',
+                ip
+            );
+        } catch (e) {
+            console.error('Error logging failed login', e);
+        }
+        return res.status(401).json({ error: 'פרטי התחברות שגויים' });
+    }
+
+    try {
+        db.prepare('INSERT INTO login_logs (user_id, identifier_attempted, status, ip_address) VALUES (?, ?, ?, ?)').run(
+            user.id,
+            identifier,
+            'success',
+            ip
+        );
+
+        let updateQuery = 'UPDATE users SET last_active_at = CURRENT_TIMESTAMP';
+        const params = [];
+
+        // If they logged in with an email but their account email is empty, save the email
+        const isEmail = /^[^@]+@[^@]+\.[^@]+$/.test(identifier);
+        let updatedEmail = false;
+        if (isEmail && !user.email) {
+            updateQuery += ', email = ?';
+            params.push(identifier);
+            user.email = identifier; // fast update of the return object
+            updatedEmail = true;
+        }
+
+        updateQuery += ' WHERE id = ?';
+        params.push(user.id);
+
+        db.prepare(updateQuery).run(...params);
+
+        if (updatedEmail) {
+            try {
+                db.prepare('INSERT INTO user_logs (user_id, admin_id, action, details) VALUES (?, ?, ?, ?)').run(
+                    user.id, null, 'EMAIL_CHANGED', `עדכון אימייל אוטומטי מהתחברות: '${identifier}'`
+                );
+            } catch (e) { console.error('Failed to log automatic email update', e); }
+        }
+
+    } catch (e) {
+        console.error('Error logging successful login or updating user', e);
+    }
+
+    res.json({ success: true, user });
+});
+
+// POST /api/users/:id/ping
+app.post('/api/users/:id/ping', (req, res) => {
+    try {
+        const result = db.prepare('UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE id = ?').run(req.params.id);
+        if (result.changes === 0) return res.status(404).json({ error: 'User not found' });
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Ping error:', error);
+        res.status(500).json({ error: 'Failed to record ping' });
+    }
+});
+
+// --- Admin Auth ---
+app.post('/api/admin/login', (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'חסרים פרטים' });
+    const hash = hashPassword(password);
+
+    try {
+        const admin = db.prepare('SELECT id, email FROM admins WHERE email = ? AND password_hash = ?').get(email, hash);
+        if (!admin) return res.status(401).json({ error: 'פרטי התחברות שגויים' });
+
+        // Generate a random token
+        const token = crypto.randomBytes(32).toString('hex');
+        db.prepare('UPDATE admins SET token = ? WHERE id = ?').run(token, admin.id);
+
+        res.json({ success: true, token, admin: { id: admin.id, email: admin.email } });
+    } catch (err) {
+        console.error('Admin login error:', err);
+        res.status(500).json({ error: 'שגיאת שרת' });
+    }
+});
+
+// Admin Auth Middleware
+const adminAuth = (req, res, next) => {
+    const token = req.header('Admin-Token');
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    try {
+        const admin = db.prepare('SELECT id FROM admins WHERE token = ?').get(token);
+        if (!admin) return res.status(401).json({ error: 'Unauthorized' });
+        req.admin = admin;
+        next();
+    } catch (err) {
+        return res.status(500).json({ error: 'Server error' });
+    }
+};
+
+app.get('/api/users/:id', (req, res) => {
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+});
+
+app.put('/api/users/:id', (req, res) => {
+    const { id } = req.params;
+    const { username, profile_image, email, password } = req.body;
+
+    if (!username || username.trim() === '') {
+        return res.status(400).json({ error: 'Username is required' });
+    }
+
+    try {
+        const oldUser = db.prepare('SELECT username, email FROM users WHERE id = ?').get(id);
+
+        let updateQuery = 'UPDATE users SET username = ?';
+        const params = [username.trim()];
+
+        if (profile_image !== undefined) {
+            updateQuery += ', profile_image = ?';
+            params.push(profile_image);
+        }
+
+        if (email !== undefined) {
+            updateQuery += ', email = ?';
+            params.push(email);
+        }
+
+        if (password) {
+            updateQuery += ', password_hash = ?';
+            params.push(hashPassword(password));
+        }
+
+        updateQuery += ' WHERE id = ?';
+        params.push(id);
+
+        db.prepare(updateQuery).run(...params);
+
+        if (oldUser && oldUser.username !== username.trim()) {
+            db.prepare(
+                'INSERT INTO user_logs (user_id, admin_id, action, details) VALUES (?, ?, ?, ?)'
+            ).run(
+                id,
+                null,
+                'USERNAME_CHANGED',
+                `עדכון שם משתמש: מ-'${oldUser.username}' ל-'${username.trim()}'`
+            );
+        }
+
+        if (oldUser && email !== undefined && oldUser.email !== email) {
+            db.prepare(
+                'INSERT INTO user_logs (user_id, admin_id, action, details) VALUES (?, ?, ?, ?)'
+            ).run(
+                id,
+                null,
+                'EMAIL_CHANGED',
+                `עדכון אימייל: מ-'${oldUser.email || 'ריק'}' ל-'${email || 'ריק'}'`
+            );
+        }
+
+        if (password) {
+            db.prepare(
+                'INSERT INTO user_logs (user_id, admin_id, action, details) VALUES (?, ?, ?, ?)'
+            ).run(
+                id,
+                null,
+                'PASSWORD_CHANGED',
+                `המשתמש שינה את סיסמתו`
+            );
+        }
+
+        const updatedUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+        res.json(updatedUser);
+    } catch (error) {
+        if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+            return res.status(409).json({ error: 'Username already exists' });
+        }
+        res.status(500).json({ error: 'Failed to update user' });
+    }
+});
+
+// --- Friends API ---
+app.get('/api/users/search', (req, res) => {
+    const { q, excludeUserId } = req.query;
+    if (!q) return res.json([]);
+    try {
+        const users = db.prepare(`
+            SELECT id, username, profile_image, email 
+            FROM users 
+            WHERE (username LIKE ? OR email LIKE ?) AND id != ?
+            LIMIT 10
+        `).all(`%${q}%`, `%${q}%`, excludeUserId || 0);
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ error: 'Search failed' });
+    }
+});
+
+app.get('/api/users/:userId/friends', (req, res) => {
+    const { userId } = req.params;
+    try {
+        const friends = db.prepare(`
+            SELECT 
+                f.id as request_id, f.status, f.requester_id, f.receiver_id,
+                u.id as user_id, u.username, u.profile_image
+            FROM friends f
+            JOIN users u ON (u.id = CASE WHEN f.requester_id = ? THEN f.receiver_id ELSE f.requester_id END)
+            WHERE f.requester_id = ? OR f.receiver_id = ?
+        `).all(userId, userId, userId);
+        res.json(friends);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch friends' });
+    }
+});
+
+app.post('/api/friends/request', (req, res) => {
+    const { requester_id, receiver_id } = req.body;
+    try {
+        // Only insert if no request exists in either direction
+        const existing = db.prepare('SELECT id FROM friends WHERE (requester_id = ? AND receiver_id = ?) OR (requester_id = ? AND receiver_id = ?)').get(requester_id, receiver_id, receiver_id, requester_id);
+        if (existing) return res.status(400).json({ error: 'Request already exists' });
+
+        const result = db.prepare('INSERT INTO friends (requester_id, receiver_id) VALUES (?, ?)').run(requester_id, receiver_id);
+        res.json({ id: result.lastInsertRowid, status: 'pending' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to send friend request' });
+    }
+});
+
+app.put('/api/friends/accept/:requestId', (req, res) => {
+    try {
+        db.prepare("UPDATE friends SET status = 'accepted' WHERE id = ?").run(req.params.requestId);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to accept friend request' });
+    }
+});
+
+app.delete('/api/friends/:requestId', (req, res) => {
+    try {
+        db.prepare("DELETE FROM friends WHERE id = ?").run(req.params.requestId);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to remove friend or request' });
+    }
+});
+
+// --- File Upload API ---
+app.post('/api/upload', upload.single('image'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No image file provided' });
+    }
+    const imageUrl = `/uploads/${req.file.filename}`;
+    res.json({ url: imageUrl });
+});
+
+// --- Templates API ---
+app.get('/api/templates', (req, res) => {
+    const templates = db.prepare('SELECT * FROM templates').all();
+    for (let t of templates) {
+        t.items = db.prepare('SELECT * FROM template_items WHERE template_id = ?').all(t.id);
+    }
+    res.json(templates);
+});
+
+// --- Projects API ---
+app.get('/api/users/:userId/projects', (req, res) => {
+    const { userId } = req.params;
+    const projects = db.prepare('SELECT * FROM projects WHERE user_id = ? ORDER BY order_index ASC, created_at ASC').all(userId);
+    res.json(projects);
+});
+
+app.post('/api/users/:userId/projects', (req, res) => {
+    const { userId } = req.params;
+    const { title, active_days, is_routine, color, parent_id } = req.body;
+    if (!title) return res.status(400).json({ error: 'Title is required' });
+    try {
+        const routineValue = is_routine !== undefined ? (is_routine ? 1 : 0) : 1;
+        const projectColor = color || '#6366f1';
+        const parentId = parent_id || null;
+
+        // Get max order_index
+        const maxOrder = db.prepare('SELECT MAX(order_index) as maxOrder FROM projects WHERE user_id = ?').get(userId);
+        const nextOrder = (maxOrder.maxOrder || 0) + 1;
+
+        const result = db.prepare(
+            'INSERT INTO projects (user_id, title, active_days, is_routine, color, parent_id, order_index) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        ).run(userId, title, active_days || '0,1,2,3,4,5,6', routineValue, projectColor, parentId, nextOrder);
+        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(result.lastInsertRowid);
+
+        try {
+            db.prepare('INSERT INTO user_logs (user_id, admin_id, action, details) VALUES (?, ?, ?, ?)').run(
+                userId, null, 'PROJECT_CREATED', `יצירת פרויקט חדש: '${title}'`
+            );
+        } catch (e) { console.error('Failed to log project creation', e); }
+
+        res.json(project);
+    } catch (err) {
+        console.error('Failed to create project:', err);
+        res.status(500).json({ error: 'Failed to create project' });
+    }
+});
+
+// Reorder Projects
+app.put('/api/users/:userId/projects/reorder', (req, res) => {
+    const { userId } = req.params;
+    const { projectIds } = req.body; // Array of project IDs in the new sorted order
+
+    if (!Array.isArray(projectIds)) {
+        return res.status(400).json({ error: 'projectIds array is required' });
+    }
+
+    try {
+        const updateOrder = db.prepare('UPDATE projects SET order_index = ? WHERE id = ? AND user_id = ?');
+
+        db.transaction(() => {
+            projectIds.forEach((id, index) => {
+                updateOrder.run(index, id, userId);
+            });
+        })();
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Project reorder failed' });
+    }
+});
+
+app.put('/api/projects/:id', (req, res) => {
+    const { id } = req.params;
+    const { title, active_days, is_routine, color, parent_id } = req.body;
+    try {
+        const oldProject = db.prepare('SELECT user_id, title FROM projects WHERE id = ?').get(id);
+
+        const updates = [];
+        const params = [];
+
+        if (title !== undefined) { updates.push('title = ?'); params.push(title); }
+        if (active_days !== undefined) { updates.push('active_days = ?'); params.push(active_days); }
+        if (is_routine !== undefined) { updates.push('is_routine = ?'); params.push(is_routine === true || is_routine === 'true' || is_routine === 1 ? 1 : 0); }
+        if (color !== undefined) { updates.push('color = ?'); params.push(color); }
+        if (parent_id !== undefined) { updates.push('parent_id = ?'); params.push(parent_id === null ? null : Number(parent_id)); }
+
+        if (updates.length > 0) {
+            params.push(id);
+            db.prepare(`UPDATE projects SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+        }
+
+        if (oldProject && title !== undefined && oldProject.title !== title) {
+            try {
+                db.prepare('INSERT INTO user_logs (user_id, admin_id, action, details) VALUES (?, ?, ?, ?)').run(
+                    oldProject.user_id, null, 'PROJECT_UPDATED', `עדכון שם פרויקט: מ-'${oldProject.title}' ל-'${title}'`
+                );
+            } catch (e) { console.error('Failed to log project update', e); }
+        }
+
+        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
+        res.json(project);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update project' });
+    }
+});
+
+app.get('/api/projects/:projectId/history', (req, res) => {
+    const { projectId } = req.params;
+    const { startDate, endDate } = req.query; // e.g. 2024-01-01 to 2024-01-31
+
+    try {
+        // Find all checklist items belonging to this project
+        // Then query daily_progress for those items within the date range
+        // We will return an array of { date: 'YYYY-MM-DD', totalTasks: X, completedTasks: Y }
+
+        const historyQuery = db.prepare(`
+            SELECT 
+                dp.date,
+                COUNT(ci.id) as totalTasks,
+                SUM(CASE WHEN dp.completed = 1 THEN 1 ELSE 0 END) as completedTasks
+            FROM checklists c
+            JOIN checklist_items ci ON c.id = ci.checklist_id
+            JOIN daily_progress dp ON ci.id = dp.checklist_item_id
+            WHERE c.project_id = ? AND dp.date >= ? AND dp.date <= ?
+            GROUP BY dp.date
+            ORDER BY dp.date ASC
+        `);
+
+        const historyData = historyQuery.all(projectId, startDate, endDate);
+        res.json(historyData);
+    } catch (err) {
+        console.error('History fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch project history' });
+    }
+});
+
+app.delete('/api/projects/:id', (req, res) => {
+    try {
+        const oldProject = db.prepare('SELECT user_id, title FROM projects WHERE id = ?').get(req.params.id);
+
+        db.prepare('DELETE FROM projects WHERE id = ?').run(req.params.id);
+
+        if (oldProject) {
+            try {
+                db.prepare('INSERT INTO user_logs (user_id, admin_id, action, details) VALUES (?, ?, ?, ?)').run(
+                    oldProject.user_id, null, 'PROJECT_DELETED', `מחיקת פרויקט: '${oldProject.title}'`
+                );
+            } catch (e) { console.error('Failed to log project deletion', e); }
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to delete project' });
+    }
+});
+
+// --- Checklists API ---
+app.get('/api/projects/:projectId/checklists', (req, res) => {
+    const { projectId } = req.params;
+    const checklists = db.prepare('SELECT * FROM checklists WHERE project_id = ? ORDER BY order_index ASC, created_at DESC').all(projectId);
+    for (let c of checklists) {
+        c.items = db.prepare('SELECT * FROM checklist_items WHERE checklist_id = ? ORDER BY order_index ASC').all(c.id);
+    }
+    res.json(checklists);
+});
+
+// Reorder Checklists within a Project
+app.put('/api/projects/:projectId/checklists/reorder', (req, res) => {
+    const { projectId } = req.params;
+    const { checklistIds } = req.body; // Array of checklist IDs in the new sorted order
+
+    if (!Array.isArray(checklistIds)) {
+        return res.status(400).json({ error: 'checklistIds array is required' });
+    }
+
+    try {
+        const updateOrder = db.prepare('UPDATE checklists SET order_index = ? WHERE id = ? AND project_id = ?');
+
+        db.transaction(() => {
+            checklistIds.forEach((id, index) => {
+                updateOrder.run(index, id, projectId);
+            });
+        })();
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Checklist reorder failed' });
+    }
+});
+
+app.get('/api/users/:userId/checklists', (req, res) => {
+    const { userId } = req.params;
+    const checklists = db.prepare('SELECT * FROM checklists WHERE user_id = ? ORDER BY order_index ASC, created_at DESC').all(userId);
+    for (let c of checklists) {
+        c.items = db.prepare('SELECT * FROM checklist_items WHERE checklist_id = ? ORDER BY order_index ASC').all(c.id);
+    }
+    res.json(checklists);
+});
+
+// Reorder Checklists for a User (Inbox)
+app.put('/api/users/:userId/checklists/reorder', (req, res) => {
+    const { userId } = req.params;
+    const { checklistIds } = req.body;
+
+    if (!Array.isArray(checklistIds)) {
+        return res.status(400).json({ error: 'checklistIds array is required' });
+    }
+
+    try {
+        const updateOrder = db.prepare('UPDATE checklists SET order_index = ? WHERE id = ? AND user_id = ? AND project_id IS NULL');
+
+        db.transaction(() => {
+            checklistIds.forEach((id, index) => {
+                updateOrder.run(index, id, userId);
+            });
+        })();
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Checklist reorder failed' });
+    }
+});
+
+// GET Inbox (Checklists with no project)
+app.get('/api/users/:userId/inbox', (req, res) => {
+    const { userId } = req.params;
+    try {
+        let checklists = db.prepare('SELECT * FROM checklists WHERE user_id = ? AND project_id IS NULL ORDER BY order_index ASC, created_at DESC').all(userId);
+
+        for (let c of checklists) {
+            c.items = db.prepare('SELECT * FROM checklist_items WHERE checklist_id = ? ORDER BY order_index ASC').all(c.id);
+        }
+        res.json(checklists);
+    } catch (err) {
+        console.error('Failed to fetch inbox', err);
+        res.status(500).json({ error: 'Failed to fetch inbox' });
+    }
+});
+
+app.post('/api/users/:userId/checklists', (req, res) => {
+    const { userId } = req.params;
+    const { title, active_days, items, project_id } = req.body;
+    if (title === undefined) return res.status(400).json({ error: 'Title is required' });
+
+    try {
+        let newChecklistId;
+        db.transaction(() => {
+            const insertList = db.prepare('INSERT INTO checklists (user_id, title, active_days, project_id) VALUES (?, ?, ?, ?)');
+            const result = insertList.run(userId, title, active_days || '0,1,2,3,4,5,6', project_id || null);
+            newChecklistId = result.lastInsertRowid;
+
+            if (items && Array.isArray(items)) {
+                const insertItem = db.prepare('INSERT INTO checklist_items (checklist_id, content, order_index) VALUES (?, ?, ?)');
+                items.forEach((itemContent, index) => {
+                    insertItem.run(newChecklistId, itemContent, index);
+                });
+            }
+        })();
+
+        // Fetch and return the newly created checklist
+        const c = db.prepare('SELECT * FROM checklists WHERE id = ?').get(newChecklistId);
+        c.items = db.prepare('SELECT * FROM checklist_items WHERE checklist_id = ? ORDER BY order_index ASC').all(newChecklistId);
+        res.json(c);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to create checklist' });
+    }
+});
+
+// Copy template to user's checklists
+app.post('/api/users/:userId/checklists/from-template', (req, res) => {
+    const { userId } = req.params;
+    const { templateId, active_days, project_id } = req.body;
+
+    try {
+        const template = db.prepare('SELECT * FROM templates WHERE id = ?').get(templateId);
+        if (!template) return res.status(404).json({ error: 'Template not found' });
+
+        const items = db.prepare('SELECT content FROM template_items WHERE template_id = ?').all(templateId);
+
+        let newChecklistId;
+        db.transaction(() => {
+            const insertList = db.prepare('INSERT INTO checklists (user_id, title, active_days, project_id) VALUES (?, ?, ?, ?)');
+            const result = insertList.run(userId, template.title, active_days || '0,1,2,3,4,5,6', project_id || null);
+            newChecklistId = result.lastInsertRowid;
+
+            const insertItem = db.prepare('INSERT INTO checklist_items (checklist_id, content, order_index) VALUES (?, ?, ?)');
+            items.forEach((item, index) => {
+                insertItem.run(newChecklistId, item.content, index);
+            });
+        })();
+
+        const c = db.prepare('SELECT * FROM checklists WHERE id = ?').get(newChecklistId);
+        c.items = db.prepare('SELECT * FROM checklist_items WHERE checklist_id = ? ORDER BY order_index ASC').all(newChecklistId);
+        res.json(c);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to instantiate template' });
+    }
+});
+
+// Update Checklist days
+app.put('/api/checklists/:id', (req, res) => {
+    const { id } = req.params;
+    const { active_days, title } = req.body;
+    try {
+        if (active_days !== undefined && title !== undefined) {
+            db.prepare('UPDATE checklists SET active_days = ?, title = ? WHERE id = ?').run(active_days, title, id);
+        } else if (active_days !== undefined) {
+            db.prepare('UPDATE checklists SET active_days = ? WHERE id = ?').run(active_days, id);
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Update failed' });
+    }
+});
+
+app.delete('/api/checklists/:id', (req, res) => {
+    try {
+        db.prepare('DELETE FROM checklists WHERE id = ?').run(req.params.id);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Delete failed' });
+    }
+});
+
+
+// Add / Update / Delete single checklist item
+app.post('/api/checklists/:checklistId/items', (req, res) => {
+    const { checklistId } = req.params;
+    const { content, order_index, parent_item_id, target_date, description, repeat_rule, time } = req.body;
+    try {
+        const result = db.prepare('INSERT INTO checklist_items (checklist_id, content, order_index, parent_item_id, target_date, description, repeat_rule, time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+            .run(checklistId, content, order_index || 0, parent_item_id || null, target_date || null, description || null, repeat_rule || null, time || null);
+        const item = db.prepare('SELECT * FROM checklist_items WHERE id = ?').get(result.lastInsertRowid);
+        res.json(item);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Add item failed' });
+    }
+});
+
+// Reorder Checklist Items
+app.put('/api/checklists/:checklistId/reorder', (req, res) => {
+    const { checklistId } = req.params;
+    const { itemIds } = req.body; // Array of item IDs in the new sorted order
+
+    if (!Array.isArray(itemIds)) {
+        return res.status(400).json({ error: 'itemIds array is required' });
+    }
+
+    try {
+        const updateOrder = db.prepare('UPDATE checklist_items SET order_index = ? WHERE id = ? AND checklist_id = ?');
+
+        db.transaction(() => {
+            itemIds.forEach((id, index) => {
+                updateOrder.run(index, id, checklistId);
+            });
+        })();
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Reorder failed' });
+    }
+});
+
+app.delete('/api/items/:itemId', (req, res) => {
+    try {
+        db.prepare('DELETE FROM checklist_items WHERE id = ?').run(req.params.itemId);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Delete item failed' });
+    }
+});
+app.put('/api/items/:itemId', (req, res) => {
+    const { content, target_date, checklist_id, description, repeat_rule, time } = req.body;
+    try {
+        const updates = [];
+        const params = [];
+
+        if (content !== undefined) {
+            updates.push('content = ?');
+            params.push(content);
+        }
+        if (target_date !== undefined) {
+            updates.push('target_date = ?');
+            params.push(target_date);
+        }
+        if (checklist_id !== undefined) {
+            updates.push('checklist_id = ?');
+            params.push(checklist_id);
+        }
+        if (description !== undefined) {
+            updates.push('description = ?');
+            params.push(description);
+        }
+        if (repeat_rule !== undefined) {
+            updates.push('repeat_rule = ?');
+            params.push(repeat_rule);
+        }
+        if (time !== undefined) {
+            updates.push('time = ?');
+            params.push(time);
+        }
+
+        if (updates.length > 0) {
+            params.push(req.params.itemId);
+            db.prepare(`UPDATE checklist_items SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+        }
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Update item failed' });
+    }
+});
+// --- Daily Progress API ---
+app.get('/api/users/:userId/progress/:date', (req, res) => {
+    const { userId, date } = req.params; // date format: YYYY-MM-DD
+    const progress = db.prepare('SELECT * FROM daily_progress WHERE user_id = ? AND date = ?').all(userId, date);
+    res.json(progress);
+});
+
+// --- Global Calendar Tasks API ---
+app.get('/api/users/:userId/tasks/by-month', (req, res) => {
+    const { userId } = req.params;
+    const { month } = req.query; // format: 'YYYY-MM'
+
+    if (!month) {
+        return res.status(400).json({ error: 'month query parameter is required (YYYY-MM)' });
+    }
+
+    try {
+        const [yearStr, monthStr] = month.split('-');
+        const year = parseInt(yearStr, 10);
+        const monthNum = parseInt(monthStr, 10) - 1; // 0-indexed for JS Date
+
+        // 1. Fetch all one-off items targeted for this month
+        const targetedItemsQuery = db.prepare(`
+            SELECT ci.id, ci.target_date, ci.content 
+            FROM checklist_items ci
+            JOIN checklists c ON ci.checklist_id = c.id
+            WHERE c.user_id = ? AND ci.target_date LIKE ?
+            AND c.project_id IS NOT NULL
+        `);
+        const targetedItems = targetedItemsQuery.all(userId, `${month}-%`);
+
+        // 2. Fetch all routine items that don't have a specific target_date
+        const routineItemsQuery = db.prepare(`
+            SELECT ci.id, c.active_days, ci.content 
+            FROM checklist_items ci
+            JOIN checklists c ON ci.checklist_id = c.id
+            LEFT JOIN projects p ON c.project_id = p.id
+            WHERE c.user_id = ? 
+            AND ci.target_date IS NULL
+            AND (p.is_routine = 1)
+        `);
+        const routineItems = routineItemsQuery.all(userId);
+
+        // 3. Fetch all progress for this month to match with items
+        const progressQuery = db.prepare(`
+            SELECT checklist_item_id, date, completed 
+            FROM daily_progress 
+            WHERE user_id = ? AND date LIKE ?
+        `);
+        const progressData = progressQuery.all(userId, `${month}-%`);
+        const progressMap = {};
+        progressData.forEach(p => {
+            progressMap[`${p.date}_${p.checklist_item_id}`] = p.completed === 1;
+        });
+
+        // 4. Build summary map
+        const summary = {};
+        const daysInMonth = new Date(year, monthNum + 1, 0).getDate();
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateObj = new Date(year, monthNum, d);
+            const dateStr = `${year}-${String(monthNum + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dayOfWeekStr = dateObj.getDay().toString();
+
+            const tasks = [];
+
+            // Targeted items
+            targetedItems.filter(i => i.target_date === dateStr).forEach(i => {
+                tasks.push({
+                    id: i.id,
+                    content: i.content,
+                    completed: !!progressMap[`${dateStr}_${i.id}`]
+                });
+            });
+
+            // Routine items
+            routineItems.filter(i => {
+                const activeDays = i.active_days || '';
+                return activeDays.split(',').includes(dayOfWeekStr);
+            }).forEach(i => {
+                tasks.push({
+                    id: i.id,
+                    content: i.content,
+                    completed: !!progressMap[`${dateStr}_${i.id}`]
+                });
+            });
+
+            if (tasks.length > 0) {
+                summary[dateStr] = {
+                    total: tasks.length,
+                    tasks: tasks
+                };
+            }
+        }
+
+        res.json(summary);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch monthly task summary' });
+    }
+});
+
+app.get('/api/users/:userId/tasks/by-date', (req, res) => {
+    const { userId } = req.params;
+    const { date } = req.query; // format: 'YYYY-MM-DD'
+
+    if (!date) {
+        return res.status(400).json({ error: 'date query parameter is required (YYYY-MM-DD)' });
+    }
+
+    try {
+        const dayOfWeekStr = new Date(date).getDay().toString(); // '0' to '6'
+        const searchPattern = `%,${dayOfWeekStr},%`;
+
+        // Fetch items matching exact target_date OR routine matching day-of-week
+        const tasksQuery = db.prepare(`
+            SELECT 
+                ci.id, ci.checklist_id, ci.parent_item_id, ci.content, ci.order_index, ci.target_date,
+                c.title as checklist_title, c.order_index as c_order,
+                p.title as project_title, p.id as project_id
+            FROM checklist_items ci
+            JOIN checklists c ON ci.checklist_id = c.id
+            LEFT JOIN projects p ON c.project_id = p.id
+            WHERE 
+                c.user_id = ? 
+                AND (
+                    ci.target_date = ? 
+                    OR (
+                        ci.target_date IS NULL 
+                        AND (p.is_routine IS NULL OR p.is_routine = 1)
+                        AND ( ',' || c.active_days || ',' LIKE ? )
+                    )
+                )
+            ORDER BY COALESCE(c.project_id, 0) ASC, c.order_index ASC, ci.order_index ASC
+        `);
+
+        const tasks = tasksQuery.all(userId, date, searchPattern);
+
+        // Fetch completion status
+        const progressQuery = db.prepare('SELECT checklist_item_id, completed FROM daily_progress WHERE user_id = ? AND date = ?');
+        const progressData = progressQuery.all(userId, date);
+        const progressMap = {};
+        progressData.forEach(p => { progressMap[p.checklist_item_id] = p.completed === 1; });
+
+        // Group by Project -> Checklist
+        const groupedMap = new Map();
+
+        tasks.forEach(task => {
+            task.completed = !!progressMap[task.id];
+
+            const projIdKey = task.project_id || 0; // 0 for no project
+
+            if (!groupedMap.has(projIdKey)) {
+                groupedMap.set(projIdKey, {
+                    project_id: task.project_id,
+                    project_title: task.project_title || 'כללי',
+                    checklistsMap: new Map()
+                });
+            }
+
+            const pObj = groupedMap.get(projIdKey);
+
+            if (!pObj.checklistsMap.has(task.checklist_id)) {
+                pObj.checklistsMap.set(task.checklist_id, {
+                    id: task.checklist_id,
+                    title: task.checklist_title,
+                    order_index: task.c_order,
+                    itemsMap: new Map()
+                });
+            }
+
+            const cObj = pObj.checklistsMap.get(task.checklist_id);
+            cObj.itemsMap.set(task.id, {
+                id: task.id,
+                parent_item_id: task.parent_item_id,
+                content: task.content,
+                order_index: task.order_index,
+                target_date: task.target_date,
+                completed: task.completed,
+                children: []
+            });
+        });
+
+        // Convert Maps to nested arrays
+        const result = Array.from(groupedMap.values()).map(proj => {
+            const checklists = Array.from(proj.checklistsMap.values()).map(checklist => {
+                const flatItems = Array.from(checklist.itemsMap.values());
+                const hierarchical = [];
+                const itemLookup = {};
+                flatItems.forEach(i => itemLookup[i.id] = i);
+
+                flatItems.forEach(i => {
+                    if (i.parent_item_id && itemLookup[i.parent_item_id]) {
+                        itemLookup[i.parent_item_id].children.push(i);
+                    } else {
+                        hierarchical.push(i);
+                    }
+                });
+
+                return {
+                    id: checklist.id,
+                    title: checklist.title,
+                    items: hierarchical
+                };
+            });
+            return {
+                id: proj.project_id,
+                title: proj.project_title,
+                checklists: checklists
+            };
+        });
+
+        res.json(result);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch global tasks by date' });
+    }
+});
+
+app.get('/api/users/:userId/sidebar-counts', (req, res) => {
+    const { userId } = req.params;
+    const { date } = req.query; // format 'YYYY-MM-DD'
+
+    if (!date) return res.status(400).json({ error: 'date is required' });
+
+    try {
+        const dayOfWeekStr = new Date(date).getDay().toString();
+        const searchPattern = `%,${dayOfWeekStr},%`;
+
+        const todayTasksQuery = db.prepare(`
+            SELECT ci.id 
+            FROM checklist_items ci
+            JOIN checklists c ON ci.checklist_id = c.id
+            LEFT JOIN projects p ON c.project_id = p.id
+            WHERE c.user_id = ? 
+            AND (ci.target_date = ? OR (ci.target_date IS NULL AND (p.is_routine IS NULL OR p.is_routine = 1) AND (',' || c.active_days || ',' LIKE ?)))
+        `);
+        const todayTasks = todayTasksQuery.all(userId, date, searchPattern);
+
+        const inboxTasksQuery = db.prepare(`
+            SELECT ci.id 
+            FROM checklist_items ci
+            JOIN checklists c ON ci.checklist_id = c.id
+            WHERE c.user_id = ? AND c.project_id IS NULL
+        `);
+        const inboxTasks = inboxTasksQuery.all(userId);
+
+        const progressQuery = db.prepare('SELECT checklist_item_id FROM daily_progress WHERE user_id = ? AND date = ? AND completed = 1');
+        const completedIds = progressQuery.all(userId, date).map(p => p.checklist_item_id);
+
+        const todayCount = todayTasks.filter(t => !completedIds.includes(t.id)).length;
+        const inboxCount = inboxTasks.filter(t => !completedIds.includes(t.id)).length;
+
+        res.json({ todayCount, inboxCount });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch sidebar counts' });
+    }
+});
+
+app.get('/api/users/:userId/activity', (req, res) => {
+    const { userId } = req.params;
+    try {
+        const activity = db.prepare(`
+            SELECT 
+                dp.id, dp.date, ci.content as message, p.title as project_name, c.project_id
+            FROM daily_progress dp
+            JOIN checklist_items ci ON dp.checklist_item_id = ci.id
+            JOIN checklists c ON ci.checklist_id = c.id
+            LEFT JOIN projects p ON c.project_id = p.id
+            WHERE dp.user_id = ? AND dp.completed = 1
+            ORDER BY dp.date DESC, dp.id DESC
+            LIMIT 50
+        `).all(userId);
+
+        // Enhance message to be more user-friendly as requested
+        const enhancedActivity = activity.map(item => ({
+            ...item,
+            message: `השלמת משימה: ${item.message}`,
+            project_name: item.project_name || 'תיבת דואר'
+        }));
+
+        res.json(enhancedActivity);
+    } catch (err) {
+        console.error('Failed to fetch activity:', err);
+        res.status(500).json({ error: 'Failed to fetch activity' });
+    }
+});
+
+app.get('/api/users/:userId/progress', (req, res) => {
+    const { userId } = req.params;
+    const { date } = req.query;
+    if (!date) return res.status(400).json({ error: 'Date is required' });
+    try {
+        const progress = db.prepare('SELECT * FROM daily_progress WHERE user_id = ? AND date = ?').all(userId, date);
+        res.json(progress);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch progress' });
+    }
+});
+
+app.post('/api/users/:userId/progress', (req, res) => {
+    const { userId } = req.params;
+    const { checklist_item_id, date, completed } = req.body;
+
+    try {
+        const upsert = db.prepare(`
+      INSERT INTO daily_progress (user_id, checklist_item_id, date, completed)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(user_id, checklist_item_id, date) DO UPDATE SET completed = excluded.completed
+    `);
+        upsert.run(userId, checklist_item_id, date, completed ? 1 : 0);
+
+        // Find out the project this task belongs to and broadcast it
+        const info = db.prepare('SELECT c.project_id FROM checklist_items ci JOIN checklists c ON ci.checklist_id = c.id WHERE ci.id = ?').get(checklist_item_id);
+        if (info && info.project_id) {
+            const userRow = db.prepare('SELECT username, profile_image FROM users WHERE id = ?').get(userId);
+            io.to(`project_${info.project_id}`).emit('task_completed', {
+                checklist_item_id,
+                completed: completed ? 1 : 0,
+                userId: parseInt(userId),
+                username: userRow ? userRow.username : 'Unknown',
+                profile_image: userRow ? userRow.profile_image : null
+            });
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to update progress' });
+    }
+});
+
+// --- Project Members & Shared Progress API ---
+app.get('/api/projects/:projectId/members', (req, res) => {
+    try {
+        const members = db.prepare(`
+            SELECT pm.role, u.id, u.username, u.profile_image
+            FROM project_members pm
+            JOIN users u ON pm.user_id = u.id
+            WHERE pm.project_id = ?
+            ORDER BY pm.role DESC
+        `).all(req.params.projectId);
+        res.json(members);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch project members' });
+    }
+});
+
+app.post('/api/projects/:projectId/members', (req, res) => {
+    const { user_id, role } = req.body;
+    try {
+        db.prepare(`
+            INSERT OR IGNORE INTO project_members (project_id, user_id, role)
+            VALUES (?, ?, ?)
+        `).run(req.params.projectId, user_id, role || 'member');
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to add project member' });
+    }
+});
+
+app.delete('/api/projects/:projectId/members/:userId', (req, res) => {
+    try {
+        db.prepare('DELETE FROM project_members WHERE project_id = ? AND user_id = ?').run(req.params.projectId, req.params.userId);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to remove project member' });
+    }
+});
+
+// Get team progress for a project on a specific date
+app.get('/api/projects/:projectId/progress/:date', (req, res) => {
+    try {
+        const items = db.prepare(`
+            SELECT dp.checklist_item_id, dp.completed, u.id as user_id, u.username, u.profile_image
+            FROM daily_progress dp
+            JOIN users u ON dp.user_id = u.id
+            JOIN checklist_items ci ON dp.checklist_item_id = ci.id
+            JOIN checklists c ON ci.checklist_id = c.id
+            WHERE c.project_id = ? AND dp.date = ? AND dp.completed = 1
+        `).all(req.params.projectId, req.params.date);
+        res.json(items);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch team progress' });
+    }
+});
+
+// --- Admin Stats API ---
+app.get('/api/admin/stats', adminAuth, (req, res) => {
+    try {
+        const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+        const totalChecklists = db.prepare('SELECT COUNT(*) as count FROM checklists').get().count;
+        const totalProgress = db.prepare('SELECT COUNT(*) as count FROM daily_progress WHERE completed = 1').get().count;
+        const activeUsersToday = db.prepare("SELECT count(distinct user_id) as count FROM daily_progress WHERE date = date('now', 'localtime')").get().count;
+
+        // Most popular templates or active lists info can be added here
+        res.json({
+            totalUsers,
+            totalChecklists,
+            totalCompletedTasks: totalProgress,
+            activeUsersToday
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
+
+// --- Admin Users & Checklists ---
+app.get('/api/admin/users', adminAuth, (req, res) => {
+    try {
+        const users = db.prepare('SELECT * FROM users ORDER BY created_at DESC').all();
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+app.get('/api/admin/users/:id', adminAuth, (req, res) => {
+    try {
+        const user = db.prepare('SELECT id, username, email, phone, profile_image, created_at, is_active FROM users WHERE id = ?').get(req.params.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const projectsCount = db.prepare('SELECT COUNT(*) as count FROM projects WHERE user_id = ?').get(req.params.id).count;
+        const checklistsCount = db.prepare('SELECT COUNT(*) as count FROM checklists WHERE user_id = ?').get(req.params.id).count;
+        const totalCompleted = db.prepare('SELECT COUNT(*) as count FROM daily_progress WHERE user_id = ? AND completed = 1').get(req.params.id).count;
+
+        res.json({ ...user, projectsCount, checklistsCount, totalCompleted });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch user details' });
+    }
+});
+
+app.get('/api/admin/users/:id/logs', adminAuth, (req, res) => {
+    try {
+        const logs = db.prepare('SELECT * FROM user_logs WHERE user_id = ? ORDER BY created_at DESC').all(req.params.id);
+        res.json(logs);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch user logs' });
+    }
+});
+
+app.get('/api/admin/users/:id/login-logs', adminAuth, (req, res) => {
+    try {
+        const logs = db.prepare('SELECT * FROM login_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 50').all(req.params.id);
+        res.json(logs);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch login logs' });
+    }
+});
+
+app.post('/api/admin/users/:id/reset-password', adminAuth, (req, res) => {
+    try {
+        const userId = req.params.id;
+        const user = db.prepare('SELECT id, username FROM users WHERE id = ?').get(userId);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        // Generate an 8-character random alphanumeric password
+        const newPassword = crypto.randomBytes(4).toString('hex');
+        const hash = hashPassword(newPassword);
+
+        db.transaction(() => {
+            db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, userId);
+            db.prepare('INSERT INTO user_logs (user_id, admin_id, action, details) VALUES (?, ?, ?, ?)')
+                .run(userId, req.admin.id, 'PASSWORD_RESET', `Password reset by admin to: ${newPassword}`);
+        })();
+
+        res.json({ success: true, newPassword });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to reset password' });
+    }
+});
+
+app.put('/api/admin/users/:id/status', adminAuth, (req, res) => {
+    try {
+        const userId = req.params.id;
+        const { is_active } = req.body;
+
+        if (typeof is_active !== 'boolean') {
+            return res.status(400).json({ error: 'is_active must be a boolean' });
+        }
+
+        const user = db.prepare('SELECT id, is_active FROM users WHERE id = ?').get(userId);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        db.transaction(() => {
+            db.prepare('UPDATE users SET is_active = ? WHERE id = ?').run(is_active ? 1 : 0, userId);
+            const actionString = is_active ? 'ACCOUNT_ACTIVATED' : 'ACCOUNT_SUSPENDED';
+            const detailsString = is_active ? 'Account activated by admin' : 'Account suspended by admin';
+            db.prepare('INSERT INTO user_logs (user_id, admin_id, action, details) VALUES (?, ?, ?, ?)')
+                .run(userId, req.admin.id, actionString, detailsString);
+        })();
+
+        res.json({ success: true, is_active });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to update user status' });
+    }
+});
+
+const PORT = process.env.PORT || 3001;
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
