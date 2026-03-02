@@ -1309,6 +1309,15 @@ app.put('/api/admin/users/:id/status', adminAuth, (req, res) => {
     }
 });
 
+// Serve static frontend files in production
+const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
+app.use(express.static(frontendDistPath));
+
+// Catch-all route for client-side routing (React Router)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+});
+
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

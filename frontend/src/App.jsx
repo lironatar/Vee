@@ -27,7 +27,7 @@ function App() {
 
     const pingServer = async () => {
       try {
-        await fetch(`http://localhost:3001/api/users/${user.id}/ping`, { method: 'POST' });
+        await fetch(`/api/users/${user.id}/ping`, { method: 'POST' });
       } catch (e) {
         console.error('Ping failed', e);
       }

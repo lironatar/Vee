@@ -3,7 +3,7 @@ import { useUser } from '../context/UserContext';
 import TaskPageLayout from '../components/TaskPageLayout';
 import { ChevronDown } from 'lucide-react';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 const History = () => {
     const { user } = useUser();

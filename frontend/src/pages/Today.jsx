@@ -85,7 +85,7 @@ const Today = () => {
     }, [user, fetchTodayTasks, fetchTodayProgress]);
 
     useEffect(() => {
-        const socket = io('http://localhost:3001');
+        const socket = io();
         socket.on('connect', () => {
             // Join a global user room or multiple project rooms
             // For now, simpler to just listen for task updates if they are broadcasted

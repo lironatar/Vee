@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Key, History, Activity, ShieldAlert, CheckCircle, Ban, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 const UserDetailsModal = ({ userBasicInfo, onClose, onUserUpdated }) => {
     const [activeTab, setActiveTab] = useState('overview');

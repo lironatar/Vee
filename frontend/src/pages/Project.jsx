@@ -23,7 +23,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 import { ActionMenu, SortableChecklistCard, AddTaskButton } from '../components/TaskComponents/index.jsx';
 import TaskPageLayout from '../components/TaskPageLayout';
@@ -87,7 +87,7 @@ const Project = () => {
     useEffect(() => {
         if (!projectId) return;
 
-        const newSocket = io('http://localhost:3001');
+        const newSocket = io();
 
         newSocket.on('connect', () => {
             newSocket.emit('join_project', projectId);

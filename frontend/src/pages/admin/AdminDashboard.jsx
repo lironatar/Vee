@@ -3,7 +3,7 @@ import { Users, ListTodo, CheckSquare, Activity, PieChart } from 'lucide-react';
 import { toast } from 'sonner';
 import UserDetailsModal from '../../components/admin/UserDetailsModal';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState(null);

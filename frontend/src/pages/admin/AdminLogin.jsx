@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Settings, LogIn, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 const AdminLogin = () => {
     const [email, setEmail] = useState('');

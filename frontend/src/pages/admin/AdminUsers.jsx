@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import UserDetailsModal from '../../components/admin/UserDetailsModal';
 import { Search, Mail, Phone, Calendar, ArrowUpRight, MoreVertical } from 'lucide-react';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 const AdminUsers = () => {
     const [users, setUsers] = useState([]);
