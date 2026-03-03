@@ -20,6 +20,13 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
     const [showProjectSelector, setShowProjectSelector] = useState(false);
     const inputContainerRef = useRef(null);
 
+    const cardRef = useRef(null);
+    useEffect(() => {
+        if (cardRef.current) {
+            cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, []);
+
     useEffect(() => {
         setSelectedChecklist(checklist);
     }, [checklist]);
@@ -102,7 +109,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
     });
 
     return (
-        <div className="add-task-card-container" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'visible', position: 'relative', background: 'var(--bg-color)', boxShadow: 'var(--glass-shadow)', transition: 'var(--transition)' }}>
+        <div ref={cardRef} className="add-task-card-container" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'visible', position: 'relative', background: 'var(--bg-color)', boxShadow: 'var(--glass-shadow)', transition: 'var(--transition)' }}>
             <div style={{ padding: '0.4rem 0.6rem' }}>
                 <div
                     ref={inputContainerRef}
@@ -360,7 +367,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                             onMouseLeave={e => !showProjectSelector && (e.currentTarget.style.background = 'transparent')}
                         >
                             {selectedProject ? `${selectedProject.title} / ` : ''}
-                            {selectedChecklist?.title || (selectedProject ? selectedProject.title : 'תיבת דואר')}
+                            {selectedChecklist?.title || (selectedProject ? selectedProject.title : 'תיבת המשימות')}
                             <ChevronDown size={14} style={{ marginRight: '0.25rem' }} />
                         </button>
                     </div>

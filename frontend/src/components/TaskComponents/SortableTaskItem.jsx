@@ -247,7 +247,7 @@ const SortableTaskItem = ({
                                                 <span style={{ maxWidth: '140px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                     {item.checklistTitle && item.checklistTitle !== item.projectTitle && item.projectTitle !== 'כללי' && item.checklistTitle !== 'כללי'
                                                         ? `${item.projectTitle} / ${item.checklistTitle}`
-                                                        : item.projectTitle === 'כללי' || !item.projectTitle ? 'תיבת דואר' : item.projectTitle}
+                                                        : item.projectTitle === 'כללי' || !item.projectTitle ? 'תיבת המשימות' : item.projectTitle}
                                                 </span>
                                                 {item.projectTitle === 'כללי' || !item.projectTitle ? '🗳️' : '#'}
                                             </div>

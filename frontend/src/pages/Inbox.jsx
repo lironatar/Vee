@@ -80,7 +80,7 @@ const Inbox = () => {
             }
         } catch (err) {
             console.error("Failed to fetch inbox:", err);
-            toast.error("שגיאה בטעינת תיבת דואר");
+            toast.error("שגיאה בטעינת תיבת המשימות");
         } finally {
             setLoading(false);
         }
@@ -355,7 +355,7 @@ const Inbox = () => {
     useEffect(() => {
         if (!loading) {
             window.dispatchEvent(new CustomEvent('updatePageTitle', {
-                detail: `תיבת דואר (${totalInboxItems}) 📥`
+                detail: `תיבת המשימות (${totalInboxItems}) 📥`
             }));
         }
     }, [totalInboxItems, loading]);
@@ -364,7 +364,7 @@ const Inbox = () => {
 
     return (
         <TaskPageLayout
-            title="תיבת דואר"
+            title="תיבת המשימות"
             titleContent={
                 <div style={{
                     transition: 'all 0.35s ease',
@@ -381,7 +381,7 @@ const Inbox = () => {
                             display: 'inline-block'
                         }}
                     >
-                        תיבת דואר
+                        תיבת המשימות
                     </h1>
                 </div>
             }
@@ -401,7 +401,7 @@ const Inbox = () => {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
-                                        title: 'תיבת דואר',
+                                        title: 'תיבת המשימות',
                                         project_id: null,
                                         active_days: '0,1,2,3,4,5,6'
                                     })
@@ -469,7 +469,7 @@ const Inbox = () => {
                                     buildHierarchy={buildHierarchy}
                                     calculateProgress={calculateProgress}
                                     setIsCreatingList={setIsCreatingList}
-                                    projectTitle="תיבת דואר"
+                                    projectTitle="תיבת המשימות"
                                 />
                                 {isCreatingList === list.id && (
                                     <form className="add-section-form" onSubmit={handleCreateCustomList}>

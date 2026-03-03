@@ -201,7 +201,7 @@ const History = () => {
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        setSelectedFilter({ type: 'inbox', id: null, label: 'תיבת דואר' });
+                                        setSelectedFilter({ type: 'inbox', id: null, label: 'תיבת המשימות' });
                                         setIsDropdownOpen(false);
                                     }}
                                     style={{
@@ -229,7 +229,7 @@ const History = () => {
                                                 background: '#e5e7eb',
                                             }}
                                         />
-                                        <span>תיבת דואר</span>
+                                        <span>תיבת המשימות</span>
                                     </span>
                                     <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Inbox</span>
                                 </button>
@@ -511,7 +511,7 @@ function createFallbackActivities(user) {
             id: '4',
             date: yesterday.toISOString(),
             message: `${displayName} השלמת משימה`,
-            project_name: 'תיבת דואר'
+            project_name: 'תיבת המשימות'
         },
         {
             id: '5',
@@ -529,7 +529,7 @@ function applyActivityFilter(allActivities, filter) {
     if (filter.type === 'inbox') {
         return allActivities.filter((activity) => {
             const name = (activity.project_name || '').toLowerCase();
-            const isInboxName = name === 'inbox' || name === 'תיבת דואר';
+            const isInboxName = name === 'inbox' || name === 'תיבת המשימות';
             const noProject = activity.project_id === null || typeof activity.project_id === 'undefined';
             return isInboxName || noProject;
         });

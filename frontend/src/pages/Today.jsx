@@ -146,7 +146,7 @@ const Today = () => {
         for (const p of projectGroups) {
             if (p.checklists && p.checklists.length > 0) return p.checklists[0];
         }
-        return { id: null, title: 'תיבת דואר' };
+        return { id: null, title: 'תיבת המשימות' };
     };
 
     const getTargetChecklistId = () => {

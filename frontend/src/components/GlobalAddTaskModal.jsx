@@ -30,7 +30,7 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
                     // Set default to Inbox (first checklist with no project_id)
                     let inboxList = cData.find(c => !c.project_id);
                     if (!inboxList) {
-                        inboxList = { id: 'NEW_INBOX', title: 'תיבת דואר', project_id: null };
+                        inboxList = { id: 'NEW_INBOX', title: 'תיבת המשימות', project_id: null };
                     }
                     setDefaultChecklist(inboxList);
                 }
@@ -70,12 +70,12 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
                     const newList = await listRes.json();
                     finalChecklistId = newList.id;
                 } else {
-                    toast.error('שגיאה ביצירת תיבת דואר');
+                    toast.error('שגיאה ביצירת תיבת המשימות');
                     return;
                 }
             } catch (err) {
                 console.error(err);
-                toast.error('שגיאה ביצירת תיבת דואר');
+                toast.error('שגיאה ביצירת תיבת המשימות');
                 return;
             }
         }

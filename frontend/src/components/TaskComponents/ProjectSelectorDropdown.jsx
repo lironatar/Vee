@@ -43,7 +43,7 @@ const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selecte
     if (!isOpen) return null;
 
     const filteredProjects = projects.filter(p => !p.parent_id && p.title.toLowerCase().includes(searchQuery.toLowerCase()));
-    const filteredInboxChecklists = checklists.filter(c => !c.project_id && (c.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 'תיבת דואר'.includes(searchQuery) || 'הפרויקט הראשון שלי'.includes(searchQuery)));
+    const filteredInboxChecklists = checklists.filter(c => !c.project_id && (c.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 'תיבת המשימות'.includes(searchQuery) || 'הפרויקט הראשון שלי'.includes(searchQuery)));
 
     // Group lists by project
     const getProjectChecklists = (project) => {
@@ -87,7 +87,7 @@ const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selecte
             >
                 <Hash size={14} color={color} style={{ opacity: isInbox ? 1 : 0.7 }} />
                 <span style={{ flexGrow: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: isSelected ? 600 : 400 }}>
-                    {checklist.title || (isInbox ? 'תיבת דואר' : (project ? project.title : 'כללי'))}
+                    {checklist.title || (isInbox ? 'תיבת המשימות' : (project ? project.title : 'כללי'))}
                 </span>
                 {isSelected && <Check size={14} color="var(--primary-color)" />}
             </div>

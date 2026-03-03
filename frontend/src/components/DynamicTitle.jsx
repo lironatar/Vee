@@ -62,7 +62,7 @@ const DynamicTitle = () => {
         } else if (path.includes('/today')) {
             pageTitle = 'המשימות להיום ☀️';
         } else if (path.includes('/inbox')) {
-            pageTitle = 'תיבת דואר 📥';
+            pageTitle = 'תיבת המשימות 📥';
         } else if (path.includes('/projects')) {
             pageTitle = 'הפרויקטים שלי 📁';
         } else if (path.includes('/project/')) {

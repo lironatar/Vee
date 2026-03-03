@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Moon, Sun, LayoutDashboard, Store, Settings, LogOut, BookOpen, Plus, Folder, X, User as UserIcon, ChevronDown, ChevronUp, ListChecks, ArrowRight, Repeat, Target, CalendarDays, Users, Hash, Bell, HelpCircle, PlusCircle, Search, Activity } from 'lucide-react';
+import { Moon, Sun, LayoutDashboard, Store, Settings, LogOut, BookOpen, Plus, Folder, X, User as UserIcon, ChevronDown, ChevronUp, ListChecks, ArrowRight, Repeat, Target, CalendarDays, Calendar, Users, Hash, Bell, HelpCircle, PlusCircle, Search, Activity, CheckCircle } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useUser } from '../context/UserContext';
 import {
@@ -148,10 +148,8 @@ const Sidebar = ({ isOpen, onToggle }) => {
         { action: () => setShowGlobalAddModal(true), label: 'הוסף משימה', icon: PlusCircle, isAddTask: true },
         { path: '/inbox', label: 'תיבת המשימות', icon: Folder, badge: counts.inboxCount > 0 ? counts.inboxCount.toString() : null },
         { path: '/today', label: 'היום', icon: Sun, badge: counts.todayCount > 0 ? counts.todayCount.toString() : null },
-        { path: '/calendar', label: 'לוח שנה גלובלי', icon: CalendarDays },
-        { path: '/history', label: 'פעילות', icon: BookOpen },
-        { action: openTemplateModal, label: 'חנות תבניות', icon: Store },
-        { path: '/admin', label: 'ניהול', icon: Settings },
+        { path: '/calendar', label: 'לו"ז', icon: Calendar },
+        { path: '/history', label: 'הושלמו', icon: CheckCircle },
     ];
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
@@ -275,9 +273,10 @@ const Sidebar = ({ isOpen, onToggle }) => {
 
                     {/* Projects section */}
                     <div className="nav-section" style={{ marginTop: '0.5rem' }}>
-                        <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 0.5rem', marginBottom: '0.35rem', color: 'var(--text-secondary)', position: 'relative' }} ref={addMenuRef}>
-                            <Link to="/projects" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>הפרויקטים שלי</span>
+                        <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.25rem 0.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)', position: 'relative' }} ref={addMenuRef}>
+                            <Link to="/projects" className="nav-link" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem', flexGrow: 1, borderRadius: 'var(--radius-sm)', transition: 'background 0.2s' }}>
+                                <Folder size={20} strokeWidth={1.8} style={{ color: 'var(--primary-color)' }} />
+                                <span style={{ fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}>הפרויקטים שלי</span>
                             </Link>
                             <div style={{ display: 'flex', gap: '0.2rem' }}>
                                 <button className="btn-icon-soft" style={{ padding: '0.15rem' }} onClick={() => setIsAddMenuOpen(!isAddMenuOpen)} title="פרויקט חדש">

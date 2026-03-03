@@ -125,7 +125,7 @@ const SortableChecklistCard = ({
                             flexGrow: 1,
                             userSelect: 'none'
                         }}>
-                            {checklist.title || 'תיבת דואר'}
+                            {checklist.title || 'תיבת המשימות'}
                         </h3>
                         <span style={{ fontSize: '13px', color: '#b3b3b3', fontWeight: 500 }}>
                             {!hideTaskCount && hierarchicalItems.length > 0 ? hierarchicalItems.length : ''}

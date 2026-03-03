@@ -165,7 +165,7 @@ const Home = () => {
                         transition: 'all 0.2s ease'
                     }} className="hover-scale">
                         <Folder size={18} />
-                        תיבת דואר אישית
+                        תיבת משימות אישית
                     </Link>
                 </div>
 
