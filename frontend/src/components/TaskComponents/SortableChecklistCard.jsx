@@ -20,16 +20,27 @@ const SortableChecklistCard = ({
     defaultItemDate = null,
     hideTaskCount = false,
     isFlatList = false,
-    overrideChecklistForAdd = null
+    overrideChecklistForAdd = null,
+    expanded,
+    onToggleExpand,
+    onDeleteChecklist,
+    onAddItem,
+    onDeleteItem,
+    onUpdateItem,
+    onToggleItem
 }) => {
     // Local update handler — calls PUT /api/items/:itemId and updates UI eventually via parent reload / socket
-    const handleUpdateItem = handleUpdateItemProp || ((itemId, updates) => {
+    const handleUpdateItem = onUpdateItem || handleUpdateItemProp || ((itemId, updates) => {
         fetch(`${API_URL}/items/${itemId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updates),
         }).catch(err => console.error('Failed to update task', err));
     });
+
+    const activeToggleItem = onToggleItem || toggleItem;
+    const activeAddItem = onAddItem || handleAddItem;
+    const activeDeleteItem = onDeleteItem || handleDeleteItem;
 
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: checklist.id,
@@ -49,7 +60,9 @@ const SortableChecklistCard = ({
 
     const hierarchicalItems = buildHierarchy ? buildHierarchy(checklist.items) : checklist.items;
     const progressPercent = calculateProgress ? calculateProgress(checklist.items) : 0;
-    const isExpanded = isFlatList ? true : expandedChecklists[checklist.id];
+
+    // Support both ways of passing expansion state
+    const isExpanded = isFlatList ? true : (expanded !== undefined ? expanded : (expandedChecklists ? expandedChecklists[checklist.id] : true));
     const isAddingRootTask = addingToList === checklist.id;
 
     // Local state for the inline date picker when creating tasks
@@ -76,7 +89,10 @@ const SortableChecklistCard = ({
                         borderBottom: '1px solid var(--border-color)',
                         paddingBottom: '0.2rem'
                     }}
-                    onClick={() => toggleChecklistExpanded(checklist.id)}
+                    onClick={() => {
+                        if (onToggleExpand) onToggleExpand(checklist.id);
+                        else if (toggleChecklistExpanded) toggleChecklistExpanded(checklist.id);
+                    }}
                 >
                     <span style={{
                         position: 'absolute',
@@ -116,7 +132,10 @@ const SortableChecklistCard = ({
                         </span>
 
                         <div style={{ display: 'flex', alignItems: 'center', opacity: 0, transition: 'opacity 0.2s', marginRight: 'auto' }} className="checklist-actions">
-                            <ActionMenu onDelete={(e) => handleDeleteChecklist(e, checklist.id)} size={16} />
+                            <ActionMenu onDelete={(e) => {
+                                if (onDeleteChecklist) onDeleteChecklist(e, checklist.id);
+                                else if (handleDeleteChecklist) handleDeleteChecklist(e, checklist.id);
+                            }} size={16} />
                         </div>
                     </div>
                 </div>
@@ -138,8 +157,8 @@ const SortableChecklistCard = ({
                                         projectTitle={projectTitle}
                                         allItems={hierarchicalItems}
                                         todayProgress={todayProgress} addingToItem={addingToItem}
-                                        toggleItem={toggleItem} setAddingToItem={setAddingToItem} setAddingToList={setAddingToList}
-                                        handleAddItem={handleAddItem} handleDeleteItem={handleDeleteItem}
+                                        toggleItem={activeToggleItem} setAddingToItem={setAddingToItem} setAddingToList={setAddingToList}
+                                        handleAddItem={activeAddItem} handleDeleteItem={activeDeleteItem}
                                         newItemContent={newItemContent} setNewItemContent={setNewItemContent}
                                         handleSetTargetDate={handleSetTargetDate}
                                         handleUpdateItem={handleUpdateItem}
@@ -168,8 +187,8 @@ const SortableChecklistCard = ({
                                             projectTitle={projectTitle}
                                             allItems={hierarchicalItems}
                                             todayProgress={todayProgress} addingToItem={addingToItem}
-                                            toggleItem={toggleItem} setAddingToItem={setAddingToItem} setAddingToList={setAddingToList}
-                                            handleAddItem={handleAddItem} handleDeleteItem={handleDeleteItem}
+                                            toggleItem={activeToggleItem} setAddingToItem={setAddingToItem} setAddingToList={setAddingToList}
+                                            handleAddItem={activeAddItem} handleDeleteItem={activeDeleteItem}
                                             newItemContent={newItemContent} setNewItemContent={setNewItemContent}
                                             handleSetTargetDate={handleSetTargetDate}
                                             handleUpdateItem={handleUpdateItem}
@@ -191,7 +210,7 @@ const SortableChecklistCard = ({
                                 setNewItemDate={setNewItemDate}
                                 checklist={overrideChecklistForAdd || checklist}
                                 setAddingToList={setAddingToList}
-                                handleAddItem={handleAddItem}
+                                handleAddItem={activeAddItem}
                                 suppressDateSpan={newItemDate === defaultItemDate}
                             />
                         ) : (

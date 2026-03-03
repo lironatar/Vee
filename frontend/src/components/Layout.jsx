@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import { LayoutDashboard } from 'lucide-react';
 
 const Layout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 992);
@@ -43,29 +44,25 @@ const Layout = () => {
 
             <div className="content-wrapper">
                 {/* Sidebar Reopen Button - Visible when sidebar is closed */}
-                {!isSidebarOpen && (
-                    <button
-                        onClick={toggleSidebar}
-                        className="btn-icon-soft menu-toggle-btn"
-                        title="פתח תבניות"
-                        style={{
-                            position: 'fixed',
-                            top: '1rem',
-                            right: '1rem',
-                            zIndex: 1100,
-                            background: 'var(--bg-secondary)',
-                            boxShadow: 'var(--card-shadow)',
-                            border: '1px solid var(--border-color)',
-                            padding: '0.45rem',
-                            transition: 'var(--transition)'
-                        }}
-                    >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                            <line x1="15" x2="15" y1="3" y2="21" />
-                        </svg>
-                    </button>
-                )}
+                <button
+                    onClick={toggleSidebar}
+                    className="btn-icon-soft menu-toggle-btn"
+                    title={isSidebarOpen ? "סגור סרגל" : "פתח סרגל"}
+                    style={{
+                        position: 'fixed',
+                        top: '1.25rem',
+                        right: isSidebarOpen ? '255px' : '1rem',
+                        zIndex: 1100,
+                        background: 'transparent',
+                        boxShadow: 'none',
+                        border: 'none',
+                        padding: '0.45rem',
+                        transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease, color 0.2s ease',
+                        color: isSidebarOpen ? 'var(--text-secondary)' : 'var(--text-primary)',
+                    }}
+                >
+                    <LayoutDashboard size={20} strokeWidth={2.2} />
+                </button>
 
                 <main className="main-content fade-in">
                     <Outlet context={{ isSidebarOpen, toggleSidebar }} />

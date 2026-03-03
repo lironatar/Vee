@@ -41,10 +41,10 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
         fetchData();
     }, [isOpen, user]);
 
-    const handleAddItem = async (e, checklistId, parentItemId) => {
+    const handleAddItem = async (e, checklistId, parentItemId, explicitContent = null) => {
         if (e) e.preventDefault();
 
-        const content = window.globalNewItemContent;
+        const content = explicitContent || window.globalNewItemContent;
         const description = window.globalNewItemDesc;
         const targetDate = window.globalNewItemDate;
         const time = window.globalNewItemTime;

@@ -41,20 +41,30 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
 
     const repeatLabels = { daily: 'כל יום', weekly: 'שבועי', weekdays: 'ימי חול', monthly: 'חודשי', yearly: 'שנתי', custom: 'מותאם' };
 
-    const handleSubmit = (e) => {
-        if (!newItemContent.replace(/<[^>]*>?/gm, '').trim()) return;
+    const smartInputRef = useRef(null);
 
-        const plainText = newItemContent.replace(/<[^>]*>?/gm, '').trim();
+    const handleSubmit = (e, explicitContent = null) => {
+        let plainText;
+        if (explicitContent !== null) {
+            plainText = explicitContent.replace(/<[^>]*>?/gm, '').trim();
+        } else {
+            // Fallback to ref or state
+            const raw = smartInputRef.current
+                ? (smartInputRef.current.innerText || smartInputRef.current.textContent)
+                : newItemContent;
+            plainText = raw.replace(/<[^>]*>?/gm, '').trim();
+        }
+
+        if (!plainText) return;
+
         e.preventDefault();
-        // Providing global variables as the original code did. 
-        // This is not ideal but necessary to avoid breaking handleAddItem in existing pages.
         window.globalNewItemContent = plainText;
         window.globalNewItemDesc = description;
         window.globalNewItemDate = newItemDate || null;
         window.globalNewItemRepeatRule = repeatRule || null;
         window.globalNewItemTime = time || null;
 
-        handleAddItem(e, selectedChecklist?.id || checklist.id, null);
+        handleAddItem(e, selectedChecklist?.id || checklist.id, null, plainText);
 
         setNewItemContent('');
         setDescription('');
@@ -117,6 +127,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                     )}
 
                     <SmartInput
+                        ref={smartInputRef}
                         html={newItemContent}
                         setHtml={setNewItemContent}
                         placeholder={(!newItemContent || newItemContent === '<br>') ? dynamicPlaceholder : ''}
@@ -127,7 +138,8 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();
-                                if (newItemContent.replace(/<[^>]*>?/gm, '').trim()) handleSubmit(e);
+                                const currentContent = e.target.innerText || e.target.textContent;
+                                handleSubmit(e, currentContent);
                             }
                         }}
                         style={{ minWidth: '80px', flexGrow: 1, border: 'none', outline: 'none', fontSize: '16px', fontWeight: 500, background: 'transparent', color: 'var(--text-primary)', padding: 0 }}

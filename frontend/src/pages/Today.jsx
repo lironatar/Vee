@@ -153,9 +153,10 @@ const Today = () => {
         return getTargetChecklistObj().id;
     };
 
-    const handleAddItem = async (e, _checklistId, parentItemId = null) => {
+    const handleAddItem = async (e, _checklistId, parentItemId = null, explicitContent = null) => {
         if (e) e.preventDefault();
-        if (!newItemContent.trim()) return;
+        const contentToSave = explicitContent !== null ? explicitContent : newItemContent;
+        if (!contentToSave || !contentToSave.trim()) return;
 
         // Use the passed _checklistId if available and NOT 'today-unified', otherwise calculate it
         let targetId = _checklistId && _checklistId !== 'today-unified' ? _checklistId : getTargetChecklistId();
@@ -170,7 +171,7 @@ const Today = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    content: newItemContent,
+                    content: contentToSave,
                     parent_item_id: parentItemId,
                     target_date: todayDateStr // Default to today since we're in Today view
                 })

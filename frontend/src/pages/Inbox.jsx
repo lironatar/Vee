@@ -37,6 +37,21 @@ const Inbox = () => {
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
+    const {
+        activeDragItem,
+        handleDragStart,
+        handleDragOver,
+        handleDragEnd: handleDnDUpdate
+    } = useTaskDnD({
+        checklists,
+        setChecklists,
+        API_URL,
+        user,
+        fetchData: () => fetchInbox()
+    });
+
+    const activeChecklists = checklists.filter(c => !c.parent_id);
+
     useEffect(() => {
         if (user?.id) {
             fetchInbox();
@@ -71,16 +86,17 @@ const Inbox = () => {
         }
     };
 
-    const handleAddItem = async (e, _checklistId, parentId = null) => {
+    const handleAddItem = async (e, _checklistId, parentId = null, explicitContent = null) => {
         if (e) e.preventDefault();
-        if (!newItemContent.trim()) return;
+        const contentToSave = explicitContent !== null ? explicitContent : newItemContent;
+        if (!contentToSave || !contentToSave.trim()) return;
 
         // In Inbox, handleAddItem is passed _checklistId which might be from a different project if selected in dropdown
         try {
             const res = await fetch(`${API_URL}/checklists/${_checklistId}/items`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: newItemContent, parent_item_id: parentId })
+                body: JSON.stringify({ content: contentToSave, parent_item_id: parentId })
             });
             if (res.ok) {
                 const newItem = await res.json();
@@ -436,7 +452,7 @@ const Inbox = () => {
                                     checklist={list}
                                     expanded={expandedChecklists[list.id]}
                                     onToggleExpand={() => toggleChecklistExpanded(list.id)}
-                                    onAddItem={(e, parentId = null) => handleAddItem(e, list.id, parentId)}
+                                    onAddItem={(e, listId, parentId = null, content = null) => handleAddItem(e, listId, parentId, content)}
                                     onDeleteItem={handleDeleteItem}
                                     onUpdateItem={handleUpdateItem}
                                     onToggleItem={toggleItem}

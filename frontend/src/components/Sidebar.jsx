@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Moon, Sun, LayoutDashboard, Store, Settings, LogOut, BookOpen, Plus, Folder, X, User as UserIcon, ChevronDown, ChevronUp, ListChecks, ArrowRight, Repeat, Target, CalendarDays, Users, Hash, Bell, HelpCircle, PlusCircle, Search, SidebarClose, Activity } from 'lucide-react';
+import { Moon, Sun, LayoutDashboard, Store, Settings, LogOut, BookOpen, Plus, Folder, X, User as UserIcon, ChevronDown, ChevronUp, ListChecks, ArrowRight, Repeat, Target, CalendarDays, Users, Hash, Bell, HelpCircle, PlusCircle, Search, Activity } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useUser } from '../context/UserContext';
 import {
@@ -146,7 +146,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
 
     const navLinks = [
         { action: () => setShowGlobalAddModal(true), label: 'הוסף משימה', icon: PlusCircle, isAddTask: true },
-        { path: '/inbox', label: 'תיבת דואר', icon: Folder, badge: counts.inboxCount > 0 ? counts.inboxCount.toString() : null },
+        { path: '/inbox', label: 'תיבת המשימות', icon: Folder, badge: counts.inboxCount > 0 ? counts.inboxCount.toString() : null },
         { path: '/today', label: 'היום', icon: Sun, badge: counts.todayCount > 0 ? counts.todayCount.toString() : null },
         { path: '/calendar', label: 'לוח שנה גלובלי', icon: CalendarDays },
         { path: '/history', label: 'פעילות', icon: BookOpen },
@@ -216,9 +216,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                                 <Bell size={18} strokeWidth={1.8} />
                                 <span style={{ position: 'absolute', top: 5, left: 6, width: 7, height: 7, background: '#f97316', borderRadius: '50%', border: '2px solid var(--bg-secondary)' }}></span>
                             </button>
-                            <button className="btn-icon-soft" onClick={onToggle} style={{ padding: '0.35rem', color: 'var(--text-secondary)' }}>
-                                <SidebarClose size={18} strokeWidth={1.8} />
-                            </button>
+                            <div style={{ width: '32px' }}></div> {/* Spacer for the Layout toggle button */}
                         </div>
                     </div>
                 </div>

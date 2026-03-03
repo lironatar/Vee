@@ -349,7 +349,7 @@ const SortableTaskItem = ({
                 </div>
 
                 {isAddingHere && handleAddItem && (
-                    <form onSubmit={(e) => { handleAddItem(e, checklistId, item.id); }} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', paddingRight: '1.5rem' }} onClick={e => e.stopPropagation()}>
+                    <form onSubmit={(e) => { handleAddItem(e, checklistId, item.id, newItemContent); }} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', paddingRight: '1.5rem' }} onClick={e => e.stopPropagation()}>
                         <input
                             type="text"
                             className="form-control"

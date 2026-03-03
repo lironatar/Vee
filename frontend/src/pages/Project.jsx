@@ -379,9 +379,10 @@ const Project = () => {
         }
     };
 
-    const handleAddItem = async (e, _checklistId, parentItemId = null) => {
-        e.preventDefault();
-        if (!newItemContent.trim()) return;
+    const handleAddItem = async (e, _checklistId, parentItemId = null, explicitContent = null) => {
+        if (e) e.preventDefault();
+        const contentToSave = explicitContent !== null ? explicitContent : newItemContent;
+        if (!contentToSave || !contentToSave.trim()) return;
 
         try {
             const targetDateInput = window.globalNewItemDate || null;
@@ -397,7 +398,7 @@ const Project = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    content: newItemContent,
+                    content: contentToSave,
                     order_index: orderIndex,
                     parent_item_id: parentItemId,
                     target_date: targetDateInput,
@@ -840,7 +841,7 @@ const Project = () => {
                                                         setIsCreatingList={setIsCreatingList}
                                                         projectTitle={project?.title || ''}
                                                         onToggleExpand={() => toggleChecklistExpanded(checklist.id)}
-                                                        onAddItem={(e, parentId = null) => handleAddItem(e, checklist.id, parentId)}
+                                                        onAddItem={(e, listId, parentId = null, content = null) => handleAddItem(e, listId, parentId, content)}
                                                         onDeleteItem={handleDeleteItem}
                                                         onUpdateItem={handleUpdateItem}
                                                         onToggleItem={toggleItem}
