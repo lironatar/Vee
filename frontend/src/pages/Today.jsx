@@ -34,7 +34,7 @@ const Today = () => {
     const [newItemContent, setNewItemContent] = useState('');
     const [scrollTop, setScrollTop] = useState(0);
     const [activeDragItem, setActiveDragItem] = useState(null);
-    const todayDateStr = new Date().toISOString().split('T')[0];
+    const todayDateStr = new Date().toLocaleDateString('en-CA');
 
     const getFormattedDate = () => {
         const d = new Date();
@@ -129,6 +129,7 @@ const Today = () => {
                         const filtered = prev.filter(p => p.checklist_item_id !== itemId);
                         return [...filtered, { checklist_item_id: itemId, completed: newCompleted ? 1 : 0, date: todayDateStr }];
                     });
+                    window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
                 }, delay);
             }
         } catch (err) {
@@ -146,7 +147,7 @@ const Today = () => {
         for (const p of projectGroups) {
             if (p.checklists && p.checklists.length > 0) return p.checklists[0];
         }
-        return { id: null, title: 'תיבת המשימות' };
+        return { id: null, title: '' };
     };
 
     const getTargetChecklistId = () => {
@@ -191,6 +192,7 @@ const Today = () => {
                 })));
                 setNewItemContent('');
                 toast.success("משימה נוספה");
+                window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             }
         } catch (err) {
             toast.error("שגיאה בהוספת משימה");
@@ -212,6 +214,7 @@ const Today = () => {
                     }))
                 })));
                 toast.success("המשימה נמחקה");
+                window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             }
         } catch (err) {
             toast.error("שגיאה במחיקת המשימה");
@@ -243,6 +246,7 @@ const Today = () => {
                         items: list.items.map(i => i.id == itemId ? { ...i, ...updatedItem } : i)
                     }))
                 })));
+                window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             }
         } catch (err) {
             toast.error("שגיאה בעדכון המשימה");
@@ -361,7 +365,7 @@ const Today = () => {
                         color: 'var(--text-primary)',
                         letterSpacing: '-0.5px'
                     }}>
-                        {getFormattedDate()}
+                        היום
                     </h1>
 
                     <div style={{
@@ -410,7 +414,7 @@ const Today = () => {
                     buildHierarchy={buildHierarchy}
                     calculateProgress={calculateProgress}
                     setIsCreatingList={() => { }}
-                    defaultItemDate={null}
+                    defaultItemDate={todayDateStr}
                     hideTaskCount={true}
                     useSharedDndContext={true}
                     overrideChecklistForAdd={getTargetChecklistObj()}

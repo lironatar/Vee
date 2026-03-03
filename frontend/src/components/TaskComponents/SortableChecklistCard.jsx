@@ -74,7 +74,7 @@ const SortableChecklistCard = ({
 
     return (
         <div ref={setNodeRef} style={{ ...appliedStyle, marginBottom: '0rem' }} className="checklist-minimal">
-            {!isFlatList && checklist.title && (
+            {!isFlatList && checklist.title !== '' && (
                 <div
                     className="checklist-header"
                     style={{
@@ -125,7 +125,7 @@ const SortableChecklistCard = ({
                             flexGrow: 1,
                             userSelect: 'none'
                         }}>
-                            {checklist.title || 'תיבת המשימות'}
+                            {checklist.title}
                         </h3>
                         <span style={{ fontSize: '13px', color: '#b3b3b3', fontWeight: 500 }}>
                             {!hideTaskCount && hierarchicalItems.length > 0 ? hierarchicalItems.length : ''}

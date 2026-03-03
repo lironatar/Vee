@@ -67,10 +67,12 @@ const Inbox = () => {
 
             if (inboxRes.ok) {
                 const data = await inboxRes.json();
-                setChecklists(data);
+                // Normalize: if a checklist is named 'תיבת המשימות', make it headless (empty title)
+                const normalizedData = data.map(c => c.title === 'תיבת המשימות' ? { ...c, title: '' } : c);
+                setChecklists(normalizedData);
                 // Expand all by default for Inbox
                 const expandMap = {};
-                data.forEach(c => expandMap[c.id] = true);
+                normalizedData.forEach(c => expandMap[c.id] = true);
                 setExpandedChecklists(expandMap);
             }
 
@@ -118,6 +120,7 @@ const Inbox = () => {
                 });
 
                 setNewItemContent('');
+                window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             }
         } catch (err) {
             toast.error("שגיאה בהוספת משימה");
@@ -134,6 +137,7 @@ const Inbox = () => {
                     }
                     return c;
                 }));
+                window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             }
         } catch (err) {
             toast.error("שגיאה במחיקה");
@@ -168,6 +172,7 @@ const Inbox = () => {
                         const filtered = prev.filter(p => p.checklist_item_id !== itemId);
                         return [...filtered, { checklist_item_id: itemId, user_id: user.id, date: selectedDate, completed: newStatus ? 1 : 0 }];
                     });
+                    window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
                 }, delay);
             } else {
                 throw new Error("Failed to update");
@@ -197,6 +202,7 @@ const Inbox = () => {
                     ...c,
                     items: c.items.map(i => i.id == itemId ? { ...i, ...updatedItem } : i)
                 })));
+                window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             }
         } catch (err) {
             toast.error("שגיאה בעדכון המשימה");
@@ -401,7 +407,7 @@ const Inbox = () => {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
-                                        title: 'תיבת המשימות',
+                                        title: '',
                                         project_id: null,
                                         active_days: '0,1,2,3,4,5,6'
                                     })
@@ -456,6 +462,8 @@ const Inbox = () => {
                                     onDeleteItem={handleDeleteItem}
                                     onUpdateItem={handleUpdateItem}
                                     onToggleItem={toggleItem}
+                                    addingToList={addingToList}
+                                    setAddingToList={setAddingToList}
                                     addingToItem={addingToItem}
                                     setAddingToItem={setAddingToItem}
                                     newItemContent={newItemContent}

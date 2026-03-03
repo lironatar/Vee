@@ -540,6 +540,50 @@ app.delete('/api/projects/:id', (req, res) => {
     }
 });
 
+// --- Project Comments API ---
+app.get('/api/projects/:projectId/comments', (req, res) => {
+    const { projectId } = req.params;
+    try {
+        const comments = db.prepare(`
+            SELECT c.*, u.username, u.profile_image 
+            FROM project_comments c
+            JOIN users u ON c.user_id = u.id
+            WHERE c.project_id = ?
+            ORDER BY c.created_at ASC
+        `).all(projectId);
+        res.json(comments);
+    } catch (err) {
+        console.error('Failed to fetch comments:', err);
+        res.status(500).json({ error: 'Failed to fetch comments' });
+    }
+});
+
+app.post('/api/projects/:projectId/comments', (req, res) => {
+    const { projectId } = req.params;
+    const { user_id, content } = req.body;
+
+    if (!user_id || !content || content.trim() === '') {
+        return res.status(400).json({ error: 'User ID and content are required' });
+    }
+
+    try {
+        const result = db.prepare('INSERT INTO project_comments (project_id, user_id, content) VALUES (?, ?, ?)')
+            .run(projectId, user_id, content.trim());
+
+        const newComment = db.prepare(`
+            SELECT c.*, u.username, u.profile_image 
+            FROM project_comments c
+            JOIN users u ON c.user_id = u.id
+            WHERE c.id = ?
+        `).get(result.lastInsertRowid);
+
+        res.json(newComment);
+    } catch (err) {
+        console.error('Failed to add comment:', err);
+        res.status(500).json({ error: 'Failed to add comment' });
+    }
+});
+
 // --- Checklists API ---
 app.get('/api/projects/:projectId/checklists', (req, res) => {
     const { projectId } = req.params;
@@ -1035,17 +1079,17 @@ app.get('/api/users/:userId/sidebar-counts', (req, res) => {
             SELECT ci.id 
             FROM checklist_items ci
             JOIN checklists c ON ci.checklist_id = c.id
-            LEFT JOIN projects p ON c.project_id = p.id
             WHERE c.user_id = ? 
-            AND (ci.target_date = ? OR (ci.target_date IS NULL AND (p.is_routine IS NULL OR p.is_routine = 1) AND (',' || c.active_days || ',' LIKE ?)))
+            AND ci.parent_item_id IS NULL
+            AND ci.target_date = ?
         `);
-        const todayTasks = todayTasksQuery.all(userId, date, searchPattern);
+        const todayTasks = todayTasksQuery.all(userId, date);
 
         const inboxTasksQuery = db.prepare(`
             SELECT ci.id 
             FROM checklist_items ci
             JOIN checklists c ON ci.checklist_id = c.id
-            WHERE c.user_id = ? AND c.project_id IS NULL
+            WHERE c.user_id = ? AND c.project_id IS NULL AND ci.parent_item_id IS NULL
         `);
         const inboxTasks = inboxTasksQuery.all(userId);
 

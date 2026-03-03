@@ -926,6 +926,8 @@ h2.react-datepicker__current-month {
   --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --bg-gray-soft: #F5F5F5;
   --btn-text-primary: #1a1a1a;
+  --sidebar-item-gap: 0.1rem;
+  --sidebar-link-py: 0.45rem;
 }
 
 [data-theme="dark"] {
@@ -1146,6 +1148,7 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 0.75rem;
 }
 
 .sidebar-user-info {
@@ -1164,14 +1167,14 @@ a:hover {
 .nav-section {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: var(--sidebar-item-gap);
 }
 
 .nav-link {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem 0.6rem;
+  padding: var(--sidebar-link-py) 0.6rem;
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-weight: 500;
@@ -1193,7 +1196,13 @@ a:hover {
 
 .nav-link.project-link {
   font-weight: 400;
-  padding: 0.35rem 0.6rem;
+  padding: var(--sidebar-link-py) 0.6rem;
+}
+
+.projects-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sidebar-item-gap);
 }
 
 .nav-link.project-link.active {
@@ -1228,7 +1237,7 @@ a:hover {
   display: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .mobile-header {
     display: flex;
   }
@@ -1255,16 +1264,24 @@ a:hover {
     box-shadow: -10px 0 30px #0000001a;
   }
 
-  .sidebar-backdrop {
+  .sidebar-overlay {
     position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
-    background: #00000080;
+    background: rgba(0, 0, 0, 0.4);
     z-index: 35;
-    -webkit-backdrop-filter: blur(2px);
-    backdrop-filter: blur(2px);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+
+  .sidebar-overlay.visible {
+    opacity: 1;
+    visibility: visible;
   }
 
   .mobile-close-btn {

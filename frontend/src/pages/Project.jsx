@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext, useParams, Link, useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { CheckCircle, Circle, Trash2, HelpCircle, ArrowRight, Store, Plus, ChevronRight, ChevronDown, Settings, X, Calendar as CalendarIcon, List as ListIcon, GripVertical, MoreVertical, Users, UserPlus, Search, Copy, Edit3, Save, Home, Filter } from 'lucide-react';
+import { CheckCircle, Circle, Trash2, HelpCircle, ArrowRight, Store, Plus, ChevronRight, ChevronDown, Settings, X, Calendar as CalendarIcon, List as ListIcon, GripVertical, MoreVertical, MoreHorizontal, Users, UserPlus, Search, Copy, Edit3, Save, Home, Filter, MessageSquare, Send, Clock } from 'lucide-react';
 import ProjectCalendar from '../components/ProjectCalendar';
 import { toast } from 'sonner';
 import { io } from 'socket.io-client';
@@ -28,6 +28,7 @@ const API_URL = '/api';
 import { ActionMenu, SortableChecklistCard, AddTaskButton } from '../components/TaskComponents/index.jsx';
 import TaskPageLayout from '../components/TaskPageLayout';
 import { useTaskDnD } from '../hooks/useTaskDnD';
+import ProjectComments from '../components/ProjectComments';
 
 const Project = () => {
     const { projectId } = useParams();
@@ -68,8 +69,14 @@ const Project = () => {
     const [showFilters, setShowFilters] = useState(false);
     const [isAddingChecklist, setIsAddingChecklist] = useState(false);
 
+    // Comments State
+    const [showComments, setShowComments] = useState(false);
+    const [comments, setComments] = useState([]);
+    const [newComment, setNewComment] = useState('');
+    const [loadingComments, setLoadingComments] = useState(false);
+
     const today = new Date();
-    const dateStr = today.toISOString().split('T')[0];
+    const dateStr = today.toLocaleDateString('en-CA');
     const weekDaysHebrew = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
     const [selectedDate, setSelectedDate] = useState(dateStr);
@@ -122,6 +129,61 @@ const Project = () => {
             fetchProgressForDate(selectedDate);
         }
     }, [user, projectId, selectedDate]);
+
+    // Fetch comments when overlay opens
+    useEffect(() => {
+        if (showComments && projectId) {
+            fetchComments();
+        }
+    }, [showComments, projectId]);
+
+    const fetchComments = async () => {
+        setLoadingComments(true);
+        try {
+            const res = await fetch(`${API_URL}/projects/${projectId}/comments`);
+            if (res.ok) {
+                const data = await res.json();
+                setComments(data);
+                setTimeout(() => {
+                    commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            }
+        } catch (err) {
+            console.error('Failed to fetch comments', err);
+        } finally {
+            setLoadingComments(false);
+        }
+    };
+
+    const handlePostComment = async (e) => {
+        e.preventDefault();
+        if (!newComment.trim()) return;
+
+        try {
+            const res = await fetch(`${API_URL}/projects/${projectId}/comments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: user.id,
+                    content: newComment.trim()
+                })
+            });
+
+            if (res.ok) {
+                const comment = await res.json();
+                setComments(prev => [...prev, comment]);
+                setNewComment('');
+                setTimeout(() => {
+                    commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            } else {
+                toast.error('שגיאה בשליחת התגובה');
+            }
+        } catch (err) {
+            console.error('Failed to post comment', err);
+            toast.error('שגיאה בשליחת התגובה');
+        }
+    };
 
 
     useEffect(() => {
@@ -329,6 +391,7 @@ const Project = () => {
                 setChecklists([newList, ...checklists]);
                 setExpandedChecklists(prev => ({ ...prev, [newList.id]: true }));
                 setAddingToList(newList.id);
+                window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             }
         } catch (e) {
             console.error(e);
@@ -373,6 +436,7 @@ const Project = () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ checklistIds: newChecklists.map(c => c.id) })
                 });
+                window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             }
         } catch (err) {
             console.error(err);
@@ -432,6 +496,7 @@ const Project = () => {
                 window.globalNewItemDescription = null;
                 window.globalNewItemRepeatRule = null;
                 window.globalNewItemTime = null;
+                window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             }
         } catch (err) {
             console.error(err);
@@ -445,6 +510,7 @@ const Project = () => {
             await fetch(`${API_URL}/items/${itemId}`, { method: 'DELETE' });
             // Refresh data to correctly handle cascade deletes
             fetchProjectData();
+            window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
         } catch (err) {
             console.error(err);
         }
@@ -472,6 +538,7 @@ const Project = () => {
                 if (updates.target_date !== undefined) {
                     toast.success(updates.target_date ? 'תאריך יעד עודכן' : 'תאריך יעד הוסר');
                 }
+                window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             }
         } catch (err) {
             console.error('Failed to update item', err);
@@ -516,6 +583,7 @@ const Project = () => {
                         const filtered = prev.filter(p => p.checklist_item_id !== itemId);
                         return [...filtered, { checklist_item_id: itemId, user_id: user.id, date: selectedDate, completed: newStatus ? 1 : 0 }];
                     });
+                    window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
                 }, delay);
             }
         } catch (err) {
@@ -530,6 +598,7 @@ const Project = () => {
         try {
             await fetch(`${API_URL}/checklists/${id}`, { method: 'DELETE' });
             setChecklists(checklists.filter(c => c.id !== id));
+            window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
         } catch (err) {
             console.error(err);
         }
@@ -660,16 +729,19 @@ const Project = () => {
                 </div>
             }
             headerActions={
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <button onClick={() => setShowTeamModal(true)} className="btn-icon-soft" title="צוות הפרויקט">
-                        <Users size={20} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginLeft: window.innerWidth <= 768 ? '-0.5rem' : '0' }}>
+                    <button onClick={() => setShowTeamModal(true)} className="btn-icon-soft" title="צוות הפרויקט" style={{ padding: '0.4rem' }}>
+                        <Users size={18} />
                     </button>
-                    <button onClick={() => setActiveTab(activeTab === 'tasks' ? 'history' : 'tasks')} className="btn-icon-soft" title={activeTab === 'tasks' ? 'יומן היסטוריה' : 'חזור למשימות'}>
-                        {activeTab === 'tasks' ? <CalendarIcon size={20} /> : <ListIcon size={20} />}
+                    <button onClick={() => setActiveTab(activeTab === 'tasks' ? 'history' : 'tasks')} className="btn-icon-soft" title={activeTab === 'tasks' ? 'יומן היסטוריה' : 'חזור למשימות'} style={{ padding: '0.4rem' }}>
+                        {activeTab === 'tasks' ? <CalendarIcon size={18} /> : <ListIcon size={18} />}
+                    </button>
+                    <button onClick={() => setShowComments(true)} className="btn-icon-soft" title="תגובות הפרויקט" style={{ padding: '0.4rem' }}>
+                        <MessageSquare size={18} />
                     </button>
                     <div style={{ position: 'relative' }} ref={projectMenuRef}>
-                        <button onClick={() => setShowProjectMenu(!showProjectMenu)} className="btn-icon-soft">
-                            <MoreVertical size={20} />
+                        <button onClick={() => setShowProjectMenu(!showProjectMenu)} className="btn-icon-soft" style={{ padding: '0.4rem' }}>
+                            <MoreHorizontal size={18} />
                         </button>
                         {showProjectMenu && (
                             <div className="card fade-in" style={{
@@ -1050,7 +1122,21 @@ const Project = () => {
                     </div>
                 )
             }
-        </TaskPageLayout >
+
+            {/* Comments Component */}
+            <ProjectComments
+                isOpen={showComments}
+                onClose={() => setShowComments(false)}
+                project={project}
+                user={user}
+                comments={comments}
+                loading={loadingComments}
+                newComment={newComment}
+                setNewComment={setNewComment}
+                onPost={handlePostComment}
+            />
+
+        </TaskPageLayout>
     );
 };
 

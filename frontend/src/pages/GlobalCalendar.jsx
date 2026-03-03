@@ -8,7 +8,7 @@ const API_URL = '/api';
 
 const GlobalCalendar = () => {
     const { user } = useUser();
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-CA'));
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState(() => localStorage.getItem('calendarViewMode') || 'daily');
@@ -81,7 +81,7 @@ const GlobalCalendar = () => {
     const handleDateChange = (daysToAdd) => {
         const d = new Date(selectedDate);
         d.setDate(d.getDate() + daysToAdd);
-        setSelectedDate(d.toISOString().split('T')[0]);
+        setSelectedDate(d.toLocaleDateString('en-CA'));
     };
 
     const toggleItem = async (e, itemId, currentStatus) => {
@@ -178,7 +178,7 @@ const GlobalCalendar = () => {
         // day slots
         for (let i = 1; i <= daysInMonth; i++) {
             const dateStr = `${monthKey}-${String(i).padStart(2, '0')}`;
-            const isToday = new Date().toISOString().split('T')[0] === dateStr;
+            const isToday = new Date().toLocaleDateString('en-CA') === dateStr;
             const isSelected = selectedDate === dateStr;
             const data = monthlyData[dateStr];
 
@@ -413,8 +413,8 @@ const GlobalCalendar = () => {
         for (let i = 0; i < 7; i++) {
             const d = new Date(start);
             d.setDate(start.getDate() + i);
-            const dateStr = d.toISOString().split('T')[0];
-            const isToday = new Date().toISOString().split('T')[0] === dateStr;
+            const dateStr = d.toLocaleDateString('en-CA');
+            const isToday = new Date().toLocaleDateString('en-CA') === dateStr;
             const isSelected = selectedDate === dateStr;
             const data = monthlyData[dateStr];
 
@@ -547,9 +547,9 @@ const GlobalCalendar = () => {
 
                             <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', padding: '0.5rem', flexGrow: 1, justifyContent: 'center' }} className="hide-scrollbar">
                                 {generateDateStrip().map((date, idx) => {
-                                    const dateStr = date.toISOString().split('T')[0];
+                                    const dateStr = date.toLocaleDateString('en-CA');
                                     const isSelected = selectedDate === dateStr;
-                                    const isToday = new Date().toISOString().split('T')[0] === dateStr;
+                                    const isToday = new Date().toLocaleDateString('en-CA') === dateStr;
 
                                     return (
                                         <button

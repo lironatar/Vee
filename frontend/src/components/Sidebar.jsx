@@ -87,6 +87,23 @@ const Sidebar = ({ isOpen, onToggle }) => {
         }
     }, [user, location.pathname, fetchProjects, fetchCounts]);
 
+    // Handle "on-hot" updates via shared events
+    useEffect(() => {
+        const handleRefresh = () => {
+            fetchCounts();
+            fetchProjects();
+        };
+        window.addEventListener('refreshSidebarCounts', handleRefresh);
+        return () => window.removeEventListener('refreshSidebarCounts', handleRefresh);
+    }, [fetchCounts, fetchProjects]);
+
+    // Update whenever the sidebar is opened (user clicks/swipes it open)
+    useEffect(() => {
+        if (isOpen && user) {
+            fetchCounts();
+        }
+    }, [isOpen, user, fetchCounts]);
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (userMenuRef.current && !userMenuRef.current.contains(event.target)) setIsUserMenuOpen(false);
@@ -272,9 +289,9 @@ const Sidebar = ({ isOpen, onToggle }) => {
 
 
                     {/* Projects section */}
-                    <div className="nav-section" style={{ marginTop: '0.5rem' }}>
-                        <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.25rem 0.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)', position: 'relative' }} ref={addMenuRef}>
-                            <Link to="/projects" className="nav-link" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem', flexGrow: 1, borderRadius: 'var(--radius-sm)', transition: 'background 0.2s' }}>
+                    <div className="nav-section" style={{ marginTop: '0.2rem' }}>
+                        <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0', marginBottom: '0', color: 'var(--text-primary)', position: 'relative' }} ref={addMenuRef}>
+                            <Link to="/projects" className="nav-link" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0', flexGrow: 1, borderRadius: 'var(--radius-sm)', transition: 'background 0.2s' }}>
                                 <Folder size={20} strokeWidth={1.8} style={{ color: 'var(--primary-color)' }} />
                                 <span style={{ fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}>הפרויקטים שלי</span>
                             </Link>

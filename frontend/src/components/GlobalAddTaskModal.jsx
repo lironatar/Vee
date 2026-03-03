@@ -30,7 +30,7 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
                     // Set default to Inbox (first checklist with no project_id)
                     let inboxList = cData.find(c => !c.project_id);
                     if (!inboxList) {
-                        inboxList = { id: 'NEW_INBOX', title: 'תיבת המשימות', project_id: null };
+                        inboxList = { id: 'NEW_INBOX', title: '', project_id: null };
                     }
                     setDefaultChecklist(inboxList);
                 }

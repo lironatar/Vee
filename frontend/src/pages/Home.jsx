@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Folder, Plus, Trash2, Repeat, Target, ListChecks, ArrowRight, ChevronDown, X, Search, ChevronLeft, Hash } from 'lucide-react';
+import TaskPageLayout from '../components/TaskPageLayout';
 
 const API_URL = '/api';
 
@@ -14,9 +15,9 @@ const Home = () => {
     // New Add Project states
     const [creationStep, setCreationStep] = useState(null); // 'blank' | 'template'
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+    const [scrollTop, setScrollTop] = useState(0);
 
-    // Search
-    const [searchTerm, setSearchTerm] = useState('');
+    // Search (removed)
 
     // Template tracking
     const [templates, setTemplates] = useState([]);
@@ -135,120 +136,89 @@ const Home = () => {
 
     if (loading) return <div style={{ textAlign: 'center', padding: '3rem' }}>טוען נתונים...</div>;
 
-    const filteredProjects = projects.filter(p => p.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return (
-        <div className="page-grid">
-
-
-            <div className="page-content">
-                <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h1 style={{
-                        margin: '0.5rem 0 0.25rem',
-                        fontSize: '1.5rem',
-                        fontWeight: 800,
-                        color: 'var(--text-primary)',
-                        letterSpacing: '-0.5px'
-                    }}>הפרויקטים שלי</h1>
-
-                    <Link to="/inbox" style={{
-                        textDecoration: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        padding: '0.5rem 1rem',
-                        background: 'rgba(var(--primary-rgb), 0.1)',
-                        color: 'var(--primary-color)',
-                        borderRadius: 'var(--radius-md)',
-                        fontWeight: 700,
-                        fontSize: '0.9rem',
-                        transition: 'all 0.2s ease'
-                    }} className="hover-scale">
-                        <Folder size={18} />
-                        תיבת משימות אישית
-                    </Link>
+        <TaskPageLayout
+            title="הפרויקטים שלי"
+            titleContent={
+                <div style={{
+                    transition: 'all 0.35s ease',
+                    opacity: Math.max(0, 1 - scrollTop / 60),
+                    transform: `translateY(${scrollTop * 0.15}px)`
+                }}>
+                    <h1
+                        style={{
+                            margin: 0,
+                            fontSize: '28px',
+                            fontWeight: 700,
+                            color: 'var(--text-primary)',
+                            letterSpacing: '-0.5px',
+                            display: 'inline-block'
+                        }}
+                    >
+                        הפרויקטים שלי
+                    </h1>
                 </div>
+            }
+            externalScrollTop={scrollTop}
+            onScroll={setScrollTop}
+        >
+            <div style={{ display: 'flex', flexDirection: 'column', width: '100%', paddingBottom: '5rem' }}>
 
-                {/* Search Bar & Add Button */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '2.5rem' }}>
-                    <div style={{ position: 'relative', width: '100%' }}>
-                        <Search size={14} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', opacity: 0.5 }} />
-                        <input
-                            type="text"
-                            placeholder="חפש פרויקט"
-                            className="form-control"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '1.5rem' }}>
+                    <div className="add-dropdown-container" style={{ position: 'relative' }}>
+                        <button
+                            onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
                             style={{
-                                padding: '6px 8px',
-                                paddingRight: '2.25rem',
-                                width: '100%',
-                                height: '33px',
-                                minHeight: 'unset',
-                                fontSize: '1rem',
-                                background: 'transparent',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                padding: '0.35rem 0.6rem',
+                                color: 'var(--text-primary)',
+                                fontWeight: 500,
+                                fontSize: '0.9rem',
+                                background: 'var(--bg-secondary)',
                                 border: '1px solid var(--border-color)',
-                                borderRadius: '8px',
-                                opacity: 0.7
+                                borderRadius: 'var(--radius-sm)',
+                                cursor: 'pointer',
+                                transition: 'var(--transition)'
                             }}
-                        />
-                    </div>
+                            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                            <Plus size={16} style={{ opacity: 0.6 }} />
+                            הוסף
+                            <ChevronDown size={14} style={{ opacity: 0.6, transition: 'transform 0.2s', transform: isAddMenuOpen ? 'rotate(180deg)' : 'none' }} />
+                        </button>
 
-                    <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                        <div className="add-dropdown-container" style={{ position: 'relative' }}>
-                            <button
-                                onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
-                                className="btn-icon-soft"
+                        {isAddMenuOpen && (
+                            <div
+                                className="action-menu-dropdown fade-in slide-down"
                                 style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.3rem',
-                                    padding: '0.25rem 0.5rem',
-                                    color: 'var(--primary-color)',
-                                    fontWeight: 700,
-                                    fontSize: '0.9rem',
-                                    background: 'transparent',
-                                    borderRadius: '6px'
+                                    position: 'absolute', top: '100%', right: 0, marginTop: '0.5rem',
+                                    width: '200px', zIndex: 100, background: 'var(--bg-secondary)',
+                                    border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)',
+                                    boxShadow: 'var(--shadow-lg)', overflow: 'hidden'
                                 }}
                             >
-                                <Plus size={16} />
-                                הוסף
-                                <ChevronDown size={12} style={{ transition: 'transform 0.2s', transform: isAddMenuOpen ? 'rotate(180deg)' : 'none', marginRight: '0.1rem', opacity: 0.6 }} />
-                            </button>
-
-                            {isAddMenuOpen && (
-                                <div
-                                    className="action-menu-dropdown fade-in slide-down"
-                                    style={{
-                                        position: 'absolute', top: '100%', right: 0, marginTop: '0.5rem',
-                                        width: '220px', zIndex: 100, background: 'var(--bg-secondary)',
-                                        border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)',
-                                        boxShadow: 'var(--shadow-lg)', overflow: 'hidden'
-                                    }}
+                                <button
+                                    className="action-menu-item"
+                                    onClick={() => { setCreationStep('blank'); setProjectType('routine'); setNewTitle(''); setIsAddMenuOpen(false); }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', width: '100%', textAlign: 'right', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-color)', cursor: 'pointer', color: 'var(--text-primary)' }}
                                 >
-                                    <button
-                                        className="action-menu-item"
-                                        onClick={() => { setCreationStep('blank'); setProjectType('routine'); setNewTitle(''); setIsAddMenuOpen(false); }}
-                                        style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', width: '100%', textAlign: 'right', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-color)', cursor: 'pointer', color: 'var(--text-primary)' }}
-                                    >
-                                        <Folder size={18} style={{ color: 'var(--primary-color)' }} />
-                                        <div>
-                                            <div style={{ fontWeight: 600, fontSize: '1rem' }}>פרויקט חדש</div>
-                                        </div>
-                                    </button>
-                                    <button
-                                        className="action-menu-item"
-                                        onClick={openTemplateModal}
-                                        style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', width: '100%', textAlign: 'right', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}
-                                    >
-                                        <ListChecks size={18} style={{ color: 'var(--success-color)' }} />
-                                        <div>
-                                            <div style={{ fontWeight: 600, fontSize: '1rem' }}>בחר מתבנית</div>
-                                        </div>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                                    <Folder size={16} style={{ color: 'var(--primary-color)' }} />
+                                    <div style={{ fontWeight: 500, fontSize: '0.95rem' }}>פרויקט חדש</div>
+                                </button>
+                                <button
+                                    className="action-menu-item"
+                                    onClick={openTemplateModal}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', width: '100%', textAlign: 'right', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}
+                                >
+                                    <ListChecks size={16} style={{ color: 'var(--success-color)' }} />
+                                    <div style={{ fontWeight: 500, fontSize: '0.95rem' }}>בחר מתבנית</div>
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -461,63 +431,37 @@ const Home = () => {
                     </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-color)', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <span style={{ fontWeight: 500, fontSize: '14px', color: 'var(--text-primary)', opacity: 1 }}>{filteredProjects.length} פרויקטים</span>
+                        <div style={{ paddingBottom: '0.5rem', borderBottom: '1px solid rgba(150,150,150,0.2)', marginBottom: '1rem' }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{projects.length} פרויקטים</span>
                         </div>
 
-                        {filteredProjects.length === 0 && searchTerm && (
-                            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-                                לא נמצאו פרויקטים התואמים לחיפוש.
-                            </div>
-                        )}
-
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                            gap: '1rem'
-                        }}>
-                            {filteredProjects.map((project, idx) => (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                            {projects.map((project) => (
                                 <Link
                                     key={project.id}
                                     to={`/project/${project.id}`}
-                                    className="card hover-scale"
                                     style={{
-                                        padding: '1.5rem',
                                         display: 'flex',
-                                        flexDirection: 'column',
                                         alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '1rem',
+                                        gap: '0.75rem',
+                                        padding: '0.6rem 0.5rem',
                                         textDecoration: 'none',
                                         color: 'var(--text-primary)',
-                                        border: '1px solid var(--border-color)',
-                                        textAlign: 'center',
-                                        minHeight: '160px'
+                                        transition: 'background 0.2s',
+                                        borderRadius: 'var(--radius-sm)'
                                     }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                 >
-                                    <div style={{
-                                        width: '48px',
-                                        height: '48px',
-                                        borderRadius: '12px',
-                                        background: 'rgba(var(--primary-rgb), 0.1)',
-                                        color: 'var(--primary-color)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}>
-                                        <Hash size={24} />
-                                    </div>
-                                    <span style={{ fontSize: '1.1rem', fontWeight: 700 }}>{project.title}</span>
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                        {project.is_routine ? 'שגרה קבועה' : 'פרויקט חד-פעמי'}
-                                    </div>
+                                    <Hash size={18} style={{ color: '#b3b3b3' }} />
+                                    <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>{project.title}</span>
                                 </Link>
                             ))}
                         </div>
                     </div>
                 )}
             </div>
-        </div>
+        </TaskPageLayout>
     );
 };
 
