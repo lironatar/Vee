@@ -66,7 +66,7 @@ const Layout = () => {
                     }}
                 >
                     <img
-                        src={isSidebarOpen ? "/src/assets/sidebar_is_open.svg" : "/src/assets/sidebar_is_closed.svg"}
+                        src={isSidebarOpen ? "/sidebar_is_open.svg" : "/sidebar_is_closed.svg"}
                         alt="sidebar toggle"
                         style={{
                             width: '24px',
