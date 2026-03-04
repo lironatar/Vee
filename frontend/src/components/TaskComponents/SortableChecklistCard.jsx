@@ -114,7 +114,7 @@ const SortableChecklistCard = ({
                         alignItems: 'center',
                         gap: '8px',
                         flexGrow: 1,
-                        padding: '0.5rem 0',
+                        padding: '0',
                         margin: 0
                     }}>
                         <h3 style={{
@@ -214,7 +214,7 @@ const SortableChecklistCard = ({
                                 suppressDateSpan={newItemDate === defaultItemDate}
                             />
                         ) : (
-                            <AddTaskButton onClick={() => { if (setAddingToList) setAddingToList(checklist.id); if (setAddingToItem) setAddingToItem(null); if (setNewItemContent) setNewItemContent(''); }} />
+                            <AddTaskButton noMarginTop={true} onClick={() => { if (setAddingToList) setAddingToList(checklist.id); if (setAddingToItem) setAddingToItem(null); if (setNewItemContent) setNewItemContent(''); }} />
                         )}
                     </div>
 

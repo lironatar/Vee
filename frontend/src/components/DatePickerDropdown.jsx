@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar as CalendarIcon, Sun, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import DynamicTodayIcon from './DynamicTodayIcon';
 
 const hebrewMonthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
 
@@ -108,7 +109,7 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
     const fmtFull = (d) => `${fmtShort(d)} ${d.getDate()} ב${hebrewMonthNames[d.getMonth()]}`;
 
     const quickPicks = [
-        { label: 'היום', sub: fmtShort(today), icon: <span style={iconWrap('rgba(75,158,71,0.12)')}><CalendarIcon size={14} style={{ color: '#4b9e47' }} /></span>, date: todayStr },
+        { label: 'היום', sub: fmtShort(today), icon: <span style={iconWrap('rgba(75,158,71,0.12)')}><DynamicTodayIcon size={14} color="#4b9e47" /></span>, date: todayStr },
         { label: 'מחר', sub: fmtShort(tomorrow), icon: <span style={iconWrap('rgba(217,154,41,0.12)')}><Sun size={14} style={{ color: '#d99a29' }} /></span>, date: tomorrow.toLocaleDateString('en-CA') },
         { label: 'סוף השבוע', sub: fmtShort(saturday), icon: <span style={iconWrap('rgba(76,139,245,0.12)', '13px')}>🛋️</span>, date: saturday.toLocaleDateString('en-CA') },
         { label: 'שבוע הבא', sub: fmtFull(nextMonday), icon: <span style={iconWrap('rgba(155,89,182,0.12)')}><ArrowLeft size={14} style={{ color: '#9b59b6' }} /></span>, date: nextMonday.toLocaleDateString('en-CA') },

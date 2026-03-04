@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Hash, Check, ChevronDown, Search } from 'lucide-react';
+import { List, Check, Search, Inbox, Folder } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
 
 const API_URL = '/api';
@@ -63,8 +63,8 @@ const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selecte
 
     const renderItem = (checklist, project, isInbox = false) => {
         const isSelected = selectedChecklistId === checklist.id;
-        // Inbox icon is usually blue-ish or default, projects might have colors
-        const color = isInbox ? '#246fe0' : (project?.color && project.color !== '#ffffff' ? project.color : 'var(--text-secondary)');
+        // Use CSS variable for standard list icons to adapt to light/dark mode
+        const iconColor = 'var(--text-secondary)';
         return (
             <div
                 key={checklist.id}
@@ -85,7 +85,7 @@ const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selecte
                 onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
                 onMouseLeave={e => e.currentTarget.style.background = isSelected ? 'var(--bg-secondary)' : 'transparent'}
             >
-                <Hash size={14} color={color} style={{ opacity: isInbox ? 1 : 0.7 }} />
+                <List size={14} color={iconColor} style={{ opacity: isInbox ? 0.9 : 0.6 }} />
                 <span style={{ flexGrow: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: isSelected ? 600 : 400 }}>
                     {checklist.title || (isInbox ? 'תיבת המשימות' : (project ? project.title : 'כללי'))}
                 </span>
@@ -111,7 +111,7 @@ const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selecte
                     alignItems: 'center',
                     gap: '0.5rem'
                 }}>
-                    <ChevronDown size={14} color="var(--text-secondary)" />
+                    <Folder size={14} color={project.color && project.color !== '#ffffff' ? project.color : 'var(--text-secondary)'} style={{ opacity: 1 }} />
                     {project.title}
                 </div>
                 {projectLists.length > 0 ? (
@@ -131,12 +131,13 @@ const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selecte
     return createPortal(
         <div ref={dropdownRef} className="dropdown-menu slide-down fade-in" style={{
             position: 'absolute',
-            top: anchorRef.current ? anchorRef.current.getBoundingClientRect().bottom + window.scrollY + 8 : 0,
+            top: anchorRef.current ? anchorRef.current.getBoundingClientRect().bottom + window.scrollY + 4 : 0,
             left: anchorRef.current ? (
                 (() => {
                     const rect = anchorRef.current.getBoundingClientRect();
                     const dropdownWidth = 275;
-                    let left = rect.left + window.scrollX + (rect.width / 2) - (dropdownWidth / 2);
+                    // Aligned more to the right side (where labels are in RTL) and shifted a bit left
+                    let left = rect.right + window.scrollX - dropdownWidth - 20;
                     // Prevent going off screen left
                     if (left < 10) left = 10;
                     // Prevent going off screen right
@@ -188,10 +189,19 @@ const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selecte
                 {/* Inbox Checklists */}
                 {filteredInboxChecklists.length > 0 && (
                     <div style={{ marginBottom: '0.5rem' }}>
-                        <div style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            הפרויקט הראשון שלי
+                        <div style={{
+                            padding: '0.4rem 0.8rem',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            color: 'var(--text-primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                        }}>
+                            <Inbox size={14} color="var(--text-secondary)" style={{ opacity: 0.8 }} />
+                            תיבת המשימות
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+                        <div style={{ paddingRight: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
                             {filteredInboxChecklists.map(c => renderItem(c, null, true))}
                         </div>
                     </div>

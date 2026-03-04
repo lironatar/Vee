@@ -760,10 +760,15 @@ app.delete('/api/checklists/:id', (req, res) => {
 // Add / Update / Delete single checklist item
 app.post('/api/checklists/:checklistId/items', (req, res) => {
     const { checklistId } = req.params;
-    const { content, order_index, parent_item_id, target_date, description, repeat_rule, time } = req.body;
+    let { content, order_index, parent_item_id, target_date, description, repeat_rule, time } = req.body;
     try {
+        if (order_index === undefined || order_index === null) {
+            const maxOrder = db.prepare('SELECT MAX(order_index) as maxIdx FROM checklist_items WHERE checklist_id = ?').get(checklistId);
+            order_index = (maxOrder && maxOrder.maxIdx !== null) ? maxOrder.maxIdx + 1 : 0;
+        }
+
         const result = db.prepare('INSERT INTO checklist_items (checklist_id, content, order_index, parent_item_id, target_date, description, repeat_rule, time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-            .run(checklistId, content, order_index || 0, parent_item_id || null, target_date || null, description || null, repeat_rule || null, time || null);
+            .run(checklistId, content, order_index, parent_item_id || null, target_date || null, description || null, repeat_rule || null, time || null);
         const item = db.prepare('SELECT * FROM checklist_items WHERE id = ?').get(result.lastInsertRowid);
         res.json(item);
     } catch (err) {
@@ -1001,7 +1006,7 @@ app.get('/api/users/:userId/tasks/by-date', (req, res) => {
             if (!groupedMap.has(projIdKey)) {
                 groupedMap.set(projIdKey, {
                     project_id: task.project_id,
-                    project_title: task.project_title || 'כללי',
+                    project_title: task.project_title || 'תיבת המשימות',
                     checklistsMap: new Map()
                 });
             }

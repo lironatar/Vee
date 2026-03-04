@@ -3,30 +3,15 @@ import { createPortal } from 'react-dom';
 import {
     X, ChevronUp, ChevronDown, MoreHorizontal,
     Calendar as CalendarIcon, AlarmClock, Tag, MapPin,
-    Flag, Plus, Trash2, CheckCircle, Circle, RefreshCw, Check
+    Flag, Plus, Trash2, CheckCircle, Circle, RefreshCw, Check,
+    Home, List, MessageSquare, Paperclip, CheckSquare, Bell, Inbox, Hash
 } from 'lucide-react';
 import DatePickerDropdown from './DatePickerDropdown';
 import TimePickerDropdown from './TimePickerDropdown';
 import SmartInput from './SmartInput';
 import { renderFormattedDate, TIME_OPTIONS, repeatOptions, repeatLabels } from './TaskComponents/index.jsx';
+import ProjectSelectorDropdown from './TaskComponents/ProjectSelectorDropdown';
 
-/**
- * TaskEditModal - Mobile popup anchored below (or above) the tapped task.
- *
- * Props:
- *  item            – checklist item object { id, content, description, target_date, created_at, ... }
- *  projectTitle    – e.g. "Home 🏠"       (optional)
- *  sectionTitle    – checklist/list name  (optional)
- *  allItems        – flat sibling item list for prev/next navigation
- *  anchorRect      – DOMRect of the tapped row, to position the dropdown
- *  isOpen          – boolean
- *  onClose         – close callback
- *  onSave          – (updatedFields) => void
- *  onDelete        – () => void
- *  onNavigate      – (item) => void
- *  isCompleted     – boolean
- *  onToggleComplete – () => void
- */
 export default function TaskEditModal({
     item,
     projectTitle = '',
@@ -51,10 +36,12 @@ export default function TaskEditModal({
     const [targetDate, setTargetDate] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [showMoreMenu, setShowMoreMenu] = useState(false);
+    const [showProjectSelector, setShowProjectSelector] = useState(false);
 
     const dateBtnRef = useRef(null);
     const timeBtnRef = useRef(null);
     const moreMenuRef = useRef(null);
+    const projectBtnRef = useRef(null);
     const contentRef = useRef(null);
     const panelRef = useRef(null);
 
@@ -70,21 +57,18 @@ export default function TaskEditModal({
             setShowMoreMenu(false);
             setShowDatePicker(false);
             setShowRepeatMenu(false);
+            setShowProjectSelector(false);
         }
     }, [item, isOpen]);
-
-    // Auto-focus when entering edit mode
-    useEffect(() => {
-        if (isEditing && contentRef.current) {
-            contentRef.current.focus();
-            contentRef.current.select();
-        }
-    }, [isEditing]);
 
     // Click-outside to close
     useEffect(() => {
         const handler = (e) => {
             if (panelRef.current && !panelRef.current.contains(e.target)) {
+                // If clicking outside, try to save if we're currently editing
+                if (isEditing) {
+                    handleSave();
+                }
                 onClose();
             }
         };
@@ -92,18 +76,7 @@ export default function TaskEditModal({
             setTimeout(() => document.addEventListener('mousedown', handler), 10);
         }
         return () => document.removeEventListener('mousedown', handler);
-    }, [isOpen, onClose]);
-
-    // Click-outside for more-menu
-    useEffect(() => {
-        const handler = (e) => {
-            if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
-                setShowMoreMenu(false);
-            }
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, []);
+    }, [isOpen, onClose, isEditing, content, description, targetDate, time, repeatRule]); // Re-bind if save dependencies change
 
     if (!isOpen || !item) return null;
 
@@ -113,7 +86,6 @@ export default function TaskEditModal({
     const hasNext = currentIdx !== -1 && currentIdx < allItems.length - 1;
     const goToPrev = () => { if (hasPrev && onNavigate) onNavigate(allItems[currentIdx - 1]); };
     const goToNext = () => { if (hasNext && onNavigate) onNavigate(allItems[currentIdx + 1]); };
-
 
     const handleSave = () => {
         const plainText = typeof content === 'string' ? content.replace(/<[^>]*>?/gm, '').trim() : '';
@@ -127,25 +99,11 @@ export default function TaskEditModal({
         setIsEditing(false);
     };
 
-    const handleCancelEdit = () => {
-        setContent(item.content || '');
-        setDescription(item.description || '');
-        setIsEditing(false);
-    };
-
     const handleDateSelect = (dateStr) => {
         setTargetDate(dateStr);
         setShowDatePicker(false);
         if (onSave) onSave({
             target_date: dateStr || null,
-        });
-    };
-
-    const handleClearDate = (e) => {
-        e.stopPropagation();
-        setTargetDate('');
-        if (onSave) onSave({
-            target_date: null
         });
     };
 
@@ -155,257 +113,243 @@ export default function TaskEditModal({
         if (onDelete) onDelete();
     };
 
-    // ---- Position the panel near the anchor ----
-    // Try to place below the row; if not enough space, place above
-    let panelStyle = {};
-    if (anchorRect) {
-        const PANEL_MAX_HEIGHT = 480;
-        const spaceBelow = window.innerHeight - anchorRect.bottom - 8;
-        const spaceAbove = anchorRect.top - 8;
-        const placeBelow = spaceBelow >= 240 || spaceBelow >= spaceAbove;
-        const top = placeBelow
-            ? anchorRect.bottom + 6
-            : Math.max(8, anchorRect.top - PANEL_MAX_HEIGHT - 6);
-
-        const isDesktop = window.innerWidth > 768;
-        panelStyle = {
-            position: 'fixed',
-            top,
-            left: isDesktop ? 'calc(50% - 250px)' : 8,
-            right: isDesktop ? 'auto' : 8,
-            width: isDesktop ? '500px' : 'calc(100% - 16px)',
-            maxHeight: PANEL_MAX_HEIGHT,
-        };
-    } else {
-        // fallback: bottom sheet
-        panelStyle = {
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            maxHeight: '88vh',
-            borderRadius: '20px 20px 0 0',
-        };
-    }
-
-    // ---- Helpers ----
-    const hebrewDate = targetDate
-        ? new Date(targetDate).toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'short' })
-        : null;
-
-    const createdAtStr = item.created_at
-        ? new Date(item.created_at).toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })
-        : null;
-
-    // header label: "project / list" or just one of them
-    const headerLabel = [projectTitle, sectionTitle].filter(Boolean).join(' / ');
-
-    // ---- Row style ----
-    const rowStyle = {
-        display: 'flex', alignItems: 'center', gap: '1rem',
-        padding: '0.7rem 1.25rem',
-        color: 'var(--text-secondary)',
-        fontSize: '0.92rem',
-        cursor: 'pointer',
-        background: 'transparent',
-        border: 'none',
-        width: '100%',
-        textAlign: 'right',
-        fontFamily: 'inherit',
-        borderBottom: '1px solid var(--border-color)',
+    // Card modal positioning (centered on desktop, drawer on bottom for mobile)
+    const isDesktop = window.innerWidth > 768;
+    const panelStyle = {
+        position: 'fixed',
+        top: isDesktop ? '50%' : 'auto',
+        left: isDesktop ? '50%' : 0,
+        right: isDesktop ? 'auto' : 0,
+        bottom: isDesktop ? 'auto' : 0,
+        transform: isDesktop ? 'translate(-50%, -50%)' : 'none',
+        width: isDesktop ? '550px' : '100%',
+        maxHeight: isDesktop ? '85vh' : '90vh',
+        background: 'var(--bg-color)',
+        borderRadius: isDesktop ? '12px' : '20px 20px 0 0',
+        zIndex: 9999,
+        boxShadow: '0 8px 40px rgba(0,0,0,0.22)',
+        animation: isDesktop ? 'fadeIn 0.15s ease' : 'slideUp 0.2s ease',
+        overflowY: 'auto',
+        direction: 'rtl',
+        display: 'flex',
+        flexDirection: 'column',
     };
 
-    const iconBox = (color = 'var(--text-secondary)') => ({
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: 26, height: 26, flexShrink: 0, color
-    });
+    // ---- Helpers ----
+    const headerLabel = [
+        projectTitle || 'תיבת המשימות',
+        (sectionTitle && sectionTitle !== projectTitle && sectionTitle !== 'כללי' && sectionTitle !== 'תיבת המשימות') ? sectionTitle : ''
+    ].filter(Boolean).join(' / ');
+
+    const isInboxInHeader = !projectTitle || projectTitle === 'כללי' || projectTitle === 'תיבת המשימות';
+    const HeaderIcon = isInboxInHeader ? Inbox : List;
+
+    // Format full date (e.g., 21 עבר 2025) or relative (היום, מחר)
+    let formattedDateString = 'הוסף תאריך';
+    if (targetDate) {
+        const d = new Date(targetDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const dateCopy = new Date(d);
+        dateCopy.setHours(0, 0, 0, 0);
+
+        const diffTime = dateCopy.getTime() - today.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+        const getNextDay = (dow) => {
+            const temp = new Date();
+            const diff = (dow - temp.getDay() + 7) % 7;
+            temp.setDate(temp.getDate() + (diff === 0 ? 7 : diff));
+            temp.setHours(0, 0, 0, 0);
+            return temp;
+        };
+
+        const saturday = getNextDay(6);
+        const nextMonday = getNextDay(1);
+
+        if (diffDays === 0) formattedDateString = 'היום';
+        else if (diffDays === 1) formattedDateString = 'מחר';
+        else if (diffDays === -1) formattedDateString = 'אתמול';
+        else if (dateCopy.getTime() === saturday.getTime()) formattedDateString = 'סוף השבוע';
+        else if (dateCopy.getTime() === nextMonday.getTime()) formattedDateString = 'שבוע הבא';
+        else {
+            const hebrewMonthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+            formattedDateString = `${d.getDate()} ב${hebrewMonthNames[d.getMonth()]} ${d.getFullYear()}`;
+        }
+    }
 
     const navBtn = (active) => ({
         border: 'none', background: 'transparent', padding: '6px',
         cursor: active ? 'pointer' : 'not-allowed',
         color: active ? 'var(--text-secondary)' : 'var(--border-color)',
         display: 'flex', opacity: active ? 1 : 0.4, transition: 'opacity 0.15s',
+        borderRadius: '4px'
     });
 
-    // ---- Render ----
+    const actionRowStyle = {
+        display: 'flex', alignItems: 'center', gap: '1rem',
+        padding: '0.8rem 1.25rem',
+        color: 'var(--text-secondary)',
+        fontSize: '0.95rem',
+        cursor: 'pointer',
+        background: 'transparent',
+        border: 'none',
+        borderBottom: '1px solid var(--border-color)',
+        width: '100%',
+        textAlign: 'right',
+        fontFamily: 'inherit',
+        transition: 'background 0.15s'
+    };
+
     const panel = (
         <>
-            {/* invisible full-screen backdrop (captures outside clicks via panelRef click-outside handler) */}
-            <div style={{ position: 'fixed', inset: 0, zIndex: 9997, background: 'transparent' }} />
+            {/* Backdrop */}
+            <div style={{ position: 'fixed', inset: 0, zIndex: 9997, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)' }} />
 
-            {/* The panel itself */}
-            <div
-                ref={panelRef}
-                style={{
-                    ...panelStyle,
-                    background: 'var(--bg-color)',
-                    borderRadius: anchorRect ? '14px' : '20px 20px 0 0',
-                    zIndex: 9999,
-                    boxShadow: '0 8px 40px rgba(0,0,0,0.22)',
-                    animation: 'fadeIn 0.15s ease',
-                    overflowY: 'auto',
-                    direction: 'rtl',
-                    border: '1px solid var(--border-color)',
-                }}
-            >
-                {/* ===== HEADER ===== */}
+            {/* Modal Panel */}
+            <div ref={panelRef} style={panelStyle} className="hide-scrollbar">
+
+                {/* Header Navbar */}
                 <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '0.65rem 1rem',
-                    borderBottom: '1px solid var(--border-color)',
-                    position: 'sticky', top: 0,
-                    background: 'var(--bg-color)', zIndex: 10,
-                    gap: '0.4rem',
+                    padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)',
+                    position: 'sticky', top: 0, background: 'var(--bg-color)', zIndex: 10,
                 }}>
-                    <span style={{
-                        fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 500,
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        flexShrink: 1,
-                    }}>
-                        # {headerLabel || 'משימה'}
-                    </span>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.05rem', flexShrink: 0 }}>
-                        {/* ↑ prev */}
-                        <button onClick={goToPrev} disabled={!hasPrev} style={navBtn(hasPrev)} title="משימה קודמת">
-                            <ChevronUp size={19} />
-                        </button>
-                        {/* ↓ next */}
-                        <button onClick={goToNext} disabled={!hasNext} style={navBtn(hasNext)} title="משימה הבאה">
-                            <ChevronDown size={19} />
-                        </button>
-
-                        <div style={{ width: '4px' }} />
-
-                        {/* X */}
-                        <button onClick={onClose} style={{ border: 'none', background: 'var(--bg-gray-soft)', padding: '6px', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', borderRadius: 'var(--radius-sm)' }}>
-                            <X size={19} />
-                        </button>
-                    </div>
-                </div>
-
-                {/* ===== TASK CONTENT (tap-to-edit) ===== */}
-                <div
-                    style={{
-                        padding: '0.45rem 1.25rem',
-                        borderBottom: '1px solid var(--border-color)',
-                        display: 'flex', gap: '0.7rem', alignItems: 'flex-start',
-                    }}
-                    onClick={() => { if (!isEditing) setIsEditing(true); }}
-                >
-                    <div
-                        className="check-circle"
-                        style={{ marginTop: '3px', flexShrink: 0 }}
-                        onClick={(e) => { e.stopPropagation(); if (onToggleComplete) onToggleComplete(); }}
-                    >
-                        {isCompleted
-                            ? <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--success-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                                <CheckCircle size={14} strokeWidth={2.5} />
-                            </div>
-                            : <div className="empty-circle-container" style={{ width: 22, height: 22, borderRadius: '50%', border: '2px solid #ccc', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
-                                <Check className="hover-check" size={12} strokeWidth={3} style={{ color: '#ccc', opacity: 0, transition: 'opacity 0.2s' }} />
-                            </div>
-                        }
-                    </div>
-
-                    {isEditing ? (
-                        <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                            <div style={{ border: '1.5px solid var(--primary-color)', borderRadius: '10px', padding: '0.3rem 0.8rem' }}>
-                                <SmartInput
-                                    html={content || ''}
-                                    setHtml={setContent}
-                                    placeholder="שם משימה"
-                                    autoFocus={true}
-                                    date={targetDate}
-                                    time={time}
-                                    onKeyDown={e => {
-                                        if (e.key === 'Escape') handleCancelEdit();
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            handleSave();
-                                        }
-                                    }}
-                                    style={{
-                                        width: '100%', border: 'none', outline: 'none',
-                                        fontSize: '1rem', fontWeight: 600, background: 'transparent',
-                                        color: 'var(--text-primary)', fontFamily: 'inherit', direction: 'rtl',
-                                        textDecoration: isCompleted ? 'line-through' : 'none',
-                                    }}
-                                />
-                                <textarea
-                                    value={description}
-                                    onChange={e => setDescription(e.target.value)}
-                                    placeholder="= תיאור"
-                                    rows={2}
-                                    style={{
-                                        width: '100%', border: 'none', outline: 'none', resize: 'none',
-                                        fontSize: '0.86rem', background: 'transparent',
-                                        color: 'var(--text-secondary)', fontFamily: 'inherit',
-                                        marginTop: '0.25rem', direction: 'rtl',
-                                    }}
-                                />
-                            </div>
-                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.2rem' }}>
-                                <button onClick={e => { e.stopPropagation(); handleCancelEdit(); }}
-                                    style={{ padding: '0.35rem 0.9rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: 'transparent', cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text-secondary)', fontFamily: 'inherit' }}>
-                                    ביטול
-                                </button>
-                                <button onClick={e => { e.stopPropagation(); handleSave(); }}
-                                    style={{ padding: '0.35rem 0.9rem', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--primary-color)', cursor: 'pointer', fontSize: '0.82rem', color: 'white', fontWeight: 600, fontFamily: 'inherit' }}>
-                                    שמירה
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div style={{ flexGrow: 1 }}>
-                            <div
-                                style={{
-                                    fontSize: '0.98rem', fontWeight: 600, color: 'var(--text-primary)',
-                                    textDecoration: isCompleted ? 'line-through' : 'none',
-                                    opacity: isCompleted ? 0.65 : 1, lineHeight: 1.4,
-                                }}
-                                dangerouslySetInnerHTML={{ __html: content || 'ללא שם...' }}
-                            />
-                            <div style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', opacity: description ? 1 : 0.4, marginTop: '0.2rem' }}>
-                                = {description || 'תיאור'}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                <div style={{ position: 'relative' }}>
-                    <button ref={dateBtnRef} style={{
-                        ...rowStyle,
-                        color: hebrewDate ? 'var(--primary-color)' : 'var(--text-secondary)',
-                    }} onClick={() => setShowDatePicker(!showDatePicker)}>
-                        <span style={iconBox(targetDate ? 'var(--primary-color)' : 'var(--text-secondary)')}>
-                            {/* Icon is now inside renderFormattedDate helper or we can keep it here but renderFormattedDate includes one. Actually I'll use targetDate ? renderFormattedDate(targetDate) : 'תאריך'  */}
+                    {/* Left side in RTL (Breadcrumbs) */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 1, minWidth: 0 }}>
+                        <HeaderIcon size={16} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
+                        <span style={{
+                            fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500,
+                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                        }}>
+                            {headerLabel}
                         </span>
-                        <div style={{ fontSize: '12px' }}>
-                            {targetDate ? renderFormattedDate(targetDate) : (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <CalendarIcon size={17} />
-                                    <span>תאריך</span>
+                    </div>
+
+                    {/* Right side in RTL (Actions) */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', flexShrink: 0 }}>
+                        <button onClick={goToNext} disabled={!hasNext} style={navBtn(hasNext)} title="משימה הבאה בדפדוף הפוך RTL"><ChevronUp size={20} /></button>
+                        <button onClick={goToPrev} disabled={!hasPrev} style={navBtn(hasPrev)} title="משימה קודמת בדפדוף הפוך RTL"><ChevronDown size={20} /></button>
+
+                        <div style={{ position: 'relative' }} ref={moreMenuRef}>
+                            <button onClick={() => setShowMoreMenu(!showMoreMenu)} style={{ ...navBtn(true), color: 'var(--text-secondary)' }}>
+                                <MoreHorizontal size={20} />
+                            </button>
+                            {showMoreMenu && (
+                                <div style={{
+                                    position: 'absolute', top: '100%', left: 0, marginTop: '0.5rem',
+                                    background: 'var(--bg-color)', border: '1px solid var(--border-color)',
+                                    borderRadius: '8px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                                    zIndex: 100, minWidth: '150px', overflow: 'hidden'
+                                }}>
+                                    <button onClick={handleDelete} style={{
+                                        display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%',
+                                        padding: '0.7rem 1rem', border: 'none', background: 'transparent',
+                                        color: 'var(--danger-color)', cursor: 'pointer', textAlign: 'right', fontFamily: 'inherit'
+                                    }}>
+                                        <Trash2 size={16} /> מחק משימה
+                                    </button>
                                 </div>
                             )}
                         </div>
-                        {repeatRule && (
-                            <span style={{ marginRight: '0.5rem', fontSize: '0.75rem', background: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: '4px', color: 'var(--primary-color)' }}>
-                                {repeatLabels[repeatRule] || 'חוזר'}
-                            </span>
-                        )}
-                        {time && (
-                            <span style={{ marginRight: '0.5rem', fontSize: '0.75rem', background: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: '4px', color: 'var(--primary-color)' }}>
-                                {time}
-                            </span>
-                        )}
-                        {hebrewDate && (
-                            <button onClick={handleClearDate}
-                                style={{ marginRight: 'auto', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', padding: '2px' }}>
-                                <X size={13} />
-                            </button>
-                        )}
-                    </button>
+
+                        <div style={{ width: '4px' }} />
+                        <button onClick={onClose} style={{ border: 'none', background: 'transparent', padding: '6px', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                            <X size={20} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Task Title & Description Area */}
+                <div style={{ padding: '1.25rem', paddingBottom: '0.75rem', position: 'relative' }}>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                        {/* Check Circle */}
+                        <div
+                            onClick={(e) => { e.stopPropagation(); if (onToggleComplete) onToggleComplete(); }}
+                            style={{
+                                marginTop: '4px', cursor: 'pointer', flexShrink: 0,
+                                width: 24, height: 24, borderRadius: '50%',
+                                border: isCompleted ? 'none' : '2px solid var(--primary-color)',
+                                background: isCompleted ? 'var(--primary-color)' : 'transparent',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            {isCompleted && <Check size={14} strokeWidth={3} color="white" />}
+                        </div>
+
+                        {/* Text Content */}
+                        <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                            <input
+                                type="text"
+                                value={content}
+                                onChange={e => setContent(e.target.value)}
+                                onFocus={() => setIsEditing(true)}
+                                onBlur={() => handleSave()}
+                                onKeyDown={e => { if (e.key === 'Enter') { e.target.blur(); handleSave(); } }}
+                                placeholder="שם משימה"
+                                style={{
+                                    width: '100%', border: 'none', outline: 'none', background: 'transparent',
+                                    fontSize: '1.3rem', fontWeight: 600, color: 'var(--text-primary)',
+                                    fontFamily: 'inherit', textDecoration: isCompleted ? 'line-through' : 'none',
+                                    opacity: isCompleted ? 0.6 : 1, padding: 0, marginBottom: '0.5rem'
+                                }}
+                            />
+
+                            <textarea
+                                value={description}
+                                onChange={e => setDescription(e.target.value)}
+                                onFocus={() => setIsEditing(true)}
+                                onBlur={() => handleSave()}
+                                placeholder="≡ תיאור..."
+                                rows={2}
+                                style={{
+                                    width: '100%', border: 'none', outline: 'none', resize: 'none',
+                                    fontSize: '0.95rem', background: 'transparent',
+                                    color: 'var(--text-secondary)', fontFamily: 'inherit',
+                                    padding: 0, lineHeight: 1.5
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Attributes List */}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+
+                    {/* Project Label */}
+                    <div style={{ position: 'relative' }}>
+                        <button ref={projectBtnRef} onClick={() => setShowProjectSelector(!showProjectSelector)} style={actionRowStyle}>
+                            <HeaderIcon size={18} />
+                            <span>{headerLabel || 'תיבת המשימות'}</span>
+                        </button>
+                    </div>
+
+                    <ProjectSelectorDropdown
+                        isOpen={showProjectSelector}
+                        onClose={() => setShowProjectSelector(false)}
+                        anchorRef={projectBtnRef}
+                        selectedChecklistId={item.checklist_id}
+                        onSelect={(checklist, _project) => {
+                            if (checklist && checklist.id !== item.checklist_id) {
+                                if (onSave) onSave({ checklist_id: checklist.id });
+                            }
+                        }}
+                    />
+
+                    {/* Due Date & Repeat Row */}
+                    <div style={{ position: 'relative' }}>
+                        <button ref={dateBtnRef} onClick={() => setShowDatePicker(!showDatePicker)} style={{
+                            ...actionRowStyle,
+                            borderBottom: 'none',
+                            color: targetDate ? 'var(--primary-color)' : 'var(--text-secondary)'
+                        }}>
+                            <CalendarIcon size={18} />
+                            <span>{formattedDateString}</span>
+                            {repeatRule && <RefreshCw size={14} style={{ marginRight: '0.5rem' }} />}
+                        </button>
+                    </div>
+
                     <DatePickerDropdown
                         isOpen={showDatePicker}
                         onClose={() => setShowDatePicker(false)}
@@ -416,34 +360,7 @@ export default function TaskEditModal({
                     >
                         <div style={{ padding: '0.6rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                             <div style={{ position: 'relative' }}>
-                                <button type="button" onClick={(e) => { e.stopPropagation(); setShowTimeMenu(!showTimeMenu); setShowRepeatMenu(false); }}
-                                    ref={timeBtnRef}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                                        width: '100%', padding: '0.6rem', border: '1px solid var(--border-color)',
-                                        borderRadius: '8px', background: time ? 'rgba(var(--primary-rgb,200,120,20),0.06)' : 'var(--bg-color)',
-                                        cursor: 'pointer', color: time ? 'var(--primary-color)' : 'var(--text-secondary)',
-                                        fontSize: '0.88rem', fontWeight: 500, fontFamily: 'inherit'
-                                    }}>
-                                    <AlarmClock size={15} />
-                                    {time || 'זמן'}
-                                </button>
-
-                                <TimePickerDropdown
-                                    isOpen={showTimeMenu}
-                                    onClose={() => setShowTimeMenu(false)}
-                                    anchorRef={timeBtnRef}
-                                    initialTime={time}
-                                    timeOptions={TIME_OPTIONS}
-                                    onSave={(val) => {
-                                        setTime(val);
-                                        if (onSave) onSave({ content, description, target_date: targetDate || null, time: val, repeat_rule: repeatRule });
-                                    }}
-                                />
-                            </div>
-
-                            <div style={{ position: 'relative' }}>
-                                <button type="button" onClick={() => { setShowRepeatMenu(!showRepeatMenu); setShowTimeMenu(false); }}
+                                <button type="button" onClick={() => { setShowRepeatMenu(!showRepeatMenu); }}
                                     style={{
                                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
                                         width: '100%', padding: '0.6rem', border: '1px solid var(--border-color)',
@@ -483,26 +400,70 @@ export default function TaskEditModal({
                             </div>
                         </div>
                     </DatePickerDropdown>
+
+                    {/* Stub attributes matching design */}
+                    <button style={actionRowStyle}><AlarmClock size={18} /><span>תאריך יעד סופי</span></button>
+                    <button style={actionRowStyle}><Flag size={18} /><span>עדיפות</span></button>
+                    <button style={actionRowStyle}><Tag size={18} /><span>תוויות</span></button>
+                    <button style={actionRowStyle}><Bell size={18} /><span>תזכורות</span></button>
+                    <button style={actionRowStyle}><MapPin size={18} /><span>מיקום</span></button>
+
+                    {/* Add Sub-task */}
+                    <button style={{ ...actionRowStyle, marginTop: '0.5rem', borderBottom: 'none' }}>
+                        <Plus size={18} /><span>הוסף תת-משימה</span>
+                    </button>
                 </div>
 
-                {/* ===== ADD SUB-TASK ===== */}
-                <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.15rem 0' }} />
-                <button style={{ ...rowStyle, color: 'var(--text-secondary)' }}>
-                    <span style={iconBox()}><Plus size={17} /></span>
-                    <span>הוסף תת-משימה</span>
-                </button>
+                {/* Filler to push footer down if there is space */}
+                <div style={{ flexGrow: 1, minHeight: '40px' }} />
 
-                <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.15rem 0' }} />
-                <button
-                    onClick={(e) => { e.stopPropagation(); if (onDelete) onDelete(); onClose(); }}
-                    style={{ ...rowStyle, color: 'var(--danger-color)', borderBottom: 'none' }}
-                >
-                    <span style={iconBox('var(--danger-color)')}><Trash2 size={17} /></span>
-                    <span>מחק משימה</span>
-                </button>
+                {/* Footer Comments Area */}
+                <div style={{
+                    padding: '1rem 1.25rem', borderTop: '1px solid var(--border-color)',
+                    background: 'var(--bg-color)', position: 'sticky', bottom: 0,
+                    borderRadius: isDesktop ? '0 0 12px 12px' : 0
+                }}>
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
+                        borderRadius: '24px', padding: '0.35rem 0.5rem 0.35rem 1rem'
+                    }}>
+                        {/* Fake Avatar */}
+                        <div style={{
+                            width: 28, height: 28, borderRadius: '50%', background: 'var(--primary-color)',
+                            color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '0.75rem', flexShrink: 0
+                        }}>אני</div>
+
+                        <input
+                            type="text"
+                            placeholder="הוסף תגובה..."
+                            style={{
+                                border: 'none', background: 'transparent', outline: 'none',
+                                flexGrow: 1, fontSize: '0.9rem', color: 'var(--text-primary)',
+                                fontFamily: 'inherit'
+                            }}
+                        />
+
+                        <button style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', display: 'flex' }}>
+                            <Paperclip size={18} />
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </>
     );
 
     return createPortal(panel, document.body);
 }
+
+// Simple internal icon for Hashes if we don't import one
+const HashIcon = ({ size, style }) => (
+    <svg width={size} height={size} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="4" y1="9" x2="20" y2="9"></line>
+        <line x1="4" y1="15" x2="20" y2="15"></line>
+        <line x1="10" y1="3" x2="8" y2="21"></line>
+        <line x1="16" y1="3" x2="14" y2="21"></line>
+    </svg>
+);

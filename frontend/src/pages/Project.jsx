@@ -455,15 +455,11 @@ const Project = () => {
             const timeInput = window.globalNewItemTime || null;
 
             // Note: _checklistId may be from another project if selected in dropdown
-            const currentList = checklists.find(c => c.id === _checklistId);
-            const orderIndex = currentList?.items?.length || 0;
-
             const res = await fetch(`${API_URL}/checklists/${_checklistId}/items`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     content: contentToSave,
-                    order_index: orderIndex,
                     parent_item_id: parentItemId,
                     target_date: targetDateInput,
                     description: descriptionInput,
@@ -531,10 +527,14 @@ const Project = () => {
             });
             if (res.ok) {
                 const updatedItem = await res.json();
-                setChecklists(prev => prev.map(c => ({
-                    ...c,
-                    items: c.items.map(i => i.id == itemId ? { ...i, ...updatedItem } : i)
-                })));
+                if (updates.checklist_id !== undefined) {
+                    fetchProjectData();
+                } else {
+                    setChecklists(prev => prev.map(c => ({
+                        ...c,
+                        items: c.items.map(i => i.id == itemId ? { ...i, ...updatedItem } : i)
+                    })));
+                }
                 if (updates.target_date !== undefined) {
                     toast.success(updates.target_date ? 'תאריך יעד עודכן' : 'תאריך יעד הוסר');
                 }
@@ -729,19 +729,19 @@ const Project = () => {
                 </div>
             }
             headerActions={
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginLeft: window.innerWidth <= 768 ? '-0.5rem' : '0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', marginLeft: window.innerWidth <= 768 ? '-1rem' : '0' }}>
                     <button onClick={() => setShowTeamModal(true)} className="btn-icon-soft" title="צוות הפרויקט" style={{ padding: '0.4rem' }}>
-                        <Users size={18} />
+                        <Users size={20} color="#666" />
                     </button>
                     <button onClick={() => setActiveTab(activeTab === 'tasks' ? 'history' : 'tasks')} className="btn-icon-soft" title={activeTab === 'tasks' ? 'יומן היסטוריה' : 'חזור למשימות'} style={{ padding: '0.4rem' }}>
-                        {activeTab === 'tasks' ? <CalendarIcon size={18} /> : <ListIcon size={18} />}
+                        {activeTab === 'tasks' ? <CalendarIcon size={20} color="#666" /> : <ListIcon size={20} color="#666" />}
                     </button>
                     <button onClick={() => setShowComments(true)} className="btn-icon-soft" title="תגובות הפרויקט" style={{ padding: '0.4rem' }}>
-                        <MessageSquare size={18} />
+                        <MessageSquare size={20} color="#666" />
                     </button>
                     <div style={{ position: 'relative' }} ref={projectMenuRef}>
                         <button onClick={() => setShowProjectMenu(!showProjectMenu)} className="btn-icon-soft" style={{ padding: '0.4rem' }}>
-                            <MoreHorizontal size={18} />
+                            <MoreHorizontal size={20} color="#666" />
                         </button>
                         {showProjectMenu && (
                             <div className="card fade-in" style={{
@@ -769,6 +769,8 @@ const Project = () => {
             onDragEnd={handleDragEnd}
             externalScrollTop={scrollTop}
             onScroll={setScrollTop}
+            alternateHeaderPadding="1.75rem"
+            breadcrumb="הפרויקטים שלי"
         >
             {activeTab === 'history' ? (
                 <ProjectCalendar projectId={project.id} API_URL={API_URL} onDayClick={(date) => { setSelectedDate(date); setActiveTab('tasks'); }} />

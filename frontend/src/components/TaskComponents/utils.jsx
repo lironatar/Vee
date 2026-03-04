@@ -46,6 +46,17 @@ export const getDateDisplayInfo = (targetDate) => {
     let color = 'var(--text-secondary)';
     let isImportant = false;
 
+    const getNextDay = (dow) => {
+        const temp = new Date();
+        const diff = (dow - temp.getDay() + 7) % 7;
+        temp.setDate(temp.getDate() + (diff === 0 ? 7 : diff));
+        temp.setHours(0, 0, 0, 0);
+        return temp;
+    };
+
+    const saturday = getNextDay(6);
+    const nextMonday = getNextDay(1);
+
     if (diffDays === 0) {
         text = 'היום';
         color = '#058527'; // Green
@@ -53,6 +64,14 @@ export const getDateDisplayInfo = (targetDate) => {
     } else if (diffDays === 1) {
         text = 'מחר';
         color = '#a855f7'; // Purple
+        isImportant = true;
+    } else if (date.getTime() === saturday.getTime()) {
+        text = 'סוף השבוע';
+        color = '#f59e0b'; // Amber
+        isImportant = true;
+    } else if (date.getTime() === nextMonday.getTime()) {
+        text = 'שבוע הבא';
+        color = '#9b59b6'; // Amethyst
         isImportant = true;
     } else if (diffDays > 1 && diffDays < 7) {
         text = `יום ${hebrewDayNames[date.getDay()]}`;

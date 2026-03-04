@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Moon, Sun, LayoutDashboard, Store, Settings, LogOut, BookOpen, Plus, Folder, X, User as UserIcon, ChevronDown, ChevronUp, ListChecks, ArrowRight, Repeat, Target, CalendarDays, Calendar, Users, Hash, Bell, HelpCircle, PlusCircle, Search, Activity, CheckCircle } from 'lucide-react';
+import { Moon, Sun, LayoutDashboard, Store, Settings, LogOut, BookOpen, Plus, Folder, X, User as UserIcon, ChevronDown, ChevronUp, ListChecks, ArrowRight, Repeat, Target, CalendarDays, Calendar, Users, Hash, Bell, HelpCircle, PlusCircle, Search, Activity, CheckCircle, Inbox } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useUser } from '../context/UserContext';
 import {
@@ -25,6 +25,7 @@ import SettingsModal from './SettingsModal';
 import FriendsModal from './FriendsModal';
 import CreateProjectModal from './CreateProjectModal';
 import GlobalAddTaskModal from './GlobalAddTaskModal';
+import DynamicTodayIcon from './DynamicTodayIcon';
 
 const API_URL = '/api';
 
@@ -163,8 +164,8 @@ const Sidebar = ({ isOpen, onToggle }) => {
 
     const navLinks = [
         { action: () => setShowGlobalAddModal(true), label: 'הוסף משימה', icon: PlusCircle, isAddTask: true },
-        { path: '/inbox', label: 'תיבת המשימות', icon: Folder, badge: counts.inboxCount > 0 ? counts.inboxCount.toString() : null },
-        { path: '/today', label: 'היום', icon: Sun, badge: counts.todayCount > 0 ? counts.todayCount.toString() : null },
+        { path: '/inbox', label: 'תיבת המשימות', icon: Inbox, badge: counts.inboxCount > 0 ? counts.inboxCount.toString() : null },
+        { path: '/today', label: 'היום', icon: DynamicTodayIcon, badge: counts.todayCount > 0 ? counts.todayCount.toString() : null },
         { path: '/calendar', label: 'לו"ז', icon: Calendar },
         { path: '/history', label: 'הושלמו', icon: CheckCircle },
     ];

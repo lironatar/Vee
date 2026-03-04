@@ -239,13 +239,17 @@ const Today = () => {
             });
             if (res.ok) {
                 const updatedItem = await res.json();
-                setProjectGroups(prev => prev.map(proj => ({
-                    ...proj,
-                    checklists: proj.checklists.map(list => ({
-                        ...list,
-                        items: list.items.map(i => i.id == itemId ? { ...i, ...updatedItem } : i)
-                    }))
-                })));
+                if (updates.checklist_id !== undefined) {
+                    fetchTodayTasks();
+                } else {
+                    setProjectGroups(prev => prev.map(proj => ({
+                        ...proj,
+                        checklists: proj.checklists.map(list => ({
+                            ...list,
+                            items: list.items.map(i => i.id == itemId ? { ...i, ...updatedItem } : i)
+                        }))
+                    })));
+                }
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             }
         } catch (err) {
@@ -389,7 +393,7 @@ const Today = () => {
             onDragEnd={handleDragEnd}
             activeDragItem={activeDragItem}
         >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', width: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
                 <SortableChecklistCard
                     checklist={unifiedChecklist}
                     idx={0}

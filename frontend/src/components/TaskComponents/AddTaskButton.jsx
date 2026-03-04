@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 
-const AddTaskButton = ({ onClick }) => {
+const AddTaskButton = ({ onClick, noMarginTop = false }) => {
     return (
         <button
             className="add-task-btn"
@@ -10,13 +10,13 @@ const AddTaskButton = ({ onClick }) => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.6rem',
-                padding: '0.5rem 0.25rem',
+                padding: '0.35rem 0',
                 background: 'transparent',
                 border: 'none',
                 color: 'var(--text-secondary)',
                 cursor: 'pointer',
                 width: '100%',
-                marginTop: '0.5rem',
+                marginTop: noMarginTop ? '0' : '0.5rem',
                 transition: 'color 0.2s, background 0.2s',
                 borderRadius: 'var(--radius-sm)'
             }}

@@ -903,7 +903,7 @@ h2.react-datepicker__current-month {
 
 :root {
   --bg-color: #ffffff;
-  --bg-secondary: #faf8f7;
+  --bg-secondary: #f4f4f5;
   --text-primary: #202020;
   --text-secondary: #808080;
   --primary-color: #d15700;
@@ -928,6 +928,7 @@ h2.react-datepicker__current-month {
   --btn-text-primary: #1a1a1a;
   --sidebar-item-gap: 0.1rem;
   --sidebar-link-py: 0.45rem;
+  --invert-icon: brightness(0) saturate(100%) invert(60%);
 }
 
 [data-theme="dark"] {
@@ -946,6 +947,7 @@ h2.react-datepicker__current-month {
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
   --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
   --btn-text-primary: #ffffff;
+  --invert-icon: invert(1) brightness(1.5) contrast(1.2);
 }
 
 * {
@@ -1126,7 +1128,7 @@ a:hover {
 }
 
 .sidebar {
-  width: 280px;
+  width: 300px;
   background: var(--bg-secondary);
   border-left: 1px solid var(--border-color);
   display: flex;
@@ -1139,7 +1141,7 @@ a:hover {
 }
 
 .sidebar-closed .sidebar {
-  margin-right: -280px;
+  margin-right: -300px;
   border-left-color: transparent;
 }
 
@@ -1225,7 +1227,7 @@ a:hover {
   display: none;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem;
+  padding: 1rem 1.5rem;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
   position: sticky;
@@ -1689,8 +1691,8 @@ textarea.form-control:focus {
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 1rem 0;
-  margin: 0.5rem 0;
+  padding: 0.2rem 0;
+
   background: transparent;
   border: none;
   color: var(--primary-color);

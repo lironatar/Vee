@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
     DndContext,
     closestCenter,
@@ -15,6 +16,7 @@ import { SortableTaskItem } from './TaskComponents/index.jsx';
 const TaskPageLayout = ({
     title,
     titleContent, // New slot for the large heading
+    breadcrumb, // Optional breadcrumb text (e.g., "הפרויקטים שלי")
     headerActions,
     children,
     onDragStart,
@@ -24,10 +26,12 @@ const TaskPageLayout = ({
     maxWidth = '100%',
     padding = '0',
     externalScrollTop = null,
-    onScroll = null
+    onScroll = null,
+    alternateHeaderPadding = "1.5rem"
 }) => {
     const [internalScrollTop, setInternalScrollTop] = useState(0);
     const scrollTop = externalScrollTop !== null ? externalScrollTop : internalScrollTop;
+    const { isSidebarOpen } = useOutletContext() || { isSidebarOpen: false };
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -41,9 +45,10 @@ const TaskPageLayout = ({
     };
 
     const isMobile = window.innerWidth <= 768;
-    const sidePadding = isMobile ? '1.5rem' : '2.5rem';
+    const sidePadding = isMobile ? '3.65rem' : '2.5rem';
+    const hPadding = (isMobile && alternateHeaderPadding) ? alternateHeaderPadding : sidePadding;
     const topPadding = isMobile ? '60px' : '40px';
-    const firstRowHeight = isMobile ? '53px' : '55px';
+    const firstRowHeight = isMobile ? '70px' : '55px';
 
     return (
         <DndContext
@@ -61,7 +66,7 @@ const TaskPageLayout = ({
                     left: 0,
                     right: 0,
                     zIndex: 100,
-                    padding: `0.75rem ${sidePadding}`,
+                    padding: `0.75rem ${hPadding}`,
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
@@ -75,19 +80,38 @@ const TaskPageLayout = ({
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        maxWidth: '800px',
                         width: '100%',
                         justifyContent: 'space-between'
                     }}>
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
-                            opacity: Math.min(1, Math.max(0, (scrollTop - 40) / 40)),
-                            transform: `translateY(${Math.max(0, 10 - (scrollTop - 40) / 4)}px)`,
-                            pointerEvents: scrollTop > 60 ? 'auto' : 'none',
-                            transition: 'all 0.3s ease'
+                            gap: '0.5rem'
                         }}>
-                            <h1 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>{title}</h1>
+                            {breadcrumb && (
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.4rem',
+                                    color: '#666',
+                                    fontWeight: 400,
+                                    fontSize: '0.95rem',
+                                    paddingRight: isMobile && !isSidebarOpen ? '30px' : '0' // Clears sidebar toggle icon on mobile
+                                }}>
+                                    {breadcrumb} <span style={{ opacity: 0.5 }}>/</span>
+                                </div>
+                            )}
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                opacity: Math.min(1, Math.max(0, (scrollTop - 40) / 40)),
+                                transform: `translateY(${Math.max(0, 10 - (scrollTop - 40) / 4)}px)`,
+                                pointerEvents: scrollTop > 60 ? 'auto' : 'none',
+                                transition: 'all 0.3s ease',
+                                paddingRight: (!breadcrumb && isMobile && !isSidebarOpen) ? '30px' : '0' // Clears sidebar toggle if no breadcrumb
+                            }}>
+                                <h1 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>{title}</h1>
+                            </div>
                         </div>
                         <div>{headerActions}</div>
                     </div>

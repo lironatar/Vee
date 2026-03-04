@@ -69,7 +69,13 @@ const Inbox = () => {
                 const data = await inboxRes.json();
                 // Normalize: if a checklist is named 'תיבת המשימות', make it headless (empty title)
                 const normalizedData = data.map(c => c.title === 'תיבת המשימות' ? { ...c, title: '' } : c);
-                setChecklists(normalizedData);
+                // Sort: Headless lists (title === '') come first
+                const sortedData = [...normalizedData].sort((a, b) => {
+                    if (a.title === '' && b.title !== '') return -1;
+                    if (a.title !== '' && b.title === '') return 1;
+                    return 0;
+                });
+                setChecklists(sortedData);
                 // Expand all by default for Inbox
                 const expandMap = {};
                 normalizedData.forEach(c => expandMap[c.id] = true);
@@ -198,10 +204,14 @@ const Inbox = () => {
             });
             if (res.ok) {
                 const updatedItem = await res.json();
-                setChecklists(prev => prev.map(c => ({
-                    ...c,
-                    items: c.items.map(i => i.id == itemId ? { ...i, ...updatedItem } : i)
-                })));
+                if (updates.checklist_id !== undefined) {
+                    fetchInbox();
+                } else {
+                    setChecklists(prev => prev.map(c => ({
+                        ...c,
+                        items: c.items.map(i => i.id == itemId ? { ...i, ...updatedItem } : i)
+                    })));
+                }
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             }
         } catch (err) {
@@ -397,7 +407,7 @@ const Inbox = () => {
             externalScrollTop={scrollTop}
             onScroll={setScrollTop}
         >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', width: '100%', paddingBottom: '5rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', paddingBottom: '5rem' }}>
                 {checklists.length === 0 ? (
                     <div className="checklist-minimal" style={{ padding: '0.1rem 0', display: 'flex', flexDirection: 'column', border: 'none' }}>
                         {/* Add Task Button for empty inbox */}

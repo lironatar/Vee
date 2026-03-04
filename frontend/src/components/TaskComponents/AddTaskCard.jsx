@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar as CalendarIcon, Clock, RefreshCw, X, ArrowLeft, ChevronDown } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, RefreshCw, X, ArrowLeft, ChevronDown, Inbox, List, Flag } from 'lucide-react';
 import SmartInput from '../SmartInput';
 import DatePickerDropdown from '../DatePickerDropdown';
 import TimePickerDropdown from '../TimePickerDropdown';
@@ -207,7 +207,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                                     transition: 'background 0.2s, color 0.2s',
                                 }}
                                 onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = '#F5F5F5';
+                                    e.currentTarget.style.background = 'var(--hover-bg)';
                                     e.currentTarget.style.color = 'var(--text-primary)';
                                 }}
                                 onMouseLeave={(e) => {
@@ -283,8 +283,8 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                                                     fontWeight: repeatRule === opt.value ? 600 : 400,
                                                     transition: 'background 0.12s',
                                                 }}
-                                                onMouseEnter={e => e.currentTarget.style.background = '#F5F5F5'}
-                                                onMouseLeave={e => e.currentTarget.style.background = repeatRule === opt.value ? '#F5F5F5' : 'transparent'}>
+                                                onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
+                                                onMouseLeave={e => e.currentTarget.style.background = repeatRule === opt.value ? 'var(--hover-bg)' : 'transparent'}>
                                                 {opt.label}
                                             </button>
                                         ))}
@@ -298,7 +298,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                                                         textAlign: 'right', fontWeight: 500, fontFamily: 'inherit',
                                                         transition: 'background 0.12s',
                                                     }}
-                                                    onMouseEnter={e => e.currentTarget.style.background = '#F5F5F5'}
+                                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
                                                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                                                     הסר חזרה
                                                 </button>
@@ -315,7 +315,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-color)'}
                 >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+                    <Flag size={14} style={{ opacity: 0.8 }} />
                     עדיפות
                 </button>
 
@@ -366,9 +366,16 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                             onMouseEnter={e => !showProjectSelector && (e.currentTarget.style.background = 'var(--hover-bg)')}
                             onMouseLeave={e => !showProjectSelector && (e.currentTarget.style.background = 'transparent')}
                         >
-                            {selectedProject ? `${selectedProject.title} / ` : ''}
-                            {selectedChecklist?.title || (selectedProject ? selectedProject.title : 'תיבת המשימות')}
-                            <ChevronDown size={14} style={{ marginRight: '0.25rem' }} />
+                            {(() => {
+                                const isInbox = !selectedProject || selectedProject.id === 'inbox' || !selectedChecklist?.project_id;
+                                const Icon = isInbox ? Inbox : List;
+                                return <Icon size={14} style={{ opacity: 0.8 }} />;
+                            })()}
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '150px' }}>
+                                {selectedProject ? `${selectedProject.title} / ` : ''}
+                                {selectedChecklist?.title || (selectedProject ? selectedProject.title : 'תיבת המשימות')}
+                            </span>
+                            <ChevronDown size={14} style={{ marginRight: '0.1rem' }} />
                         </button>
                     </div>
 
@@ -383,7 +390,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                         הוסף משימה
                     </button>
                     <button type="button" onClick={() => { if (setAddingToList) setAddingToList(null); }} className="mobile-only" style={{ padding: '0.5rem', border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', transition: 'background 0.2s' }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#F5F5F5'}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                         <X size={20} />
                     </button>

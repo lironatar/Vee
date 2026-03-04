@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import { LayoutDashboard } from 'lucide-react';
+
 
 const Layout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 992);
@@ -50,18 +50,32 @@ const Layout = () => {
                     title={isSidebarOpen ? "סגור סרגל" : "פתח סרגל"}
                     style={{
                         position: 'fixed',
-                        top: '1.25rem',
-                        right: isSidebarOpen ? '255px' : '1rem',
+                        top: 0,
+                        height: '60px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        right: isSidebarOpen ? '275px' : '0.5rem',
                         zIndex: 1100,
                         background: 'transparent',
                         boxShadow: 'none',
                         border: 'none',
-                        padding: '0.45rem',
+                        padding: '0 0.5rem',
                         transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease, color 0.2s ease',
                         color: isSidebarOpen ? 'var(--text-secondary)' : 'var(--text-primary)',
                     }}
                 >
-                    <LayoutDashboard size={20} strokeWidth={2.2} />
+                    <img
+                        src={isSidebarOpen ? "/src/assets/sidebar_is_open.svg" : "/src/assets/sidebar_is_closed.svg"}
+                        alt="sidebar toggle"
+                        style={{
+                            width: '24px',
+                            height: 'auto',
+                            filter: 'var(--invert-icon)',
+                            transition: 'all 0.3s ease',
+                            display: 'block'
+                        }}
+                    />
                 </button>
 
                 <main className="main-content fade-in">
