@@ -760,15 +760,15 @@ app.delete('/api/checklists/:id', (req, res) => {
 // Add / Update / Delete single checklist item
 app.post('/api/checklists/:checklistId/items', (req, res) => {
     const { checklistId } = req.params;
-    let { content, order_index, parent_item_id, target_date, description, repeat_rule, time } = req.body;
+    let { content, order_index, parent_item_id, target_date, description, repeat_rule, time, duration } = req.body;
     try {
         if (order_index === undefined || order_index === null) {
             const maxOrder = db.prepare('SELECT MAX(order_index) as maxIdx FROM checklist_items WHERE checklist_id = ?').get(checklistId);
             order_index = (maxOrder && maxOrder.maxIdx !== null) ? maxOrder.maxIdx + 1 : 0;
         }
 
-        const result = db.prepare('INSERT INTO checklist_items (checklist_id, content, order_index, parent_item_id, target_date, description, repeat_rule, time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-            .run(checklistId, content, order_index, parent_item_id || null, target_date || null, description || null, repeat_rule || null, time || null);
+        const result = db.prepare('INSERT INTO checklist_items (checklist_id, content, order_index, parent_item_id, target_date, description, repeat_rule, time, duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+            .run(checklistId, content, order_index, parent_item_id || null, target_date || null, description || null, repeat_rule || null, time || null, duration || 15);
         const item = db.prepare('SELECT * FROM checklist_items WHERE id = ?').get(result.lastInsertRowid);
         res.json(item);
     } catch (err) {
@@ -811,7 +811,7 @@ app.delete('/api/items/:itemId', (req, res) => {
     }
 });
 app.put('/api/items/:itemId', (req, res) => {
-    const { content, target_date, checklist_id, description, repeat_rule, time } = req.body;
+    const { content, target_date, checklist_id, description, repeat_rule, time, duration } = req.body;
     try {
         const updates = [];
         const params = [];
@@ -839,6 +839,10 @@ app.put('/api/items/:itemId', (req, res) => {
         if (time !== undefined) {
             updates.push('time = ?');
             params.push(time);
+        }
+        if (duration !== undefined) {
+            updates.push('duration = ?');
+            params.push(duration);
         }
 
         if (updates.length > 0) {

@@ -174,7 +174,11 @@ const Today = () => {
                 body: JSON.stringify({
                     content: contentToSave,
                     parent_item_id: parentItemId,
-                    target_date: todayDateStr // Default to today since we're in Today view
+                    target_date: todayDateStr, // Default to today since we're in Today view
+                    time: window.globalNewItemTime || null,
+                    duration: window.globalNewItemDuration || 15,
+                    description: window.globalNewItemDesc || null,
+                    repeat_rule: window.globalNewItemRepeatRule || null
                 })
             });
 

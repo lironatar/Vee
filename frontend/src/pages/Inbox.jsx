@@ -104,7 +104,15 @@ const Inbox = () => {
             const res = await fetch(`${API_URL}/checklists/${_checklistId}/items`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: contentToSave, parent_item_id: parentId })
+                body: JSON.stringify({
+                    content: contentToSave,
+                    parent_item_id: parentId,
+                    target_date: window.globalNewItemDate || null,
+                    time: window.globalNewItemTime || null,
+                    duration: window.globalNewItemDuration || 15,
+                    description: window.globalNewItemDesc || null,
+                    repeat_rule: window.globalNewItemRepeatRule || null
+                })
             });
             if (res.ok) {
                 const newItem = await res.json();

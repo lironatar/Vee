@@ -7,13 +7,14 @@ import { getRandomTaskPlaceholder } from '../../utils/taskPlaceholders';
 import ProjectSelectorDropdown from './ProjectSelectorDropdown';
 import { hebrewDayNames, hebrewMonthNames, TIME_OPTIONS, getDateDisplayInfo } from './utils.jsx';
 
-const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewItemDate, checklist, setAddingToList, handleAddItem, suppressDateSpan = false }) => {
+const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewItemDate, checklist, setAddingToList, handleAddItem, suppressDateSpan = false, initialTime = '' }) => {
     const [description, setDescription] = useState('');
     const [showDateDropdown, setShowDateDropdown] = useState(false);
     const [showRepeatMenu, setShowRepeatMenu] = useState(false);
     const [showTimeMenu, setShowTimeMenu] = useState(false);
     const [repeatRule, setRepeatRule] = useState(null);
-    const [time, setTime] = useState('');
+    const [time, setTime] = useState(initialTime || '');
+    const [duration, setDuration] = useState(15);
     const [dynamicPlaceholder, setDynamicPlaceholder] = useState(() => getRandomTaskPlaceholder());
     const [selectedChecklist, setSelectedChecklist] = useState(checklist);
     const [selectedProject, setSelectedProject] = useState(null);
@@ -34,6 +35,10 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
     const dateBtnRef = useRef(null);
     const timeBtnRef = useRef(null);
     const projectBtnRef = useRef(null);
+
+    useEffect(() => {
+        if (initialTime) setTime(initialTime);
+    }, [initialTime]);
 
     const today = new Date();
 
@@ -70,12 +75,14 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
         window.globalNewItemDate = newItemDate || null;
         window.globalNewItemRepeatRule = repeatRule || null;
         window.globalNewItemTime = time || null;
+        window.globalNewItemDuration = duration || 15;
 
         handleAddItem(e, selectedChecklist?.id || checklist.id, null, plainText);
 
         setNewItemContent('');
         setDescription('');
         setTime('');
+        setDuration(15);
         setNewItemDate('');
         setRepeatRule(null);
         setDynamicPlaceholder(getRandomTaskPlaceholder());
@@ -307,6 +314,30 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                                     </div>
                                 )}
                             </div>
+
+                            {time && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>משך (דקות):</span>
+                                    <select
+                                        value={duration}
+                                        onChange={(e) => setDuration(parseInt(e.target.value))}
+                                        style={{
+                                            padding: '0.2rem',
+                                            borderRadius: '4px',
+                                            border: '1px solid var(--border-color)',
+                                            fontSize: '0.8rem',
+                                            flexGrow: 1
+                                        }}
+                                    >
+                                        <option value={15}>15 דק׳</option>
+                                        <option value={30}>30 דק׳</option>
+                                        <option value={45}>45 דק׳</option>
+                                        <option value={60}>שעה</option>
+                                        <option value={90}>שעה וחצי</option>
+                                        <option value={120}>שעתיים</option>
+                                    </select>
+                                </div>
+                            )}
                         </div>
                     </DatePickerDropdown>
                 </div>

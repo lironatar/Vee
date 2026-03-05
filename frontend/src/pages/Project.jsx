@@ -453,6 +453,7 @@ const Project = () => {
             const descriptionInput = window.globalNewItemDescription || null;
             const repeatRuleInput = window.globalNewItemRepeatRule || null;
             const timeInput = window.globalNewItemTime || null;
+            const durationInput = window.globalNewItemDuration || 15;
 
             // Note: _checklistId may be from another project if selected in dropdown
             const res = await fetch(`${API_URL}/checklists/${_checklistId}/items`, {
@@ -464,7 +465,8 @@ const Project = () => {
                     target_date: targetDateInput,
                     description: descriptionInput,
                     repeat_rule: repeatRuleInput,
-                    time: timeInput
+                    time: timeInput,
+                    duration: durationInput
                 })
             });
 
@@ -492,6 +494,7 @@ const Project = () => {
                 window.globalNewItemDescription = null;
                 window.globalNewItemRepeatRule = null;
                 window.globalNewItemTime = null;
+                window.globalNewItemDuration = 15;
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             }
         } catch (err) {

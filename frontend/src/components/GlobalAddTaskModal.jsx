@@ -49,6 +49,7 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
         const targetDate = window.globalNewItemDate;
         const time = window.globalNewItemTime;
         const repeatRule = window.globalNewItemRepeatRule;
+        const duration = window.globalNewItemDuration;
 
         if (!content) return;
 
@@ -89,6 +90,7 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
                     description: description || null,
                     target_date: targetDate || null,
                     time: time || null,
+                    duration: duration || 15,
                     repeat_rule: repeatRule || null,
                     parent_item_id: parentItemId || null
                 })

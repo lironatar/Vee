@@ -6,7 +6,8 @@ import { toast } from 'sonner';
 import CalendarWrapper from '../components/CalendarWrapper';
 import { Plus, X } from 'lucide-react';
 import AddTaskCard from '../components/TaskComponents/AddTaskCard';
-import TaskPageLayout from '../components/TaskPageLayout';
+import CalendarPageLayout from '../components/CalendarPageLayout';
+import { UpcomingWeeklyView, DailyTimelineView } from '../components/TaskComponents/index.jsx';
 
 const API_URL = '/api';
 
@@ -20,9 +21,16 @@ const GlobalCalendar = () => {
     const [scrollTop, setScrollTop] = useState(0);
     const [currentRange, setCurrentRange] = useState({ start: null, end: null });
 
+    // Upcoming View State (Infinite Scroll)
+    const [upcomingEvents, setUpcomingEvents] = useState([]);
+    const [upcomingMonthsLoaded, setUpcomingMonthsLoaded] = useState(0); // How many months forward we've fetched
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMoreUpcoming, setHasMoreUpcoming] = useState(true);
+
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedModalDate, setSelectedModalDate] = useState('');
+    const [selectedModalTime, setSelectedModalTime] = useState('');
     const [newTaskContent, setNewTaskContent] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [dummyInbox, setDummyInbox] = useState({ id: 'inbox', title: 'תיבת המשימות' });
@@ -64,7 +72,8 @@ const GlobalCalendar = () => {
                                 allDay: !task.time,
                                 extendedProps: {
                                     completed: task.completed
-                                }
+                                },
+                                originalTask: task // ADDED: Keep raw task for UpcomingDayView
                             });
                         });
                     }
@@ -82,7 +91,6 @@ const GlobalCalendar = () => {
 
     const handleDatesSet = (dateInfo) => {
         // FullCalendar's datesSet gives us the visible range.
-        // We'll extract the "central" month of the view to fetch.
         const midDate = new Date((dateInfo.start.getTime() + dateInfo.end.getTime()) / 2);
         const y = midDate.getFullYear();
         const m = String(midDate.getMonth() + 1).padStart(2, '0');
@@ -94,6 +102,71 @@ const GlobalCalendar = () => {
             fetchCalendarEvents(monthStr);
         }
     };
+
+    // Dedicated fetcher for Upcoming (Daily) View
+    const fetchUpcomingMonths = async () => {
+        if (!user) return;
+
+        setLoading(true);
+
+        try {
+            const today = new Date();
+            const fetchMonth = (date) => {
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                return `${y}-${m}`;
+            };
+
+            const currentMonthStr = fetchMonth(today);
+            const nextMonthDate = new Date(today);
+            nextMonthDate.setMonth(today.getMonth() + 1);
+            const nextMonthStr = fetchMonth(nextMonthDate);
+
+            // Fetch both current and next month to be safe for the 7-day view
+            const [resp1, resp2] = await Promise.all([
+                fetch(`${API_URL}/users/${user.id}/tasks/by-month?month=${currentMonthStr}`),
+                fetch(`${API_URL}/users/${user.id}/tasks/by-month?month=${nextMonthStr}`)
+            ]);
+
+            const rawTasks = [];
+
+            if (resp1.ok) {
+                const summary = await resp1.json();
+                for (const [dateStr, data] of Object.entries(summary)) {
+                    if (data.tasks) {
+                        data.tasks.forEach(task => rawTasks.push({
+                            ...task,
+                            target_date: task.time ? `${dateStr}T${task.time}` : dateStr
+                        }));
+                    }
+                }
+            }
+
+            if (resp2.ok) {
+                const summary = await resp2.json();
+                for (const [dateStr, data] of Object.entries(summary)) {
+                    if (data.tasks) {
+                        data.tasks.forEach(task => rawTasks.push({
+                            ...task,
+                            target_date: task.time ? `${dateStr}T${task.time}` : dateStr
+                        }));
+                    }
+                }
+            }
+
+            setUpcomingEvents(rawTasks);
+        } catch (error) {
+            console.error('Error fetching upcoming events', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (viewMode === 'daily') {
+            fetchUpcomingMonths();
+        }
+    }, [viewMode, user]);
 
     useEffect(() => {
         // Initial load is handled by handleDatesSet in FullCalendar
@@ -144,6 +217,7 @@ const GlobalCalendar = () => {
                     content: contentToSave.trim(),
                     target_date: window.globalNewItemDate || selectedModalDate,
                     time: window.globalNewItemTime || null,
+                    duration: window.globalNewItemDuration || 15,
                     description: window.globalNewItemDesc || null,
                     repeat_rule: window.globalNewItemRepeatRule || null,
                     parent_item_id: parentId
@@ -209,9 +283,65 @@ const GlobalCalendar = () => {
         arg.revert();
     };
 
+    const handleUpcomingTaskToggle = async (taskId, currentStatus) => {
+        try {
+            // First try updating the item directly
+            const res = await fetch(`${API_URL}/items/${taskId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ completed: !currentStatus ? 1 : 0 })
+            });
+
+            if (res.ok) {
+                // Optimistically update UI
+                setUpcomingEvents(prev => prev.map(t =>
+                    t.id === taskId ? { ...t, completed: !currentStatus ? 1 : 0 } : t
+                ));
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error('שגיאה בעדכון מצב המשימה');
+        }
+    };
+
+    const handleUpcomingTaskDelete = async (stub, taskId, checklistId) => {
+        try {
+            const res = await fetch(`${API_URL}/items/${taskId}`, { method: 'DELETE' });
+            if (res.ok) {
+                toast.success('משימה נמחקה');
+                setUpcomingEvents(prev => prev.filter(t => t.id !== taskId));
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error('שגיאה במחיקת המשימה');
+        }
+    };
+
+    const handleUpcomingTaskUpdate = async (taskId, updatedFields) => {
+        try {
+            const res = await fetch(`${API_URL}/items/${taskId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedFields)
+            });
+            if (res.ok) {
+                // Update local state so it reflects instantly
+                setUpcomingEvents(prev => prev.map(t =>
+                    t.id === taskId ? { ...t, ...updatedFields } : t
+                ));
+                toast.success('משימה עודכנה');
+            }
+        } catch (error) {
+            toast.error('שגיאה בעדכון משימה');
+        }
+    };
+
     return (
-        <TaskPageLayout
+        <CalendarPageLayout
             title="לוח שנה"
+            maxWidth="100%"
+            padding="0"
+            contentPadding="0 0 100px"
             titleContent={
                 <div style={{
                     transition: 'all 0.35s ease',
@@ -242,9 +372,39 @@ const GlobalCalendar = () => {
             onScroll={setScrollTop}
             externalScrollTop={scrollTop}
         >
-            {loading && events.length === 0 ? (
+            {loading && ((viewMode !== 'monthly' && upcomingEvents.length === 0) || (viewMode === 'monthly' && events.length === 0)) ? (
                 <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--primary-color)' }}>
                     <Loader2 className="animate-spin" size={32} />
+                </div>
+            ) : viewMode === 'daily' ? (
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <DailyTimelineView
+                        events={upcomingEvents}
+                        date={new Date()}
+                        onTaskToggle={handleUpcomingTaskToggle}
+                        onTaskDelete={handleUpcomingTaskDelete}
+                        onTaskUpdate={handleUpcomingTaskUpdate}
+                        onAddTaskClick={(dateStr, time) => {
+                            setSelectedModalDate(dateStr);
+                            setSelectedModalTime(time || '');
+                            setIsModalOpen(true);
+                        }}
+                    />
+                </div>
+            ) : viewMode === 'weekly' ? (
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <UpcomingWeeklyView
+                        events={upcomingEvents}
+                        startDate={new Date()}
+                        onTaskToggle={handleUpcomingTaskToggle}
+                        onTaskDelete={handleUpcomingTaskDelete}
+                        onTaskUpdate={handleUpcomingTaskUpdate}
+                        onAddTaskClick={(dateStr) => {
+                            setSelectedModalDate(dateStr);
+                            setSelectedModalTime('');
+                            setIsModalOpen(true);
+                        }}
+                    />
                 </div>
             ) : (
                 <div className="card" style={{ flex: 1, padding: isMobile ? '0.5rem' : '1.5rem', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
@@ -255,7 +415,7 @@ const GlobalCalendar = () => {
                     )}
                     <CalendarWrapper
                         events={events}
-                        viewMode={viewMode}
+                        viewMode="dayGridMonth"
                         onDateClick={handleDateClick}
                         onEventClick={handleEventClick}
                         onEventDrop={handleEventDrop}
@@ -291,6 +451,7 @@ const GlobalCalendar = () => {
                             setNewItemContent={setNewTaskContent}
                             newItemDate={selectedModalDate}
                             setNewItemDate={setSelectedModalDate}
+                            initialTime={selectedModalTime} // NEED TO UPDATE AddTaskCard to accept initialTime
                             checklist={dummyInbox}
                             setAddingToList={() => setIsModalOpen(false)}
                             handleAddItem={handleAddItem}
@@ -299,7 +460,7 @@ const GlobalCalendar = () => {
                     </div>
                 </div>
             )}
-        </TaskPageLayout>
+        </CalendarPageLayout>
     );
 };
 

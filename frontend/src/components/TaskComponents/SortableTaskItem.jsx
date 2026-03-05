@@ -11,7 +11,7 @@ const SortableTaskItem = ({
     item, checklistId, depth = 0, isCompletedFallback = false, useProgressArray = true, todayProgress, addingToItem,
     toggleItem, setAddingToItem, setAddingToList, handleAddItem, handleDeleteItem,
     newItemContent, setNewItemContent, handleSetTargetDate, handleUpdateItem,
-    sectionTitle = '', projectTitle = '', allItems = [], isOverlay = false
+    sectionTitle = '', projectTitle = '', allItems = [], isOverlay = false, compact = false
 }) => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -73,8 +73,8 @@ const SortableTaskItem = ({
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
                         position: 'relative',
-                        borderBottom: '1px solid var(--border-color)',
-                        padding: '8px 0',
+                        borderBottom: compact ? 'none' : '1px solid var(--border-color)',
+                        padding: compact ? '2px 0' : '8px 0',
                     }}
                 >
                     <div style={{
