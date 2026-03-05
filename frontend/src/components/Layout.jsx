@@ -44,39 +44,41 @@ const Layout = () => {
 
             <div className="content-wrapper">
                 {/* Sidebar Reopen Button - Visible when sidebar is closed */}
-                <button
-                    onClick={toggleSidebar}
-                    className="btn-icon-soft menu-toggle-btn"
-                    title={isSidebarOpen ? "סגור סרגל" : "פתח סרגל"}
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        height: '60px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        right: isSidebarOpen ? '275px' : '0.5rem',
-                        zIndex: 1100,
-                        background: 'transparent',
-                        boxShadow: 'none',
-                        border: 'none',
-                        padding: '0 0.5rem',
-                        transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease, color 0.2s ease',
-                        color: isSidebarOpen ? 'var(--text-secondary)' : 'var(--text-primary)',
-                    }}
-                >
-                    <img
-                        src={isSidebarOpen ? "/sidebar_is_open.svg" : "/sidebar_is_closed.svg"}
-                        alt="sidebar toggle"
+                {!isSidebarOpen && (
+                    <button
+                        onClick={toggleSidebar}
+                        className="btn-icon-soft menu-toggle-btn"
+                        title="פתח סרגל"
                         style={{
-                            width: '24px',
-                            height: 'auto',
-                            filter: 'var(--invert-icon)',
-                            transition: 'all 0.3s ease',
-                            display: 'block'
+                            position: 'fixed',
+                            top: 0,
+                            height: '60px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            right: '0.5rem',
+                            zIndex: 1100,
+                            background: 'transparent',
+                            boxShadow: 'none',
+                            border: 'none',
+                            padding: '0 0.5rem',
+                            transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease, color 0.2s ease',
+                            color: 'var(--text-primary)',
                         }}
-                    />
-                </button>
+                    >
+                        <img
+                            src="/sidebar_is_closed.svg"
+                            alt="sidebar toggle"
+                            style={{
+                                width: '32px',
+                                height: 'auto',
+                                filter: 'var(--invert-icon)',
+                                transition: 'all 0.3s ease',
+                                display: 'block'
+                            }}
+                        />
+                    </button>
+                )}
 
                 <main className="main-content fade-in">
                     <Outlet context={{ isSidebarOpen, toggleSidebar }} />

@@ -851,6 +851,41 @@ app.put('/api/items/:itemId', (req, res) => {
         res.status(500).json({ error: 'Update item failed' });
     }
 });
+
+// Update item date and time explicitly for calendar drag and drop
+app.put('/api/items/:itemId/datetime', (req, res) => {
+    const { target_date, time } = req.body;
+    try {
+        const updates = [];
+        const params = [];
+
+        // If dragging to a new day, target_date will be provided. Note that FullCalendar may send null to clear it.
+        if (target_date !== undefined) {
+            updates.push('target_date = ?');
+            params.push(target_date);
+        }
+
+        // If it's a timed event and dragged, time might be updated
+        if (time !== undefined) {
+            updates.push('time = ?');
+            // A time of '' or null means clear the time
+            params.push(time === '' ? null : time);
+        }
+
+        if (updates.length > 0) {
+            params.push(req.params.itemId);
+            db.prepare(`UPDATE checklist_items SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+        }
+
+        // Fetch updated item to return
+        const updatedItem = db.prepare('SELECT * FROM checklist_items WHERE id = ?').get(req.params.itemId);
+        res.json({ success: true, item: updatedItem });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to update item datetime' });
+    }
+});
+
 // --- Daily Progress API ---
 app.get('/api/users/:userId/progress/:date', (req, res) => {
     const { userId, date } = req.params; // date format: YYYY-MM-DD
@@ -874,27 +909,14 @@ app.get('/api/users/:userId/tasks/by-month', (req, res) => {
 
         // 1. Fetch all one-off items targeted for this month
         const targetedItemsQuery = db.prepare(`
-            SELECT ci.id, ci.target_date, ci.content 
+            SELECT ci.id, ci.target_date, ci.content, ci.time
             FROM checklist_items ci
             JOIN checklists c ON ci.checklist_id = c.id
             WHERE c.user_id = ? AND ci.target_date LIKE ?
-            AND c.project_id IS NOT NULL
         `);
         const targetedItems = targetedItemsQuery.all(userId, `${month}-%`);
 
-        // 2. Fetch all routine items that don't have a specific target_date
-        const routineItemsQuery = db.prepare(`
-            SELECT ci.id, c.active_days, ci.content 
-            FROM checklist_items ci
-            JOIN checklists c ON ci.checklist_id = c.id
-            LEFT JOIN projects p ON c.project_id = p.id
-            WHERE c.user_id = ? 
-            AND ci.target_date IS NULL
-            AND (p.is_routine = 1)
-        `);
-        const routineItems = routineItemsQuery.all(userId);
-
-        // 3. Fetch all progress for this month to match with items
+        // 2. Fetch all progress for this month to match with items
         const progressQuery = db.prepare(`
             SELECT checklist_item_id, date, completed 
             FROM daily_progress 
@@ -906,15 +928,13 @@ app.get('/api/users/:userId/tasks/by-month', (req, res) => {
             progressMap[`${p.date}_${p.checklist_item_id}`] = p.completed === 1;
         });
 
-        // 4. Build summary map
+        // 3. Build summary map
         const summary = {};
         const daysInMonth = new Date(year, monthNum + 1, 0).getDate();
 
         for (let d = 1; d <= daysInMonth; d++) {
             const dateObj = new Date(year, monthNum, d);
             const dateStr = `${year}-${String(monthNum + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const dayOfWeekStr = dateObj.getDay().toString();
-
             const tasks = [];
 
             // Targeted items
@@ -922,18 +942,7 @@ app.get('/api/users/:userId/tasks/by-month', (req, res) => {
                 tasks.push({
                     id: i.id,
                     content: i.content,
-                    completed: !!progressMap[`${dateStr}_${i.id}`]
-                });
-            });
-
-            // Routine items
-            routineItems.filter(i => {
-                const activeDays = i.active_days || '';
-                return activeDays.split(',').includes(dayOfWeekStr);
-            }).forEach(i => {
-                tasks.push({
-                    id: i.id,
-                    content: i.content,
+                    time: i.time,
                     completed: !!progressMap[`${dateStr}_${i.id}`]
                 });
             });

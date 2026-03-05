@@ -183,7 +183,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                             <button
                                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                                 style={{
-                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                    display: 'flex', alignItems: 'center', gap: '0.65rem',
                                     background: 'transparent', border: 'none', cursor: 'pointer',
                                     padding: '0.25rem', borderRadius: 'var(--radius-sm)',
                                     transition: 'var(--transition)', width: '100%',
@@ -198,7 +198,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                                 }}>
                                     {!user.profile_image && <UserIcon size={14} />}
                                 </div>
-                                <span style={{ fontWeight: 600, fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.username}</span>
+                                <span style={{ fontWeight: 600, fontSize: '0.85rem', fontFamily: 'inherit', letterSpacing: '0.2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.username}</span>
                                 <ChevronDown size={14} style={{ opacity: 0.6, transform: isUserMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s', marginTop: '1px' }} />
                             </button>
 
@@ -227,12 +227,21 @@ const Sidebar = ({ isOpen, onToggle }) => {
                         </div>
 
                         {/* Top Utility Icons */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.1rem', flexShrink: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
                             <button className="btn-icon-soft" style={{ padding: '0.35rem', color: 'var(--text-secondary)', position: 'relative' }}>
                                 <Bell size={18} strokeWidth={1.8} />
                                 <span style={{ position: 'absolute', top: 5, left: 6, width: 7, height: 7, background: '#f97316', borderRadius: '50%', border: '2px solid var(--bg-secondary)' }}></span>
                             </button>
-                            <div style={{ width: '32px' }}></div> {/* Spacer for the Layout toggle button */}
+                            {isOpen && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onToggle(); }}
+                                    className="btn-icon-soft"
+                                    style={{ padding: '0.45rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    title="סגור סרגל"
+                                >
+                                    <img src="/sidebar_is_open.svg" alt="close sidebar" style={{ width: '30px', height: 'auto', filter: 'var(--invert-icon)', display: 'block' }} />
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -1,0 +1,215 @@
+/* --- FullCalendar Overrides --- */
+
+.calendar-wrapper-container {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    /* Ensure the wrapper uses the theme fonts */
+    font-family: var(--font-primary, inherit);
+}
+
+.calendar-wrapper-container .fc {
+    --fc-page-bg-color: transparent;
+    --fc-neutral-bg-color: var(--bg-secondary);
+    --fc-neutral-text-color: var(--text-secondary);
+    --fc-border-color: var(--border-color);
+
+    --fc-button-text-color: var(--text-primary);
+    --fc-button-bg-color: var(--bg-secondary);
+    --fc-button-border-color: var(--border-color);
+    --fc-button-hover-bg-color: var(--hover-bg);
+    --fc-button-hover-border-color: var(--border-color);
+    --fc-button-active-bg-color: var(--primary-color);
+    --fc-button-active-border-color: var(--primary-color);
+
+    --fc-event-bg-color: var(--bg-secondary);
+    --fc-event-border-color: var(--border-color);
+    --fc-event-text-color: var(--text-primary);
+
+    --fc-today-bg-color: rgba(var(--primary-rgb, 99, 102, 241), 0.05);
+
+    font-family: inherit;
+}
+
+/* Remove ugly borders on the main view wrap */
+.calendar-wrapper-container .fc-theme-standard td,
+.calendar-wrapper-container .fc-theme-standard th {
+    border-color: rgba(0, 0, 0, 0.04);
+    /* Very faint internal lines */
+}
+
+.dark .calendar-wrapper-container .fc-theme-standard td,
+.dark .calendar-wrapper-container .fc-theme-standard th {
+    border-color: rgba(255, 255, 255, 0.04);
+}
+
+.calendar-wrapper-container .fc-scrollgrid {
+    border: none !important;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+/* Day grid cells */
+.calendar-wrapper-container .fc-daygrid-day-top {
+    flex-direction: row;
+    /* Keep the number on the right in RTL */
+    padding: 4px;
+}
+
+/* Header toolbar styling */
+.calendar-wrapper-container .fc .fc-toolbar-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.calendar-wrapper-container .fc .fc-button-primary {
+    border-radius: var(--radius-sm);
+    text-transform: capitalize;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: none !important;
+}
+
+.calendar-wrapper-container .fc .fc-button-primary:not(:disabled).fc-button-active,
+.calendar-wrapper-container .fc .fc-button-primary:not(:disabled):active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Day grid cells */
+.calendar-wrapper-container .fc-daygrid-day {
+    transition: background-color 0.2s ease;
+}
+
+.calendar-wrapper-container .fc-daygrid-day:hover {
+    background-color: rgba(var(--text-primary-rgb, 15, 23, 42), 0.02);
+}
+
+.calendar-wrapper-container .fc-daygrid-day-number {
+    color: var(--text-secondary);
+    font-weight: 500;
+    padding: 4px 8px !important;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px;
+    text-decoration: none !important;
+}
+
+/* Today styling - Solid circle */
+.calendar-wrapper-container .fc-day-today .fc-daygrid-day-number {
+    color: white !important;
+    background-color: var(--primary-color) !important;
+    font-weight: 600;
+}
+
+.calendar-wrapper-container .fc-day-today {
+    background-color: transparent !important;
+    /* Remove full cell highlight */
+}
+
+/* Time grid */
+.calendar-wrapper-container .fc-timegrid-slot-label-cushion {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    padding-left: 8px;
+    /* space from borderline */
+}
+
+/* Current time indicator */
+.calendar-wrapper-container .fc-now-indicator-line {
+    border-color: var(--primary-color);
+    border-width: 2px 0 0;
+}
+
+.calendar-wrapper-container .fc-now-indicator-arrow {
+    border-color: var(--primary-color);
+    background-color: var(--primary-color);
+    border-width: 5px;
+    /* Size of the dot */
+    border-radius: 50%;
+    transform: translateY(-50%) translateX(50%);
+    /* Center dot on line edge */
+}
+
+/* General Event Overrides to strip defaults */
+.calendar-wrapper-container .fc-event {
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    margin: 1px 0 !important;
+}
+
+.calendar-wrapper-container .fc-event:hover {
+    z-index: 5 !important;
+}
+
+/* Custom indicator components (these classes are used in eventContent in CalendarWrapper.jsx) */
+.fc-custom-event-all-day {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    /* Pill shape */
+    font-size: 0.85em;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    transition: all 0.2s;
+}
+
+.fc-custom-event-all-day:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.fc-custom-event-timed {
+    display: flex;
+    flex-direction: column;
+    padding: 4px 6px;
+    background-color: rgba(var(--primary-rgb, 99, 102, 241), 0.1);
+    border-right: 3px solid var(--primary-color);
+    /* solid line on right because RTL */
+    border-radius: 4px;
+    font-size: 0.8em;
+    color: var(--text-primary);
+    height: 100%;
+    overflow: hidden;
+    transition: all 0.2s;
+}
+
+.fc-custom-event-timed:hover {
+    background-color: rgba(var(--primary-rgb, 99, 102, 241), 0.15);
+}
+
+.fc-custom-event-timed .event-title {
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.fc-custom-event-timed .event-time {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+
+.is-completed {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+/* Header columns (Sun, Mon, Tue...) */
+.calendar-wrapper-container .fc-col-header-cell-cushion {
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.9em;
+    padding: 12px 0;
+    text-transform: uppercase;
+}
