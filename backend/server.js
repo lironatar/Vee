@@ -913,9 +913,10 @@ app.get('/api/users/:userId/tasks/by-month', (req, res) => {
 
         // 1. Fetch all one-off items targeted for this month
         const targetedItemsQuery = db.prepare(`
-            SELECT ci.id, ci.target_date, ci.content, ci.time
+            SELECT ci.*, c.title as checklistTitle, p.title as projectTitle
             FROM checklist_items ci
             JOIN checklists c ON ci.checklist_id = c.id
+            LEFT JOIN projects p ON c.project_id = p.id
             WHERE c.user_id = ? AND ci.target_date LIKE ?
         `);
         const targetedItems = targetedItemsQuery.all(userId, `${month}-%`);
@@ -942,11 +943,9 @@ app.get('/api/users/:userId/tasks/by-month', (req, res) => {
             const tasks = [];
 
             // Targeted items
-            targetedItems.filter(i => i.target_date === dateStr).forEach(i => {
+            targetedItems.filter(i => i.target_date && i.target_date.startsWith(dateStr)).forEach(i => {
                 tasks.push({
-                    id: i.id,
-                    content: i.content,
-                    time: i.time,
+                    ...i,
                     completed: !!progressMap[`${dateStr}_${i.id}`]
                 });
             });

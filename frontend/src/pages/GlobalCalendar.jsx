@@ -163,10 +163,22 @@ const GlobalCalendar = () => {
     };
 
     useEffect(() => {
-        if (viewMode === 'daily') {
+        if (viewMode === 'daily' || viewMode === 'weekly') {
             fetchUpcomingMonths();
         }
     }, [viewMode, user]);
+
+    useEffect(() => {
+        const handleRefresh = () => {
+            if (viewMode === 'monthly') {
+                fetchCalendarEvents(currentRange.month);
+            } else {
+                fetchUpcomingMonths();
+            }
+        };
+        window.addEventListener('refreshCalendarTasks', handleRefresh);
+        return () => window.removeEventListener('refreshCalendarTasks', handleRefresh);
+    }, [viewMode, currentRange.month]);
 
     useEffect(() => {
         // Initial load is handled by handleDatesSet in FullCalendar
@@ -228,7 +240,11 @@ const GlobalCalendar = () => {
                 toast.success('משימה נוצרה בהצלחה');
                 setIsModalOpen(false);
                 setNewTaskContent('');
-                fetchCalendarEvents(currentRange.month); // Refresh current visible month
+                if (viewMode === 'monthly') {
+                    fetchCalendarEvents(currentRange.month); // Refresh current visible month
+                } else {
+                    fetchUpcomingMonths(); // Refresh upcoming/weekly/daily events
+                }
             } else {
                 toast.error('שגיאה ביצירת המשימה');
             }
@@ -434,8 +450,8 @@ const GlobalCalendar = () => {
             {/* Quick Add Task Modal */}
             {isModalOpen && (
                 <div
-                    className="modal-overlay fade-in"
-                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(2px)' }}
+                    className="modal-overlay"
+                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'transparent', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     onMouseDown={(e) => {
                         // Close if clicked exactly on the overlay
                         if (e.target === e.currentTarget) setIsModalOpen(false);
@@ -443,7 +459,7 @@ const GlobalCalendar = () => {
                 >
                     <div
                         className="slide-up"
-                        style={{ width: '90%', maxWidth: '600px', pointerEvents: 'auto' }}
+                        style={{ width: '90%', maxWidth: '600px', pointerEvents: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04)', borderRadius: 'var(--radius-md)', background: 'var(--bg-color)' }}
                         onMouseDown={e => e.stopPropagation()}
                     >
                         <AddTaskCard

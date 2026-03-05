@@ -116,7 +116,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
     });
 
     return (
-        <div ref={cardRef} className="add-task-card-container" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'visible', position: 'relative', background: 'var(--bg-color)', boxShadow: 'var(--glass-shadow)', transition: 'var(--transition)' }}>
+        <div ref={cardRef} className="add-task-card-container" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'visible', position: 'relative', background: 'var(--bg-color)', boxShadow: '0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.02)', transition: 'var(--transition)' }}>
             <div style={{ padding: '0.4rem 0.6rem' }}>
                 <div
                     ref={inputContainerRef}

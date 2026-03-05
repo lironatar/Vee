@@ -9,7 +9,7 @@ const API_URL = '/api';
 const GlobalAddTaskModal = ({ isOpen, onClose }) => {
     const { user } = useUser();
     const [newItemContent, setNewItemContent] = useState('');
-    const [newItemDate, setNewItemDate] = useState('');
+    const [newItemDate, setNewItemDate] = useState(() => new Date().toLocaleDateString('en-CA'));
     const [checklists, setChecklists] = useState([]);
     const [defaultChecklist, setDefaultChecklist] = useState(null);
 
@@ -18,7 +18,7 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
 
         // Reset state
         setNewItemContent('');
-        setNewItemDate('');
+        setNewItemDate(new Date().toLocaleDateString('en-CA'));
 
         const fetchData = async () => {
             try {
@@ -98,6 +98,8 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
 
             if (res.ok) {
                 toast.success('המשימה נוספה בהצלחה');
+                window.dispatchEvent(new CustomEvent('refreshCalendarTasks'));
+                window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             } else {
                 toast.error('שגיאה בהוספת משימה');
             }
@@ -120,7 +122,7 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
         maxWidth: '580px',
         zIndex: 10000,
         direction: 'rtl',
-        boxShadow: '0 20px 50px rgba(0,0,0,0.15)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04)',
         borderRadius: 'var(--radius-lg)',
         background: 'var(--bg-color)',
     };
@@ -128,6 +130,7 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
         position: 'fixed',
         inset: 0,
         background: 'transparent',
+        backdropFilter: 'none',
         zIndex: 9999,
     };
 

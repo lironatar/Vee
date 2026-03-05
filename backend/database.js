@@ -64,6 +64,10 @@ const initDb = () => {
       checklist_id INTEGER NOT NULL,
       parent_item_id INTEGER,
       content TEXT NOT NULL,
+      description TEXT,
+      repeat_rule TEXT,
+      time TEXT,
+      duration INTEGER DEFAULT 15,
       order_index INTEGER DEFAULT 0,
       target_date TEXT,
       FOREIGN KEY (checklist_id) REFERENCES checklists (id) ON DELETE CASCADE,
@@ -221,6 +225,12 @@ const initDb = () => {
   const hasTime = tableInfoItems.some(col => col.name === 'time');
   if (!hasTime) {
     db.exec('ALTER TABLE checklist_items ADD COLUMN time TEXT');
+  }
+
+  // Migration: Add duration to checklist_items if missing
+  const hasDuration = tableInfoItems.some(col => col.name === 'duration');
+  if (!hasDuration) {
+    db.exec('ALTER TABLE checklist_items ADD COLUMN duration INTEGER DEFAULT 15');
   }
 
   // Migration: Add active_days to projects if missing
