@@ -27,6 +27,7 @@ import CreateProjectModal from './CreateProjectModal';
 import TemplateStoreModal from './TemplateStoreModal';
 import GlobalAddTaskModal from './GlobalAddTaskModal';
 import DynamicTodayIcon from './DynamicTodayIcon';
+import UserMenuDropdown from './UserMenuDropdown';
 
 const API_URL = '/api';
 
@@ -161,26 +162,16 @@ const Sidebar = ({ isOpen, onToggle }) => {
                             </button>
 
                             {isUserMenuOpen && (
-                                <div style={{
-                                    position: 'absolute', top: '100%', right: 0, marginTop: '0.4rem',
-                                    background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
-                                    borderRadius: 'var(--radius-md)', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-                                    width: '200px', zIndex: 1000, overflow: 'hidden', display: 'flex', flexDirection: 'column',
-                                }}>
-                                    <button onClick={() => { setIsFriendsOpen(true); setIsUserMenuOpen(false); if (window.innerWidth <= 992) onToggle(); }} className="sidebar-menu-item user-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'right', width: '100%', color: 'var(--text-primary)' }}>
-                                        <Users size={16} opacity={0.7} /> חברים
-                                    </button>
-                                    <button onClick={() => { setInitialSettingsTab('account'); setIsSettingsOpen(true); setIsUserMenuOpen(false); if (window.innerWidth <= 992) onToggle(); }} className="sidebar-menu-item user-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'right', width: '100%', color: 'var(--text-primary)' }}>
-                                        <Settings size={16} opacity={0.7} /> הגדרות חשבון
-                                    </button>
-                                    <button onClick={() => { toggleTheme(); setIsUserMenuOpen(false); }} className="sidebar-menu-item user-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'right', width: '100%', color: 'var(--text-primary)' }}>
-                                        {theme === 'light' ? <Moon size={16} opacity={0.7} /> : <Sun size={16} opacity={0.7} />}
-                                        {theme === 'light' ? 'מצב לילה' : 'מצב יום'}
-                                    </button>
-                                    <button onClick={() => { logout(); setIsUserMenuOpen(false); }} className="sidebar-menu-item user-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'right', width: '100%', color: 'var(--danger-color)' }}>
-                                        <LogOut size={16} opacity={0.7} /> התנתקות
-                                    </button>
-                                </div>
+                                <UserMenuDropdown
+                                    theme={theme}
+                                    toggleTheme={toggleTheme}
+                                    logout={logout}
+                                    setIsFriendsOpen={setIsFriendsOpen}
+                                    setIsUserMenuOpen={setIsUserMenuOpen}
+                                    setInitialSettingsTab={setInitialSettingsTab}
+                                    setIsSettingsOpen={setIsSettingsOpen}
+                                    onToggle={onToggle}
+                                />
                             )}
                         </div>
 
