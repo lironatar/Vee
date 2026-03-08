@@ -11,7 +11,8 @@ const SortableTaskItem = ({
     item, checklistId, depth = 0, isCompletedFallback = false, useProgressArray = true, todayProgress, addingToItem,
     toggleItem, setAddingToItem, setAddingToList, handleAddItem, handleDeleteItem,
     newItemContent, setNewItemContent, handleSetTargetDate, handleUpdateItem,
-    sectionTitle = '', projectTitle = '', allItems = [], isOverlay = false, compact = false
+    sectionTitle = '', projectTitle = '', allItems = [], isOverlay = false, compact = false,
+    isWaterfalling = false
 }) => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -60,7 +61,7 @@ const SortableTaskItem = ({
         <>
             <div ref={setNodeRef} style={{ ...style, display: 'flex', flexDirection: 'column', paddingRight: `${depth * 1.5}rem` }}>
                 <div
-                    className={`task-item ${isCompleted ? 'is-completed' : ''} ${isOverlay ? 'is-drag-overlay' : isDragging ? 'is-dragging-origin' : ''}`}
+                    className={`task-item ${isCompleted ? 'is-completed' : ''} ${isOverlay ? 'is-drag-overlay' : isDragging ? 'is-dragging-origin' : ''} ${isWaterfalling ? 'magic-reveal' : ''}`}
                     onClick={(e) => {
                         setAnchorRect(e.currentTarget.getBoundingClientRect());
                         setEditItem(item);
@@ -377,6 +378,7 @@ const SortableTaskItem = ({
                                 allItems={allItems}
                                 isCompletedFallback={isCompletedFallback} useProgressArray={useProgressArray}
                                 sectionTitle={sectionTitle} projectTitle={projectTitle}
+                                isWaterfalling={isWaterfalling}
                             />
                         ))}
                     </div>

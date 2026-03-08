@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useOutletContext, useParams, Link, useNavigate } from 'react-router-dom';
+import { useOutletContext, useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { CheckCircle, Circle, Trash2, HelpCircle, ArrowRight, Store, Plus, ChevronRight, ChevronDown, Settings, X, Calendar as CalendarIcon, List as ListIcon, GripVertical, MoreVertical, MoreHorizontal, Users, UserPlus, Search, Copy, Edit3, Save, Home, Filter, MessageSquare, Send, Clock } from 'lucide-react';
 import ProjectCalendar from '../components/ProjectCalendar';
@@ -29,16 +29,18 @@ import { ActionMenu, SortableChecklistCard, AddTaskButton } from '../components/
 import TaskPageLayout from '../components/TaskPageLayout';
 import { useTaskDnD } from '../hooks/useTaskDnD';
 import ProjectComments from '../components/ProjectComments';
+import cache from '../utils/cache';
 
 const Project = () => {
     const { projectId } = useParams();
+    const location = useLocation();
     const { user } = useUser();
     const navigate = useNavigate();
 
-    const [project, setProject] = useState(null);
-    const [checklists, setChecklists] = useState([]);
+    const [project, setProject] = useState(() => cache.get(`project_data_${projectId}`)?.project || null);
+    const [checklists, setChecklists] = useState(() => cache.get(`project_data_${projectId}`)?.checklists || []);
     const [todayProgress, setTodayProgress] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(!cache.get(`project_data_${projectId}`));
 
     const [isCreatingList, setIsCreatingList] = useState(false);
     const [newListTitle, setNewListTitle] = useState('');
@@ -47,6 +49,12 @@ const Project = () => {
     const [addingToList, setAddingToList] = useState(null); // ID of checklist to add main task to
 
     const [expandedChecklists, setExpandedChecklists] = useState({});
+
+    // Magic Reveal States
+    const [magicRevealing, setMagicRevealing] = useState(location.state?.magicReveal || false);
+    const [isWaterfalling, setIsWaterfalling] = useState(false);
+    const [visibleChecklistIds, setVisibleChecklistIds] = useState(new Set());
+    const [visibleTaskIds, setVisibleTaskIds] = useState(new Set());
 
     // New Feature States
     const [activeTab, setActiveTab] = useState('tasks'); // 'tasks' | 'history'
@@ -86,6 +94,13 @@ const Project = () => {
 
     useEffect(() => {
         if (user && projectId) {
+            const cached = cache.get(`project_data_${projectId}`);
+            if (!cached) {
+                setLoading(true);
+            } else {
+                setProject(cached.project);
+                setChecklists(cached.checklists);
+            }
             fetchProjectData();
             fetchProjectMembers();
         }
@@ -136,6 +151,50 @@ const Project = () => {
             fetchComments();
         }
     }, [showComments, projectId]);
+
+    // Handle Magic Reveal Sequence
+    useEffect(() => {
+        // Cleaning up history state if it was a magic reveal
+        if (location.state?.magicReveal) {
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state]);
+
+    const startWaterfall = async (listsToRevealRaw = null) => {
+        setMagicRevealing(false);
+        setIsWaterfalling(true);
+        const data = listsToRevealRaw || checklists;
+        const listsToReveal = data.filter(c => c.active_days.split(',').includes(selectedDayOfWeek));
+        await new Promise(r => setTimeout(r, 100)); // Wait for DOM render after scope change
+        const scrollContainer = document.querySelector('.page-content');
+
+        const smoothScroll = () => {
+            if (scrollContainer) {
+                requestAnimationFrame(() => {
+                    scrollContainer.scrollTo({
+                        top: scrollContainer.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                });
+            }
+        };
+
+        for (const list of listsToReveal) {
+            setVisibleChecklistIds(prev => new Set([...prev, list.id]));
+            setTimeout(smoothScroll, 50);
+            await new Promise(r => setTimeout(r, 120));
+
+            if (list.items && list.items.length > 0) {
+                for (const item of list.items) {
+                    setVisibleTaskIds(prev => new Set([...prev, item.id]));
+                    setTimeout(smoothScroll, 50);
+                    await new Promise(r => setTimeout(r, 100));
+                }
+            }
+        }
+
+        setIsWaterfalling(false);
+    };
 
     const fetchComments = async () => {
         setLoadingComments(true);
@@ -220,6 +279,13 @@ const Project = () => {
             const initExpanded = {};
             listsData.forEach(list => initExpanded[list.id] = true);
             setExpandedChecklists(initExpanded);
+
+            if (magicRevealing) {
+                setTimeout(() => startWaterfall(listsData), 100);
+            }
+
+            // Save to cache
+            cache.set(`project_data_${projectId}`, { project: currentProj, checklists: listsData });
 
         } catch (err) {
             console.error('Error fetching project data:', err);
@@ -667,11 +733,40 @@ const Project = () => {
         fetchData: fetchProjectData
     });
 
-    if (loading) return <div style={{ textAlign: 'center', padding: '3rem' }}>טוען נתונים...</div>;
-    if (!project) return <div style={{ textAlign: 'center', padding: '3rem' }}>פרויקט לא נמצא.</div>;
+    const PageLoader = () => (
+        <div style={{ padding: '1rem 0' }}>
+            <div className="skeleton-box skeleton-title"></div>
+            {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="skeleton-row">
+                    <div className="skeleton-box skeleton-circle"></div>
+                    <div className="skeleton-box skeleton-text" style={{ width: `${Math.random() * 40 + 30}%` }}></div>
+                </div>
+            ))}
+        </div>
+    );
+
+    if (loading && !project) {
+        return (
+            <TaskPageLayout title="טוען...">
+                <PageLoader />
+            </TaskPageLayout>
+        );
+    }
+
+    if (!project) {
+        return (
+            <TaskPageLayout title="לא נמצא">
+                <div style={{ textAlign: 'center', padding: '3rem' }}>
+                    <h3>הפרויקט לא נמצא</h3>
+                    <p style={{ color: 'var(--text-secondary)' }}>נראה שהפרויקט הזה כבר לא קיים.</p>
+                </div>
+            </TaskPageLayout>
+        );
+    }
 
     const isProjectActive = project.active_days && project.active_days.split(',').includes(selectedDayOfWeek);
     const activeChecklists = checklists.filter(c => c.active_days.split(',').includes(selectedDayOfWeek))
+        .filter(c => (!magicRevealing && !isWaterfalling) || visibleChecklistIds.has(c.id))
         .map(c => ({
             ...c,
             items: c.items.filter(item => {
@@ -795,189 +890,193 @@ const Project = () => {
                         </div>
                     )}
 
-                    {
-                        !isProjectActive && selectedDate === dateStr ? (
-                            <div style={{ padding: '3rem 2rem', textAlign: 'center', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-                                <CalendarIcon size={48} style={{ color: 'var(--text-secondary)', margin: '0 auto 1rem' }} />
-                                <h3>פרויקט זה אינו פעיל היום</h3>
-                                <p style={{ color: 'var(--text-secondary)' }}>תוכל לשנות זאת בהגדרות הפרויקט או לחזור ביום אחר.</p>
-                            </div>
-                        ) : (
-                            <>
-                                {isCreatingList === true && (
-                                    <div className="fade-in" style={{ padding: '0.75rem 1rem', marginBottom: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
-                                        <form onSubmit={handleCreateCustomList} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'nowrap' }}>
-                                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexGrow: 1, minWidth: 0 }}>
-                                                <input
-                                                    type="text"
-                                                    className="form-control"
-                                                    placeholder="שם הרשימה החדשה..."
-                                                    value={newListTitle}
-                                                    onChange={(e) => setNewListTitle(e.target.value)}
-                                                    autoFocus
-                                                    style={{ flexGrow: 1, minWidth: '50px', border: 'none', background: 'transparent', fontSize: '1.05rem', padding: 0, outline: 'none', boxShadow: 'none' }}
-                                                />
-                                            </div>
+                    {/* Main Content Area */}
+                    {!isProjectActive && selectedDate === dateStr ? (
+                        <div style={{ padding: '3rem 2rem', textAlign: 'center', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                            <CalendarIcon size={48} style={{ color: 'var(--text-secondary)', margin: '0 auto 1rem' }} />
+                            <h3>פרויקט זה אינו פעיל היום</h3>
+                            <p style={{ color: 'var(--text-secondary)' }}>תוכל לשנות זאת בהגדרות הפרויקט או לחזור ביום אחר.</p>
+                        </div>
+                    ) : (
+                        <>
+                            {isCreatingList === true && (
+                                <div className="fade-in" style={{ padding: '0.75rem 1rem', marginBottom: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
+                                    <form onSubmit={handleCreateCustomList} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'nowrap' }}>
+                                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexGrow: 1, minWidth: 0 }}>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                placeholder="שם הרשימה החדשה..."
+                                                value={newListTitle}
+                                                onChange={(e) => setNewListTitle(e.target.value)}
+                                                autoFocus
+                                                style={{ flexGrow: 1, minWidth: '50px', border: 'none', background: 'transparent', fontSize: '1.05rem', padding: 0, outline: 'none', boxShadow: 'none' }}
+                                            />
+                                        </div>
 
-                                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
-                                                <button type="button" onClick={() => { setIsCreatingList(false); setNewListTitle(''); }} className="desktop-only" style={{ padding: '0.4rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 500, fontSize: '0.85rem' }}>ביטול</button>
-                                                <button type="submit" disabled={!newListTitle.trim()} className="desktop-only" style={{ padding: '0.4rem 1rem', borderRadius: 'var(--radius-md)', border: 'none', background: newListTitle.trim() ? '#d1453b' : 'rgba(209,69,59,0.5)', color: 'white', cursor: newListTitle.trim() ? 'pointer' : 'default', fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap' }}>הוסף רשימה</button>
+                                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
+                                            <button type="button" onClick={() => { setIsCreatingList(false); setNewListTitle(''); }} className="desktop-only" style={{ padding: '0.4rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 500, fontSize: '0.85rem' }}>ביטול</button>
+                                            <button type="submit" disabled={!newListTitle.trim()} className="desktop-only" style={{ padding: '0.4rem 1rem', borderRadius: 'var(--radius-md)', border: 'none', background: newListTitle.trim() ? '#d1453b' : 'rgba(209,69,59,0.5)', color: 'white', cursor: newListTitle.trim() ? 'pointer' : 'default', fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap' }}>הוסף רשימה</button>
 
-                                                {/* Mobile Icon Buttons */}
-                                                <button type="button" onClick={() => { setIsCreatingList(false); setNewListTitle(''); }} className="mobile-only" style={{ padding: '0.5rem', border: 'none', background: 'var(--border-color)', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)' }}>
-                                                    <X size={18} />
-                                                </button>
-                                                <button type="submit" disabled={!newListTitle.trim()} className="mobile-only" style={{ padding: '0.5rem', border: 'none', background: newListTitle.trim() ? '#d1453b' : 'rgba(209,69,59,0.5)', color: 'white', borderRadius: '8px', cursor: newListTitle.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <Plus size={18} />
-                                                </button>
+                                            {/* Mobile Icon Buttons */}
+                                            <button type="button" onClick={() => { setIsCreatingList(false); setNewListTitle(''); }} className="mobile-only" style={{ padding: '0.5rem', border: 'none', background: 'var(--border-color)', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)' }}>
+                                                <X size={18} />
+                                            </button>
+                                            <button type="submit" disabled={!newListTitle.trim()} className="mobile-only" style={{ padding: '0.5rem', border: 'none', background: newListTitle.trim() ? '#d1453b' : 'rgba(209,69,59,0.5)', color: 'white', borderRadius: '8px', cursor: newListTitle.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <Plus size={18} />
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            )}
+
+                            {activeChecklists.length === 0 ? (
+                                <div className="checklist-minimal" style={{ padding: '0.5rem 0', display: 'flex', flexDirection: 'column', border: 'none' }}>
+                                    {/* Add Task Button for empty project */}
+                                    <AddTaskButton onClick={async () => {
+                                        // If no list exists, create a default one first
+                                        try {
+                                            const res = await fetch(`${API_URL}/users/${user.id}/checklists`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    title: '',
+                                                    project_id: projectId,
+                                                    active_days: '0,1,2,3,4,5,6'
+                                                })
+                                            });
+                                            if (res.ok) {
+                                                const newList = await res.json();
+                                                setChecklists([newList]);
+                                                setExpandedChecklists({ [newList.id]: true });
+                                                setAddingToList(newList.id);
+                                            }
+                                        } catch (e) { console.error(e); }
+                                    }} />
+
+                                    <button
+                                        type="button"
+                                        className="add-section-divider"
+                                        onMouseDown={(e) => { e.stopPropagation(); setIsCreatingList(true); }}
+                                    >
+                                        הוסף רשימה (Section)
+                                    </button>
+
+                                    {isCreatingList === true && (
+                                        <form className="add-section-form" onSubmit={handleCreateCustomList}>
+                                            <input
+                                                type="text"
+                                                className="add-section-input"
+                                                placeholder="שם הרשימה... (לדוגמה: פרוייקט חדש)"
+                                                value={newListTitle}
+                                                onChange={(e) => setNewListTitle(e.target.value)}
+                                                autoFocus
+                                            />
+                                            <div className="add-section-actions">
+                                                <button type="submit" className="btn-add-section" disabled={!newListTitle.trim()}>הוסף רשימה</button>
+                                                <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(false); setNewListTitle(''); }}>ביטול</button>
                                             </div>
                                         </form>
-                                    </div>
-                                )}
-
-                                {activeChecklists.length === 0 ? (
-                                    <div className="checklist-minimal" style={{ padding: '0.5rem 0', display: 'flex', flexDirection: 'column', border: 'none' }}>
-                                        {/* Add Task Button for empty project */}
-                                        <AddTaskButton onClick={async () => {
-                                            // If no list exists, create a default one first
-                                            try {
-                                                const res = await fetch(`${API_URL}/users/${user.id}/checklists`, {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({
-                                                        title: '',
-                                                        project_id: projectId,
-                                                        active_days: '0,1,2,3,4,5,6'
-                                                    })
-                                                });
-                                                if (res.ok) {
-                                                    const newList = await res.json();
-                                                    setChecklists([newList]);
-                                                    setExpandedChecklists({ [newList.id]: true });
-                                                    setAddingToList(newList.id);
-                                                }
-                                            } catch (e) { console.error(e); }
-                                        }} />
-
-                                        <button
-                                            type="button"
-                                            className="add-section-divider"
-                                            onMouseDown={(e) => { e.stopPropagation(); setIsCreatingList(true); }}
-                                        >
-                                            הוסף רשימה (Section)
-                                        </button>
-
-                                        {isCreatingList === true && (
-                                            <form className="add-section-form" onSubmit={handleCreateCustomList}>
-                                                <input
-                                                    type="text"
-                                                    className="add-section-input"
-                                                    placeholder="שם הרשימה... (לדוגמה: פרוייקט חדש)"
-                                                    value={newListTitle}
-                                                    onChange={(e) => setNewListTitle(e.target.value)}
-                                                    autoFocus
+                                    )}
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                                    <SortableContext
+                                        items={activeChecklists.map(c => c.id)}
+                                        strategy={verticalListSortingStrategy}
+                                    >
+                                        {activeChecklists.map((checklist, idx) => (
+                                            <React.Fragment key={checklist.id}>
+                                                <SortableChecklistCard
+                                                    checklist={checklist}
+                                                    idx={idx}
+                                                    expandedChecklists={expandedChecklists}
+                                                    toggleChecklistExpanded={toggleChecklistExpanded}
+                                                    handleDeleteChecklist={handleDeleteChecklist}
+                                                    todayProgress={todayProgress}
+                                                    sensors={sensors}
+                                                    handleDragEnd={handleDragEnd}
+                                                    activeTab={activeTab}
+                                                    addingToList={addingToList}
+                                                    addingToItem={addingToItem}
+                                                    toggleItem={toggleItem}
+                                                    setAddingToItem={setAddingToItem}
+                                                    setAddingToList={setAddingToList}
+                                                    handleAddItem={handleAddItem}
+                                                    handleDeleteItem={handleDeleteItem}
+                                                    newItemContent={newItemContent}
+                                                    setNewItemContent={setNewItemContent}
+                                                    handleSetTargetDate={handleSetTargetDate}
+                                                    handleUpdateItem={handleUpdateItem}
+                                                    buildHierarchy={buildHierarchy}
+                                                    calculateProgress={calculateProgress}
+                                                    setIsCreatingList={setIsCreatingList}
+                                                    projectTitle={project?.title || ''}
+                                                    defaultProject={project}
+                                                    onToggleExpand={() => toggleChecklistExpanded(checklist.id)}
+                                                    onAddItem={(e, listId, parentId = null, content = null) => handleAddItem(e, listId, parentId, content)}
+                                                    onDeleteItem={handleDeleteItem}
+                                                    onUpdateItem={handleUpdateItem}
+                                                    onToggleItem={toggleItem}
+                                                    onDeleteChecklist={(e) => handleDeleteChecklist(e, checklist.id)}
+                                                    API_URL={API_URL}
+                                                    isInbox={false}
+                                                    useSharedDndContext={true}
+                                                    className={isWaterfalling && visibleChecklistIds.has(checklist.id) ? 'magic-reveal' : (location.state?.magicReveal ? `slide-down stagger-${(idx % 4) + 1}` : '')}
+                                                    visibleTaskIds={visibleTaskIds}
+                                                    isWaterfalling={isWaterfalling}
                                                 />
-                                                <div className="add-section-actions">
-                                                    <button type="submit" className="btn-add-section" disabled={!newListTitle.trim()}>הוסף רשימה</button>
-                                                    <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(false); setNewListTitle(''); }}>ביטול</button>
-                                                </div>
-                                            </form>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
-                                        <SortableContext
-                                            items={activeChecklists.map(c => c.id)}
-                                            strategy={verticalListSortingStrategy}
-                                        >
-                                            {activeChecklists.map((checklist, idx) => (
-                                                <React.Fragment key={checklist.id}>
-                                                    <SortableChecklistCard
-                                                        checklist={checklist}
-                                                        idx={idx}
-                                                        expandedChecklists={expandedChecklists}
-                                                        toggleChecklistExpanded={toggleChecklistExpanded}
-                                                        handleDeleteChecklist={handleDeleteChecklist}
-                                                        todayProgress={todayProgress}
-                                                        sensors={sensors}
-                                                        handleDragEnd={handleDragEnd}
-                                                        activeTab={activeTab}
-                                                        addingToList={addingToList}
-                                                        addingToItem={addingToItem}
-                                                        toggleItem={toggleItem}
-                                                        setAddingToItem={setAddingToItem}
-                                                        setAddingToList={setAddingToList}
-                                                        handleAddItem={handleAddItem}
-                                                        handleDeleteItem={handleDeleteItem}
-                                                        newItemContent={newItemContent}
-                                                        setNewItemContent={setNewItemContent}
-                                                        handleSetTargetDate={handleSetTargetDate}
-                                                        handleUpdateItem={handleUpdateItem}
-                                                        buildHierarchy={buildHierarchy}
-                                                        calculateProgress={calculateProgress}
-                                                        setIsCreatingList={setIsCreatingList}
-                                                        projectTitle={project?.title || ''}
-                                                        onToggleExpand={() => toggleChecklistExpanded(checklist.id)}
-                                                        onAddItem={(e, listId, parentId = null, content = null) => handleAddItem(e, listId, parentId, content)}
-                                                        onDeleteItem={handleDeleteItem}
-                                                        onUpdateItem={handleUpdateItem}
-                                                        onToggleItem={toggleItem}
-                                                        onDeleteChecklist={(e) => handleDeleteChecklist(e, checklist.id)}
-                                                        API_URL={API_URL}
-                                                        isInbox={false}
-                                                        useSharedDndContext={true}
-                                                    />
-                                                    {isCreatingList === checklist.id && (
-                                                        <form className="add-section-form" onSubmit={handleCreateCustomList}>
-                                                            <input
-                                                                type="text"
-                                                                className="add-section-input"
-                                                                placeholder="שם הרשימה... (לדוגמה: פרוייקט חדש)"
-                                                                value={newListTitle}
-                                                                onChange={(e) => setNewListTitle(e.target.value)}
-                                                                autoFocus
-                                                            />
-                                                            <div className="add-section-actions">
-                                                                <button type="submit" className="btn-add-section" disabled={!newListTitle.trim()}>הוסף רשימה</button>
-                                                                <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(null); setNewListTitle(''); }}>ביטול</button>
-                                                            </div>
-                                                        </form>
-                                                    )}
-                                                </React.Fragment>
-                                            ))}
-                                        </SortableContext>
+                                                {isCreatingList === checklist.id && (
+                                                    <form className="add-section-form" onSubmit={handleCreateCustomList}>
+                                                        <input
+                                                            type="text"
+                                                            className="add-section-input"
+                                                            placeholder="שם הרשימה... (לדוגמה: פרוייקט חדש)"
+                                                            value={newListTitle}
+                                                            onChange={(e) => setNewListTitle(e.target.value)}
+                                                            autoFocus
+                                                        />
+                                                        <div className="add-section-actions">
+                                                            <button type="submit" className="btn-add-section" disabled={!newListTitle.trim()}>הוסף רשימה</button>
+                                                            <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(null); setNewListTitle(''); }}>ביטול</button>
+                                                        </div>
+                                                    </form>
+                                                )}
+                                            </React.Fragment>
+                                        ))}
+                                    </SortableContext>
 
 
 
 
-                                        <button
-                                            type="button"
-                                            className="add-section-divider"
-                                            onMouseDown={(e) => { e.stopPropagation(); setIsCreatingList(true); }}
-                                        >
-                                            הוסף רשימה (Section)
-                                        </button>
+                                    <button
+                                        type="button"
+                                        className="add-section-divider"
+                                        onMouseDown={(e) => { e.stopPropagation(); setIsCreatingList(true); }}
+                                    >
+                                        הוסף רשימה (Section)
+                                    </button>
 
-                                        {isCreatingList === true && (
-                                            <form className="add-section-form" onSubmit={handleCreateCustomList}>
-                                                <input
-                                                    type="text"
-                                                    className="add-section-input"
-                                                    placeholder="שם הרשימה... (לדוגמה: פרוייקט חדש)"
-                                                    value={newListTitle}
-                                                    onChange={(e) => setNewListTitle(e.target.value)}
-                                                    autoFocus
-                                                />
-                                                <div className="add-section-actions">
-                                                    <button type="submit" className="btn-add-section" disabled={!newListTitle.trim()}>הוסף רשימה</button>
-                                                    <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(false); setNewListTitle(''); }}>ביטול</button>
-                                                </div>
-                                            </form>
-                                        )}
-                                    </div>
-                                )}
-                            </>
-                        )
+                                    {isCreatingList === true && (
+                                        <form className="add-section-form" onSubmit={handleCreateCustomList}>
+                                            <input
+                                                type="text"
+                                                className="add-section-input"
+                                                placeholder="שם הרשימה... (לדוגמה: פרוייקט חדש)"
+                                                value={newListTitle}
+                                                onChange={(e) => setNewListTitle(e.target.value)}
+                                                autoFocus
+                                            />
+                                            <div className="add-section-actions">
+                                                <button type="submit" className="btn-add-section" disabled={!newListTitle.trim()}>הוסף רשימה</button>
+                                                <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(false); setNewListTitle(''); }}>ביטול</button>
+                                            </div>
+                                        </form>
+                                    )}
+                                </div>
+                            )}
+                        </>
+                    )
                     }
                 </>
             )}
@@ -1035,7 +1134,7 @@ const Project = () => {
                                                     .filter(f => !projectMembers.some(pm => pm.user_id === (f.receiver_id === user.id ? f.requester_id : f.receiver_id)))
                                                     .map(f => {
                                                         const friendId = f.receiver_id === user.id ? f.requester_id : f.receiver_id;
-                                                        const friendName = user.username === f.username ? "חבר" : f.username; // Note: friends logic inside fetch returns pure username 
+                                                        const friendName = user.username === f.username ? "חבר" : f.username;
                                                         return (
                                                             <div key={friendId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

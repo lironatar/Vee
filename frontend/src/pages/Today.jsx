@@ -20,14 +20,15 @@ import {
 } from '@dnd-kit/sortable';
 import { SortableChecklistCard } from '../components/TaskComponents/index.jsx';
 import TaskPageLayout from '../components/TaskPageLayout';
+import cache from '../utils/cache';
 
 const API_URL = '/api';
 
 const Today = () => {
     const { user } = useUser();
-    const [projectGroups, setProjectGroups] = useState([]);
-    const [todayProgress, setTodayProgress] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [projectGroups, setProjectGroups] = useState(() => cache.get(`today_tasks_${user.id}`) || []);
+    const [todayProgress, setTodayProgress] = useState(() => cache.get(`today_progress_${user.id}`) || []);
+    const [loading, setLoading] = useState(!cache.get(`today_tasks_${user.id}`));
     const [expandedChecklists, setExpandedChecklists] = useState({ 'today-unified': true });
     const [addingToList, setAddingToList] = useState(null);
     const [addingToItem, setAddingToItem] = useState(null);
@@ -56,6 +57,7 @@ const Today = () => {
             if (res.ok) {
                 const data = await res.json();
                 setProjectGroups(data);
+                cache.set(`today_tasks_${user.id}`, data);
             }
         } catch (err) {
             console.error('Error fetching today tasks:', err);
@@ -70,7 +72,9 @@ const Today = () => {
             // Let's fetch it from a generic progress endpoint if available, or extract it from projectGroups
             const res = await fetch(`${API_URL}/users/${user.id}/progress?date=${todayDateStr}`);
             if (res.ok) {
-                setTodayProgress(await res.json());
+                const data = await res.json();
+                setTodayProgress(data);
+                cache.set(`today_progress_${user.id}`, data);
             }
         } catch (err) {
             console.error('Error fetching today progress:', err);
@@ -184,16 +188,27 @@ const Today = () => {
 
             if (res.ok) {
                 const newItem = await res.json();
-                // Update local state by finding the checklist and adding the item
-                setProjectGroups(prev => prev.map(proj => ({
-                    ...proj,
-                    checklists: proj.checklists.map(list => {
-                        if (list.id === targetId) {
-                            return { ...list, items: [...list.items, newItem] };
-                        }
-                        return list;
-                    })
-                })));
+
+                // Track if the list exists in the current state for an instant update
+                const listExists = projectGroups.some(p => p.checklists.some(l => l.id === targetId));
+
+                if (listExists) {
+                    setProjectGroups(prev => prev.map(proj => ({
+                        ...proj,
+                        checklists: proj.checklists.map(list => {
+                            if (list.id === targetId) {
+                                return { ...list, items: [...list.items, newItem] };
+                            }
+                            return list;
+                        })
+                    })));
+                    // Still re-fetch in background to ensure correct sorting/structure from server
+                    fetchTodayTasks();
+                } else {
+                    // If the project wasn't previously showing (0 tasks today), we MUST re-fetch to get group structure
+                    await fetchTodayTasks();
+                }
+
                 setNewItemContent('');
                 toast.success("משימה נוספה");
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
@@ -349,7 +364,25 @@ const Today = () => {
         }
     }, [allTasks.length, loading]);
 
-    if (loading) return <div style={{ textAlign: 'center', padding: '3rem' }}>טוען משימות להיום...</div>;
+    const PageLoader = () => (
+        <div style={{ padding: '1rem 0' }}>
+            <div className="skeleton-box skeleton-title"></div>
+            {[1, 2, 3, 4, 5, 6, 7].map(i => (
+                <div key={i} className="skeleton-row">
+                    <div className="skeleton-box skeleton-circle"></div>
+                    <div className="skeleton-box skeleton-text" style={{ width: `${Math.random() * 50 + 20}%` }}></div>
+                </div>
+            ))}
+        </div>
+    );
+
+    if (loading && projectGroups.length === 0) {
+        return (
+            <TaskPageLayout title="טוען...">
+                <PageLoader />
+            </TaskPageLayout>
+        );
+    }
 
     const unifiedChecklist = {
         id: 'today-unified',

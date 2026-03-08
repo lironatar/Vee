@@ -796,6 +796,27 @@ h2.react-datepicker__current-month {
   border-bottom-color: #b3b3b3;
 }
 
+/* === Staggered Animations === */
+.stagger-1 {
+  animation-delay: 0.1s;
+  animation-fill-mode: both;
+}
+
+.stagger-2 {
+  animation-delay: 0.25s;
+  animation-fill-mode: both;
+}
+
+.stagger-3 {
+  animation-delay: 0.4s;
+  animation-fill-mode: both;
+}
+
+.stagger-4 {
+  animation-delay: 0.55s;
+  animation-fill-mode: both;
+}
+
 .react-datepicker__year-option:hover .react-datepicker__navigation--years-previous,
 .react-datepicker__month-option:hover .react-datepicker__navigation--years-previous,
 .react-datepicker__month-year-option:hover .react-datepicker__navigation--years-previous {
@@ -1140,12 +1161,13 @@ a:hover {
   position: sticky;
   top: 0;
   z-index: 40;
-  transition: transform 0.3s ease, margin-right 0.3s ease, border-left 0.3s ease;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-closed .sidebar {
   margin-right: -300px;
   border-left-color: transparent;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.6s cubic-bezier(0.4, 0, 0.2, 1), border-left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-header {
@@ -1262,24 +1284,23 @@ a:hover {
     transform: translate(100%);
     width: 300px;
     max-width: 80vw;
+    transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .sidebar.open {
     transform: translate(0);
     box-shadow: -10px 0 30px #0000001a;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .sidebar-overlay {
     position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
     left: 0;
     background: rgba(0, 0, 0, 0.4);
     z-index: 35;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
   }
@@ -1287,6 +1308,7 @@ a:hover {
   .sidebar-overlay.visible {
     opacity: 1;
     visibility: visible;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .mobile-close-btn {
@@ -1423,6 +1445,30 @@ textarea.form-control:focus {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-down {
+  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.action-menu-item {
+  transition: all 0.2s ease;
+}
+
+.action-menu-item:hover {
+  background-color: var(--hover-bg) !important;
 }
 
 ::-webkit-scrollbar {
@@ -1804,4 +1850,70 @@ textarea.form-control:focus {
 /* Admin Table Row Hover */
 .table-row-hover:hover {
   background-color: var(--bg-secondary) !important;
+}
+
+/* === Magic Reveal Animations === */
+@keyframes magic-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+    filter: blur(8px);
+    clip-path: inset(0 0 100% 0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.magic-reveal {
+  animation: magic-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* === Skeleton Loader === */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-box {
+  background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--hover-bg) 50%, var(--bg-secondary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+}
+
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+  opacity: 0.6;
+}
+
+.skeleton-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.skeleton-text {
+  height: 14px;
+  flex-grow: 1;
+}
+
+.skeleton-title {
+  height: 24px;
+  width: 150px;
+  margin-bottom: 2rem;
 }

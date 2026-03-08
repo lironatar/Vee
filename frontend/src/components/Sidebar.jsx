@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Moon, Sun, LayoutDashboard, Store, Settings, LogOut, BookOpen, Plus, Folder, X, User as UserIcon, ChevronDown, ChevronUp, ListChecks, ArrowRight, Repeat, Target, CalendarDays, Calendar, Users, Hash, Bell, HelpCircle, PlusCircle, Search, Activity, CheckCircle, Inbox } from 'lucide-react';
+import { Moon, Sun, LayoutDashboard, Layers, Settings, LogOut, BookOpen, Plus, Folder, X, User as UserIcon, ChevronDown, ChevronUp, ListChecks, ArrowRight, Repeat, Target, CalendarDays, Calendar, Users, Hash, Bell, HelpCircle, PlusCircle, Search, Activity, CheckCircle, Inbox } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useUser } from '../context/UserContext';
 import {
@@ -24,6 +24,7 @@ import SortableProjectItem from './SortableProjectItem';
 import SettingsModal from './SettingsModal';
 import FriendsModal from './FriendsModal';
 import CreateProjectModal from './CreateProjectModal';
+import TemplateStoreModal from './TemplateStoreModal';
 import GlobalAddTaskModal from './GlobalAddTaskModal';
 import DynamicTodayIcon from './DynamicTodayIcon';
 
@@ -46,12 +47,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
 
     // Template modal states
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
-    const [creationStep, setCreationStep] = useState(null);
-    const [templates, setTemplates] = useState([]);
-    const [fetchingTemplates, setFetchingTemplates] = useState(false);
-    const [selectedTemplate, setSelectedTemplate] = useState(null);
-    const [projectType, setProjectType] = useState('routine');
-    const [newProjectTitle, setNewProjectTitle] = useState('');
+    const [showTemplateModal, setShowTemplateModal] = useState(false);
 
     const userMenuRef = useRef(null);
     const addMenuRef = useRef(null);
@@ -116,48 +112,10 @@ const Sidebar = ({ isOpen, onToggle }) => {
         };
     }, []);
 
-    const openTemplateModal = async () => {
-        setCreationStep('template');
+    const openTemplateModal = () => {
+        setShowTemplateModal(true);
         if (window.innerWidth <= 992) onToggle(); // Close sidebar on mobile
         setIsAddMenuOpen(false);
-        if (templates.length === 0) {
-            setFetchingTemplates(true);
-            try {
-                const res = await fetch(`${API_URL}/templates`);
-                setTemplates(await res.json());
-            } catch (e) {
-                console.error('Failed to fetch templates', e);
-            }
-            setFetchingTemplates(false);
-        }
-    };
-
-    const handleCreateProjectFromTemplate = async (e) => {
-        e.preventDefault();
-        if (!newProjectTitle.trim() || !selectedTemplate) return;
-        try {
-            const projectRes = await fetch(`${API_URL}/users/${user.id}/projects`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: newProjectTitle, is_routine: projectType === 'routine' }),
-            });
-            if (projectRes.ok) {
-                const newProject = await projectRes.json();
-                await fetch(`${API_URL}/users/${user.id}/checklists/from-template`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ templateId: selectedTemplate.id, project_id: newProject.id, active_days: '0,1,2,3,4,5,6' }),
-                });
-                setProjects(prev => [newProject, ...prev]);
-                setNewProjectTitle('');
-                setProjectType('routine');
-                setCreationStep(null);
-                setSelectedTemplate(null);
-                navigate(`/project/${newProject.id}`);
-            }
-        } catch (err) {
-            console.error('Error creating project from template:', err);
-        }
     };
 
     if (!user) return null;
@@ -301,26 +259,47 @@ const Sidebar = ({ isOpen, onToggle }) => {
                     {/* Projects section */}
                     <div className="nav-section" style={{ marginTop: '0.2rem' }}>
                         <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0', marginBottom: '0', color: 'var(--text-primary)', position: 'relative' }} ref={addMenuRef}>
-                            <Link to="/projects" className="nav-link" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0', flexGrow: 1, borderRadius: 'var(--radius-sm)', transition: 'background 0.2s' }}>
+                            <Link
+                                to="/projects"
+                                onClick={() => { if (window.innerWidth <= 992) onToggle(); }}
+                                className="nav-link"
+                                style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0', flexGrow: 1, borderRadius: 'var(--radius-sm)', transition: 'background 0.2s' }}
+                            >
                                 <Folder size={20} strokeWidth={1.8} style={{ color: 'var(--primary-color)' }} />
                                 <span style={{ fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}>הפרויקטים שלי</span>
                             </Link>
-                            <div style={{ display: 'flex', gap: '0.2rem' }}>
-                                <button className="btn-icon-soft" style={{ padding: '0.15rem' }} onClick={() => setIsAddMenuOpen(!isAddMenuOpen)} title="פרויקט חדש">
-                                    <Plus size={14} />
+                            <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                                <button
+                                    className="btn-icon-soft"
+                                    style={{
+                                        width: '28px',
+                                        height: '28px',
+                                        padding: '0',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        background: isAddMenuOpen ? 'var(--hover-bg)' : 'transparent',
+                                        color: isAddMenuOpen ? 'var(--primary-color)' : 'var(--text-secondary)'
+                                    }}
+                                    onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
+                                    title="אפשרויות הוספה"
+                                >
+                                    <Plus size={18} strokeWidth={2.5} />
                                 </button>
-                                <button className="btn-icon-soft" style={{ padding: '0.15rem' }}>
-                                    <ChevronDown size={14} />
+                                <button className="btn-icon-soft" style={{ width: '24px', height: '24px', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <ChevronDown size={16} />
                                 </button>
                             </div>
 
                             {isAddMenuOpen && (
-                                <div className="action-menu-dropdown fade-in slide-down" style={{ position: 'absolute', top: '100%', left: 0, marginTop: '0.5rem', width: '200px', zIndex: 100, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden' }}>
-                                    <button className="action-menu-item" onClick={() => { setShowCreateModal(true); setIsAddMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', width: '100%', textAlign: 'right', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-color)', cursor: 'pointer', color: 'var(--text-primary)' }}>
-                                        <Folder size={16} style={{ color: 'var(--primary-color)' }} /><span>פרויקט חדש</span>
+                                <div className="action-menu-dropdown fade-in slide-down" style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '0.4rem', zIndex: 100, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', overflow: 'hidden', padding: '0.2rem' }}>
+                                    <button className="action-menu-item" onClick={() => { setShowCreateModal(true); setIsAddMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 0.85rem', width: '100%', textAlign: 'right', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }}>
+                                        <Folder size={18} style={{ color: 'var(--text-secondary)' }} />
+                                        <span style={{ fontWeight: 500, fontSize: '1rem' }}>פרויקט חדש</span>
                                     </button>
-                                    <button className="action-menu-item" onClick={openTemplateModal} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', width: '100%', textAlign: 'right', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}>
-                                        <ListChecks size={16} style={{ color: 'var(--success-color)' }} /><span>חנות תבניות</span>
+                                    <button className="action-menu-item" onClick={openTemplateModal} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 0.85rem', width: '100%', textAlign: 'right', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }}>
+                                        <Layers size={18} style={{ color: 'var(--text-secondary)' }} />
+                                        <span style={{ fontWeight: 500, fontSize: '1rem' }}>גלה תבניות</span>
                                     </button>
                                 </div>
                             )}
@@ -386,102 +365,19 @@ const Sidebar = ({ isOpen, onToggle }) => {
             </aside>
 
             {/* Template Store Modal */}
-            {creationStep === 'template' && (
-                <div className="modal-overlay fade-in" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setCreationStep(null)}>
-                    <div className="card slide-up shadow-xl mobile-modal-fullscreen" style={{ width: '95%', maxWidth: '1100px', height: '85vh', overflow: 'hidden', padding: 0, background: 'var(--bg-color)', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
-                        <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-secondary)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <div style={{ background: 'var(--success-color)', color: 'white', padding: '0.5rem', borderRadius: 'var(--radius-md)' }}><ListChecks size={24} /></div>
-                                <div>
-                                    <h2 style={{ margin: 0, fontSize: '1.5rem' }}>חנות תבניות</h2>
-                                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>מצא את תבנית השגרה המושלמת עבורך</span>
-                                </div>
-                            </div>
-                            <button onClick={() => setCreationStep(null)} className="btn-icon-soft" title="סגור"><X size={28} /></button>
-                        </div>
-                        <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
-                            <div className="mobile-modal-scroll" style={{ flexGrow: 1, padding: '2rem', overflowY: 'auto', background: 'var(--bg-color)' }}>
-                                {!selectedTemplate ? (
-                                    <>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
-                                            <h3 style={{ margin: 0 }}>תבניות נבחרות</h3>
-                                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{templates.length} תבניות נמצאו</span>
-                                        </div>
-                                        {fetchingTemplates ? (
-                                            <div style={{ textAlign: 'center', padding: '4rem' }}>
-                                                <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                                                <p style={{ color: 'var(--text-secondary)' }}>טוען תבניות...</p>
-                                            </div>
-                                        ) : (
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
-                                                {templates.map((tmp, idx) => (
-                                                    <div key={tmp.id} className={`card hover-scale stagger-${(idx % 4) + 1}`} onClick={() => { setSelectedTemplate(tmp); setNewProjectTitle(tmp.title); setProjectType('routine'); }} style={{ padding: '1.5rem', cursor: 'pointer', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)' }}>
-                                                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                                                            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(16,185,129,0.1)', color: 'var(--success-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><ListChecks size={24} /></div>
-                                                            <div>
-                                                                <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem' }}>{tmp.title}</h4>
-                                                                <span style={{ fontSize: '0.75rem', background: 'var(--border-color)', color: 'var(--text-secondary)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>רשימת משימות</span>
-                                                            </div>
-                                                        </div>
-                                                        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: '0 0 1rem', lineHeight: 1.5 }}>{tmp.description || 'רשימת משימות מאורגנת.'}</p>
-                                                        <div style={{ marginTop: 'auto', background: 'var(--bg-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem' }}>
-                                                            <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                                                                {tmp.items && tmp.items.slice(0, 3).map((item, i) => (
-                                                                    <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                                                                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary-color)', flexShrink: 0 }}></div>
-                                                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.content}</span>
-                                                                    </li>
-                                                                ))}
-                                                                {tmp.items && tmp.items.length > 3 && <li style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>+ ועוד {tmp.items.length - 3} משימות...</li>}
-                                                            </ul>
-                                                        </div>
-                                                        <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)', textAlign: 'center', color: 'var(--primary-color)', fontWeight: 600, fontSize: '0.9rem' }}>
-                                                            השתמש בתבנית זו &rarr;
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div style={{ margin: '0 auto', padding: '2rem 0', maxWidth: '600px' }}>
-                                        <button onClick={() => setSelectedTemplate(null)} className="btn-icon-soft" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '2rem', padding: '0.5rem 1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-full)' }}>
-                                            <ArrowRight size={18} /> חזרה לחנות
-                                        </button>
-                                        <div className="card shadow-lg" style={{ padding: '2.5rem', borderTop: '4px solid var(--success-color)' }}>
-                                            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                                                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(16,185,129,0.1)', color: 'var(--success-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}><ListChecks size={32} /></div>
-                                                <h2 style={{ margin: '0 0 0.5rem' }}>{selectedTemplate.title}</h2>
-                                                <p style={{ color: 'var(--text-secondary)', margin: 0 }}>הגדר את פרטי הפרויקט.</p>
-                                            </div>
-                                            <form onSubmit={handleCreateProjectFromTemplate}>
-                                                <div style={{ marginBottom: '2rem' }}>
-                                                    <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>שם הפרויקט</label>
-                                                    <input type="text" className="form-control" placeholder="הכנס שם..." value={newProjectTitle} onChange={(e) => setNewProjectTitle(e.target.value)} autoFocus style={{ padding: '1rem', fontSize: '1.1rem' }} />
-                                                </div>
-                                                <div style={{ marginBottom: '2.5rem' }}>
-                                                    <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>סוג הפרויקט</label>
-                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                                        <div className={`selection-card ${projectType === 'routine' ? 'selected' : ''}`} onClick={() => setProjectType('routine')} style={{ padding: '1rem', cursor: 'pointer' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}><Repeat size={20} /><span style={{ fontWeight: 600 }}>שגרה קבועה</span></div>
-                                                        </div>
-                                                        <div className={`selection-card ${projectType === 'once' ? 'selected' : ''}`} onClick={() => setProjectType('once')} style={{ padding: '1rem', cursor: 'pointer' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}><Target size={20} /><span style={{ fontWeight: 600 }}>יעד חד-פעמי</span></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', display: 'flex', justifyContent: 'center', gap: '0.5rem' }} disabled={!newProjectTitle.trim()}>
-                                                    <Plus size={22} /> התחל עם תבנית זו
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <TemplateStoreModal
+                isOpen={showTemplateModal}
+                onClose={() => setShowTemplateModal(false)}
+                onCreated={(newProject) => {
+                    setProjects(prev => [newProject, ...prev]);
+                    setShowTemplateModal(false);
+                    if (window.innerWidth <= 992) onToggle();
+                    const isMagic = newProject._fromTemplateMagic;
+                    navigate(`/project/${newProject.id}`, isMagic ? { state: { magicReveal: true } } : undefined);
+                }}
+                userId={user.id}
+                apiUrl={API_URL}
+            />
 
             {/* Create Project Modal */}
             <CreateProjectModal

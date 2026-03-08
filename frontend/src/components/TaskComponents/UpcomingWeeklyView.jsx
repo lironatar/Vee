@@ -159,12 +159,10 @@ const UpcomingWeeklyView = ({
     // so we configure sensors carefully.
     const sensors = useSensors(
         useSensor(MouseSensor, {
-            // Require the mouse to move by 10 pixels before activating drag
-            activationConstraint: { distance: 10 },
+            activationConstraint: { distance: 5 },
         }),
         useSensor(TouchSensor, {
-            // Press delay prevents normal scrolling from triggering drag
-            activationConstraint: { delay: 150, tolerance: 5 },
+            activationConstraint: { distance: 5 },
         })
     );
 

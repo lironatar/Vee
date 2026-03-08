@@ -27,7 +27,11 @@ const SortableChecklistCard = ({
     onAddItem,
     onDeleteItem,
     onUpdateItem,
-    onToggleItem
+    onToggleItem,
+    defaultProject = null,
+    visibleTaskIds = null,
+    isWaterfalling = false,
+    className = ''
 }) => {
     // Local update handler — calls PUT /api/items/:itemId and updates UI eventually via parent reload / socket
     const handleUpdateItem = onUpdateItem || handleUpdateItemProp || ((itemId, updates) => {
@@ -58,7 +62,10 @@ const SortableChecklistCard = ({
         paddingRight: '0'
     };
 
-    const hierarchicalItems = buildHierarchy ? buildHierarchy(checklist.items) : checklist.items;
+    const hierarchicalItemsRaw = buildHierarchy ? buildHierarchy(checklist.items) : checklist.items;
+    const hierarchicalItems = (isWaterfalling && visibleTaskIds)
+        ? hierarchicalItemsRaw.filter(item => visibleTaskIds.has(item.id))
+        : hierarchicalItemsRaw;
     const progressPercent = calculateProgress ? calculateProgress(checklist.items) : 0;
 
     // Support both ways of passing expansion state
@@ -73,7 +80,7 @@ const SortableChecklistCard = ({
     };
 
     return (
-        <div ref={setNodeRef} style={{ ...appliedStyle, marginBottom: '0rem' }} className="checklist-minimal">
+        <div ref={setNodeRef} style={{ ...appliedStyle, marginBottom: '0rem' }} className={`checklist-minimal ${className}`}>
             {!isFlatList && checklist.title !== '' && (
                 <div
                     className="checklist-header"
@@ -194,6 +201,7 @@ const SortableChecklistCard = ({
                                             handleUpdateItem={handleUpdateItem}
                                             useProgressArray={useProgressArray}
                                             isCompletedFallback={item.completed}
+                                            isWaterfalling={isWaterfalling}
                                         />
                                     ))}
                                 </div>
@@ -209,6 +217,7 @@ const SortableChecklistCard = ({
                                 newItemDate={newItemDate}
                                 setNewItemDate={setNewItemDate}
                                 checklist={overrideChecklistForAdd || checklist}
+                                defaultProject={defaultProject}
                                 setAddingToList={setAddingToList}
                                 handleAddItem={activeAddItem}
                                 suppressDateSpan={newItemDate === defaultItemDate}

@@ -12,6 +12,7 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
     const [newItemDate, setNewItemDate] = useState(() => new Date().toLocaleDateString('en-CA'));
     const [checklists, setChecklists] = useState([]);
     const [defaultChecklist, setDefaultChecklist] = useState(null);
+    const [defaultProject, setDefaultProject] = useState(null);
 
     useEffect(() => {
         if (!isOpen || !user) return;
@@ -22,20 +23,41 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
 
         const fetchData = async () => {
             try {
-                const checkRes = await fetch(`${API_URL}/users/${user.id}/checklists`);
-                if (checkRes.ok) {
+                const [checkRes, projRes] = await Promise.all([
+                    fetch(`${API_URL}/users/${user.id}/checklists`),
+                    fetch(`${API_URL}/users/${user.id}/projects`)
+                ]);
+                if (checkRes.ok && projRes.ok) {
                     const cData = await checkRes.json();
+                    const pData = await projRes.json();
                     setChecklists(cData);
 
-                    // Set default to Inbox (first checklist with no project_id)
-                    let inboxList = cData.find(c => !c.project_id);
-                    if (!inboxList) {
-                        inboxList = { id: 'NEW_INBOX', title: '', project_id: null };
+                    let currentProjectId = null;
+                    if (window.location.pathname.startsWith('/project/')) {
+                        currentProjectId = parseInt(window.location.pathname.split('/')[2]);
                     }
-                    setDefaultChecklist(inboxList);
+
+                    let defaultList = null;
+                    let defProject = null;
+
+                    if (currentProjectId) {
+                        defProject = pData.find(p => p.id === currentProjectId) || null;
+                        defaultList = cData.find(c => c.project_id === currentProjectId && (!c.title || c.title === ''));
+                        if (!defaultList) {
+                            defaultList = { id: `NEW_INBOX_${currentProjectId}`, title: '', project_id: currentProjectId };
+                        }
+                    } else {
+                        defaultList = cData.find(c => !c.project_id);
+                        if (!defaultList) {
+                            defaultList = { id: 'NEW_INBOX', title: '', project_id: null };
+                        }
+                    }
+
+                    setDefaultChecklist(defaultList);
+                    setDefaultProject(defProject);
                 }
             } catch (error) {
-                console.error('Failed to fetch lists:', error);
+                console.error('Failed to fetch lists/projects:', error);
             }
         };
         fetchData();
@@ -56,7 +78,10 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
         let finalChecklistId = checklistId;
 
         // Auto-create inbox if needed
-        if (finalChecklistId === 'NEW_INBOX' || !finalChecklistId) {
+        if (typeof finalChecklistId === 'string' && finalChecklistId.startsWith('NEW_INBOX')) {
+            const isProjectInbox = finalChecklistId.startsWith('NEW_INBOX_');
+            const targetProjectId = isProjectInbox ? parseInt(finalChecklistId.split('_')[2]) : null;
+
             try {
                 const listRes = await fetch(`${API_URL}/users/${user.id}/checklists`, {
                     method: 'POST',
@@ -64,7 +89,7 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
                     body: JSON.stringify({
                         title: '',
                         active_days: '0,1,2,3,4,5,6',
-                        project_id: null
+                        project_id: targetProjectId
                     })
                 });
                 if (listRes.ok) {
@@ -144,6 +169,7 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
                     newItemDate={newItemDate}
                     setNewItemDate={setNewItemDate}
                     checklist={defaultChecklist}
+                    defaultProject={defaultProject}
                     setAddingToList={onClose}
                     handleAddItem={handleAddItem}
                 />

@@ -6,8 +6,11 @@ import TimePickerDropdown from '../TimePickerDropdown';
 import { getRandomTaskPlaceholder } from '../../utils/taskPlaceholders';
 import ProjectSelectorDropdown from './ProjectSelectorDropdown';
 import { hebrewDayNames, hebrewMonthNames, TIME_OPTIONS, getDateDisplayInfo } from './utils.jsx';
+import { useUser } from '../../context/UserContext';
+import { toast } from 'sonner';
 
-const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewItemDate, checklist, setAddingToList, handleAddItem, suppressDateSpan = false, initialTime = '' }) => {
+const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewItemDate, checklist, defaultProject, setAddingToList, handleAddItem, suppressDateSpan = false, initialTime = '' }) => {
+    const { user } = useUser();
     const [description, setDescription] = useState('');
     const [showDateDropdown, setShowDateDropdown] = useState(false);
     const [showRepeatMenu, setShowRepeatMenu] = useState(false);
@@ -17,7 +20,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
     const [duration, setDuration] = useState(15);
     const [dynamicPlaceholder, setDynamicPlaceholder] = useState(() => getRandomTaskPlaceholder());
     const [selectedChecklist, setSelectedChecklist] = useState(checklist);
-    const [selectedProject, setSelectedProject] = useState(null);
+    const [selectedProject, setSelectedProject] = useState(defaultProject || null);
     const [showProjectSelector, setShowProjectSelector] = useState(false);
     const inputContainerRef = useRef(null);
 
@@ -30,7 +33,8 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
 
     useEffect(() => {
         setSelectedChecklist(checklist);
-    }, [checklist]);
+        setSelectedProject(defaultProject || null);
+    }, [checklist, defaultProject]);
 
     const dateBtnRef = useRef(null);
     const timeBtnRef = useRef(null);
@@ -55,7 +59,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
 
     const smartInputRef = useRef(null);
 
-    const handleSubmit = (e, explicitContent = null) => {
+    const handleSubmit = async (e, explicitContent = null) => {
         let plainText;
         if (explicitContent !== null) {
             plainText = explicitContent.replace(/<[^>]*>?/gm, '').trim();
@@ -69,7 +73,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
 
         if (!plainText) return;
 
-        e.preventDefault();
+        if (e) e.preventDefault();
         window.globalNewItemContent = plainText;
         window.globalNewItemDesc = description;
         window.globalNewItemDate = newItemDate || null;
@@ -77,7 +81,39 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
         window.globalNewItemTime = time || null;
         window.globalNewItemDuration = duration || 15;
 
-        handleAddItem(e, selectedChecklist?.id || checklist.id, null, plainText);
+        // Auto-create inbox if needed
+        let targetChecklistId = selectedChecklist?.id || checklist.id;
+
+        if (typeof targetChecklistId === 'string' && targetChecklistId.startsWith('NEW_INBOX')) {
+            const isProjectInbox = targetChecklistId.startsWith('NEW_INBOX_');
+            const targetProjectId = isProjectInbox ? parseInt(targetChecklistId.split('_')[2]) : null;
+
+            try {
+                const listRes = await fetch(`/api/users/${user.id}/checklists`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: '',
+                        active_days: '0,1,2,3,4,5,6',
+                        project_id: targetProjectId
+                    })
+                });
+                if (listRes.ok) {
+                    const newList = await listRes.json();
+                    targetChecklistId = newList.id;
+                    // Note: This modifies the shared checklists state down the line
+                } else {
+                    toast.error('שגיאה ביצירת משפך לפרויקט');
+                    return;
+                }
+            } catch (err) {
+                console.error(err);
+                toast.error('שגיאה ביצירת משפך לפרויקט');
+                return;
+            }
+        }
+
+        handleAddItem(e, targetChecklistId, null, plainText);
 
         setNewItemContent('');
         setDescription('');
@@ -363,6 +399,8 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                 onClose={() => setShowProjectSelector(false)}
                 anchorRef={projectBtnRef}
                 selectedChecklistId={selectedChecklist?.id}
+                selectedProject={selectedProject}
+                selectedChecklist={selectedChecklist}
                 onSelect={(cl, proj) => {
                     setSelectedChecklist(cl);
                     setSelectedProject(proj);
@@ -402,9 +440,14 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                                 const Icon = isInbox ? Inbox : List;
                                 return <Icon size={14} style={{ opacity: 0.8 }} />;
                             })()}
-                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '150px' }}>
-                                {selectedProject ? `${selectedProject.title} / ` : ''}
-                                {selectedChecklist?.title || (selectedProject ? selectedProject.title : 'תיבת המשימות')}
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }}>
+                                {selectedProject ? (
+                                    selectedChecklist?.title && selectedChecklist.title.trim() !== '' && selectedChecklist.title !== selectedProject.title ?
+                                        `${selectedProject.title} / ${selectedChecklist.title}` :
+                                        selectedProject.title
+                                ) : (
+                                    selectedChecklist?.title || 'תיבת המשימות'
+                                )}
                             </span>
                             <ChevronDown size={14} style={{ marginRight: '0.1rem' }} />
                         </button>

@@ -113,8 +113,8 @@ const DailyTimelineView = ({
     }, [date]);
 
     const sensors = useSensors(
-        useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
-        useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
+        useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { distance: 5 } })
     );
 
     const { timedTasks, allDayTasks } = useMemo(() => {
