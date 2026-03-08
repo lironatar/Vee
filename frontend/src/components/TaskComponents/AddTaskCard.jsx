@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar as CalendarIcon, Clock, RefreshCw, X, ArrowLeft, ChevronDown, Inbox, List, Flag } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, RefreshCw, X, ArrowLeft, ChevronDown, Inbox, List, Flag, SendHorizontal } from 'lucide-react';
 import SmartInput from '../SmartInput';
 import DatePickerDropdown from '../DatePickerDropdown';
 import TimePickerDropdown from '../TimePickerDropdown';
@@ -22,6 +22,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
     const [selectedChecklist, setSelectedChecklist] = useState(checklist);
     const [selectedProject, setSelectedProject] = useState(defaultProject || null);
     const [showProjectSelector, setShowProjectSelector] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
     const inputContainerRef = useRef(null);
 
     const cardRef = useRef(null);
@@ -152,7 +153,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
     });
 
     return (
-        <div ref={cardRef} className="add-task-card-container" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'visible', position: 'relative', background: 'var(--bg-color)', boxShadow: '0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.02)', transition: 'var(--transition)' }}>
+        <div ref={cardRef} className="add-task-card-container" style={{ border: isFocused ? '1px solid #c0c0c0' : '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'visible', position: 'relative', background: 'var(--bg-color)', boxShadow: isFocused ? '0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05)' : '0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.02)', transition: 'var(--transition)' }}>
             <div style={{ padding: '0.4rem 0.6rem' }}>
                 <div
                     ref={inputContainerRef}
@@ -161,6 +162,8 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                         const input = e.currentTarget.querySelector('.smart-input-area');
                         if (input) input.focus();
                     }}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
                 >
                     {newItemDate && !suppressDateSpan && (
                         <div style={{
@@ -200,7 +203,8 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                     type="text"
                     placeholder="תיאור"
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
                     style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: 400, background: 'transparent', color: 'var(--text-secondary)', padding: 0 }}
                 />
             </div>
@@ -460,17 +464,17 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                         ביטול
                     </button>
                     <button type="button" onClick={handleSubmit} disabled={!newItemContent.trim()} className="desktop-only"
-                        style={{ padding: '0.45rem 1.25rem', borderRadius: 'var(--radius-sm)', border: 'none', background: newItemContent.trim() ? 'var(--primary-color)' : 'rgba(var(--primary-rgb, 209, 87, 0), 0.4)', color: 'var(--btn-text-primary, white)', cursor: newItemContent.trim() ? 'pointer' : 'default', fontWeight: 700, fontSize: '0.87rem', transition: 'var(--transition)', boxShadow: newItemContent.trim() ? '0 2px 6px rgba(var(--primary-rgb, 209, 87, 0), 0.3)' : 'none' }}>
+                        style={{ padding: '0.45rem 1.25rem', borderRadius: 'var(--radius-sm)', border: 'none', background: newItemContent.trim() ? '#2f3b4c' : 'rgba(47, 59, 76, 0.4)', color: 'white', cursor: newItemContent.trim() ? 'pointer' : 'default', fontWeight: 700, fontSize: '0.87rem', transition: 'var(--transition)', boxShadow: newItemContent.trim() ? '0 2px 6px rgba(47, 59, 76, 0.2)' : 'none' }}>
                         הוסף משימה
                     </button>
-                    <button type="button" onClick={() => { if (setAddingToList) setAddingToList(null); }} className="mobile-only" style={{ padding: '0.5rem', border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', transition: 'background 0.2s' }}
+                    <button type="button" onClick={() => { if (setAddingToList) setAddingToList(null); }} className="mobile-only" style={{ padding: '0.5rem', border: 'none', background: 'var(--bg-gray-soft)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', transition: 'background 0.2s' }}
                         onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                        onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-gray-soft)'}>
                         <X size={20} />
                     </button>
                     <button type="button" onClick={handleSubmit} disabled={!newItemContent.trim()} className="mobile-only"
-                        style={{ padding: '0.5rem', border: 'none', background: newItemContent.trim() ? 'var(--primary-color)' : 'rgba(209,87,0,0.5)', color: 'var(--btn-text-primary, white)', borderRadius: 'var(--radius-sm)', cursor: newItemContent.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <ArrowLeft size={20} />
+                        style={{ padding: '0.5rem', border: 'none', background: newItemContent.trim() ? '#2f3b4c' : 'rgba(47, 59, 76, 0.4)', color: 'white', borderRadius: 'var(--radius-sm)', cursor: newItemContent.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <SendHorizontal size={20} style={{ transform: 'scaleX(-1)' }} />
                     </button>
                 </div>
             </div>

@@ -24,7 +24,7 @@ const AddTaskButton = ({ onClick, noMarginTop = false }) => {
             onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'transparent'; }}
         >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Plus size={20} style={{ color: 'var(--primary-color)' }} />
+                <Plus size={20} style={{ color: '#2f3b4c' }} />
             </div>
             <span style={{ fontWeight: 500, fontSize: '15px' }}>הוסף משימה</span>
         </button>
