@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
-import { BookOpen, Eye, EyeOff, ArrowLeft, Sparkles } from 'lucide-react';
+import { BookOpen, Eye, EyeOff, ArrowLeft, Sparkles, MailOpen } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
 const API_URL = '/api';
 
 export default function Login() {
     const { login } = useUser();
-    const [mode, setMode] = useState('login'); // 'login' | 'register'
-    const [identifier, setIdentifier] = useState(''); // email / phone / username
+    const [searchParams] = useSearchParams();
+    const inviteToken = searchParams.get('invite');
+
+    const [mode, setMode] = useState(inviteToken ? 'register' : 'login'); // Default to register if invited
+    const [identifier, setIdentifier] = useState(searchParams.get('email') || ''); // pre-fill email if provided
     const [password, setPassword] = useState('');
     const [displayName, setDisplayName] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -34,7 +38,7 @@ export default function Login() {
                 const res = await fetch(`${API_URL}/auth/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ identifier, password, display_name: displayName }),
+                    body: JSON.stringify({ identifier, password, display_name: displayName, invite_token: inviteToken }),
                 });
                 const data = await res.json();
                 if (res.ok) {
@@ -51,7 +55,7 @@ export default function Login() {
                 const res = await fetch(`${API_URL}/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ identifier, password }),
+                    body: JSON.stringify({ identifier, password, invite_token: inviteToken }),
                 });
                 const data = await res.json();
                 if (res.ok) {
@@ -97,8 +101,28 @@ export default function Login() {
                 width: '100%', maxWidth: '420px',
                 padding: '1rem',
             }}>
-                {/* Logo / Header */}
-                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                {/* Logo / Header / Invite Notification */}
+                <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                    {inviteToken && (
+                        <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            background: 'rgba(16, 185, 129, 0.1)',
+                            border: '1px solid var(--success-color)',
+                            color: 'var(--success-color)',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '50px',
+                            fontWeight: 600,
+                            fontSize: '0.9rem',
+                            marginBottom: '1.5rem',
+                            animation: 'slideUp 0.5s ease-out'
+                        }}>
+                            <MailOpen size={16} />
+                            קיבלת הזמנה להצטרף ל-Vee!
+                        </div>
+                    )}
+
                     <div style={{
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                         width: '64px', height: '64px', borderRadius: '18px',

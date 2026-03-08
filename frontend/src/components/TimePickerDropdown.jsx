@@ -198,7 +198,7 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, onSave, t
                                                 width: '100%',
                                                 padding: '0.6rem 1rem',
                                                 border: 'none',
-                                                background: isActive ? '#F5F5F5' : 'transparent',
+                                                background: isActive ? 'var(--dropdown-selected)' : 'transparent',
                                                 textAlign: 'center',
                                                 cursor: 'pointer',
                                                 color: 'var(--text-primary)',
@@ -206,10 +206,10 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, onSave, t
                                                 fontWeight: isActive ? 600 : 400,
                                                 transition: 'background 0.1s'
                                             }}
-                                            onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--dropdown-hover)'}
                                             onMouseLeave={(e) => {
                                                 if (!isActive) {
-                                                    e.currentTarget.style.background = 'transparent';
+                                                    e.currentTarget.style.background = isActive ? 'var(--dropdown-selected)' : 'transparent';
                                                 }
                                             }}
                                             onMouseDown={(e) => {

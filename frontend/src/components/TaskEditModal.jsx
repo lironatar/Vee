@@ -37,11 +37,14 @@ export default function TaskEditModal({
     const [isEditing, setIsEditing] = useState(false);
     const [showMoreMenu, setShowMoreMenu] = useState(false);
     const [showProjectSelector, setShowProjectSelector] = useState(false);
+    const [priority, setPriority] = useState(4);
+    const [showPriorityMenu, setShowPriorityMenu] = useState(false);
 
     const dateBtnRef = useRef(null);
     const timeBtnRef = useRef(null);
     const moreMenuRef = useRef(null);
     const projectBtnRef = useRef(null);
+    const priorityBtnRef = useRef(null);
     const contentRef = useRef(null);
     const panelRef = useRef(null);
 
@@ -53,11 +56,13 @@ export default function TaskEditModal({
             setTargetDate(item.target_date || '');
             setTime(item.time || '');
             setRepeatRule(item.repeat_rule || null);
+            setPriority(item.priority || 4);
             setIsEditing(false);
             setShowMoreMenu(false);
             setShowDatePicker(false);
             setShowRepeatMenu(false);
             setShowProjectSelector(false);
+            setShowPriorityMenu(false);
         }
     }, [item, isOpen]);
 
@@ -76,7 +81,7 @@ export default function TaskEditModal({
             setTimeout(() => document.addEventListener('mousedown', handler), 10);
         }
         return () => document.removeEventListener('mousedown', handler);
-    }, [isOpen, onClose, isEditing, content, description, targetDate, time, repeatRule]); // Re-bind if save dependencies change
+    }, [isOpen, onClose, isEditing, content, description, targetDate, time, repeatRule, priority]); // Re-bind if save dependencies change
 
     if (!isOpen || !item) return null;
 
@@ -94,7 +99,8 @@ export default function TaskEditModal({
             description,
             target_date: targetDate || null,
             time: time || null,
-            repeat_rule: repeatRule || null
+            repeat_rule: repeatRule || null,
+            priority: priority
         });
         setIsEditing(false);
     };
@@ -319,7 +325,13 @@ export default function TaskEditModal({
 
                     {/* Project Label */}
                     <div style={{ position: 'relative' }}>
-                        <button ref={projectBtnRef} onClick={() => setShowProjectSelector(!showProjectSelector)} style={actionRowStyle}>
+                        <button
+                            ref={projectBtnRef}
+                            onClick={() => setShowProjectSelector(!showProjectSelector)}
+                            style={actionRowStyle}
+                            onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
                             <HeaderIcon size={18} />
                             <span>{headerLabel || 'תיבת המשימות'}</span>
                         </button>
@@ -339,11 +351,17 @@ export default function TaskEditModal({
 
                     {/* Due Date & Repeat Row */}
                     <div style={{ position: 'relative' }}>
-                        <button ref={dateBtnRef} onClick={() => setShowDatePicker(!showDatePicker)} style={{
-                            ...actionRowStyle,
-                            borderBottom: 'none',
-                            color: targetDate ? 'var(--primary-color)' : 'var(--text-secondary)'
-                        }}>
+                        <button
+                            ref={dateBtnRef}
+                            onClick={() => setShowDatePicker(!showDatePicker)}
+                            style={{
+                                ...actionRowStyle,
+                                borderBottom: 'none',
+                                color: targetDate ? 'var(--primary-color)' : 'var(--text-secondary)'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
                             <CalendarIcon size={18} />
                             <span>{formattedDateString}</span>
                             {repeatRule && <RefreshCw size={14} style={{ marginRight: '0.5rem' }} />}
@@ -367,7 +385,10 @@ export default function TaskEditModal({
                                         borderRadius: '8px', background: repeatRule ? 'rgba(var(--primary-rgb,200,120,20),0.06)' : 'var(--bg-color)',
                                         cursor: 'pointer', color: repeatRule ? 'var(--primary-color)' : 'var(--text-secondary)',
                                         fontSize: '0.88rem', fontWeight: 500, fontFamily: 'inherit'
-                                    }}>
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = repeatRule ? 'rgba(var(--primary-rgb,200,120,20),0.06)' : 'var(--bg-color)'}
+                                >
                                     <RefreshCw size={15} />
                                     {repeatRule ? repeatLabels[repeatRule] : 'חזרה'}
                                 </button>
@@ -403,13 +424,79 @@ export default function TaskEditModal({
 
                     {/* Stub attributes matching design */}
                     <button style={actionRowStyle}><AlarmClock size={18} /><span>תאריך יעד סופי</span></button>
-                    <button style={actionRowStyle}><Flag size={18} /><span>עדיפות</span></button>
-                    <button style={actionRowStyle}><Tag size={18} /><span>תוויות</span></button>
-                    <button style={actionRowStyle}><Bell size={18} /><span>תזכורות</span></button>
-                    <button style={actionRowStyle}><MapPin size={18} /><span>מיקום</span></button>
+
+                    {/* Priority Dropdown */}
+                    <div style={{ position: 'relative' }}>
+                        <button
+                            ref={priorityBtnRef}
+                            onClick={() => setShowPriorityMenu(!showPriorityMenu)}
+                            style={{
+                                ...actionRowStyle,
+                                color: priority === 1 ? 'var(--priority-1)' : priority === 2 ? 'var(--priority-2)' : priority === 3 ? 'var(--priority-3)' : 'var(--text-secondary)'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                            <Flag size={18} fill={priority !== 4 ? (priority === 1 ? 'var(--priority-1)' : priority === 2 ? 'var(--priority-2)' : 'var(--priority-3)') : 'transparent'} />
+                            <span>
+                                {priority === 1 ? 'עדיפות 1 (גבוהה ביותר)' : priority === 2 ? 'עדיפות 2' : priority === 3 ? 'עדיפות 3' : 'עדיפות 4 (רגילה)'}
+                            </span>
+                        </button>
+
+                        {showPriorityMenu && (
+                            <div style={{
+                                position: 'absolute', top: 'calc(100% - 4px)', left: '1.25rem', right: '1.25rem',
+                                background: 'var(--bg-color)', border: '1px solid var(--border-color)',
+                                borderRadius: '8px', boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                                overflow: 'hidden', zIndex: 1000, display: 'flex', flexDirection: 'column'
+                            }}>
+                                {[
+                                    { level: 1, label: 'עדיפות 1', color: 'var(--priority-1)' },
+                                    { level: 2, label: 'עדיפות 2', color: 'var(--priority-2)' },
+                                    { level: 3, label: 'עדיפות 3', color: 'var(--priority-3)' },
+                                    { level: 4, label: 'עדיפות 4', color: 'var(--text-secondary)' }
+                                ].map(p => (
+                                    <button
+                                        key={p.level}
+                                        onClick={() => {
+                                            setPriority(p.level);
+                                            setShowPriorityMenu(false);
+                                            if (onSave) onSave({ priority: p.level });
+                                        }}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                            width: '100%', padding: '0.75rem 1rem', border: 'none',
+                                            background: priority === p.level ? 'var(--dropdown-selected)' : 'transparent',
+                                            cursor: 'pointer', textAlign: 'right', fontFamily: 'inherit',
+                                            borderBottom: p.level !== 4 ? '1px solid var(--border-color)' : 'none',
+                                            transition: 'background 0.15s'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (priority !== p.level) e.currentTarget.style.background = 'var(--dropdown-hover)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (priority !== p.level) e.currentTarget.style.background = 'transparent';
+                                            else e.currentTarget.style.background = 'var(--dropdown-selected)';
+                                        }}
+                                    >
+                                        <Flag size={16} style={{ color: p.color }} fill={p.level !== 4 ? p.color : 'transparent'} />
+                                        <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: priority === p.level ? 600 : 400 }}>{p.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <button style={actionRowStyle} onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}><Tag size={18} /><span>תוויות</span></button>
+                    <button style={actionRowStyle} onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}><Bell size={18} /><span>תזכורות</span></button>
+                    <button style={actionRowStyle} onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}><MapPin size={18} /><span>מיקום</span></button>
 
                     {/* Add Sub-task */}
-                    <button style={{ ...actionRowStyle, marginTop: '0.5rem', borderBottom: 'none' }}>
+                    <button
+                        style={{ ...actionRowStyle, marginTop: '0.5rem', borderBottom: 'none' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
                         <Plus size={18} /><span>הוסף תת-משימה</span>
                     </button>
                 </div>

@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const db = require('./database');
 const http = require('http');
 const { Server } = require('socket.io');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const server = http.createServer(app);
@@ -51,6 +52,67 @@ const upload = multer({
     }
 });
 
+// --- Email Sending Service ---
+const transporter = nodemailer.createTransport({
+    host: 'smtp.resend.com',
+    port: 465,
+    secure: true,
+    auth: {
+        user: 'resend',
+        pass: 're_5jpHQcuv_MZqLjjY9n2mGmFeNaHy3bXEX'
+    }
+});
+
+const generateInvitationEmailHtml = (inviterName, inviteLink) => `
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הזמנה ל-Vee</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; margin: 0; padding: 0; direction: rtl;">
+    <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px; text-align: center;">
+            <div style="background-color: rgba(255,255,255,0.2); width: 80px; height: 80px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; margin-bottom: 20px;">
+                <span style="font-size: 40px;">✨</span>
+            </div>
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 800;">הוזמנת להצטרף ל-Vee!</h1>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 40px 30px; text-align: center;">
+            <p style="font-size: 18px; color: #374151; line-height: 1.6; margin-bottom: 30px;">
+                היי! <strong>${inviterName}</strong> שלח/ה לך הזמנה אישית להצטרף אליו למערכת ניהול המשימות והפרויקטים החברתית - Vee.
+            </p>
+            
+            <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+                 <p style="margin: 0; color: #64748b; font-size: 15px;">ההזמנה הזו תקפה ל-7 ימים בלבד.</p>
+            </div>
+
+            <a href="${inviteLink}" style="display: inline-block; background: #10b981; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 50px; font-weight: bold; font-size: 18px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); transition: transform 0.2s;">
+                קבל/י את ההזמנה עכשיו
+            </a>
+            
+            <p style="margin-top: 40px; font-size: 14px; color: #94a3b8;">
+                אם הכפתור לא עובד, עותק/י את הקישור הבא לדפדפן שלך:<br>
+                <a href="${inviteLink}" style="color: #6366f1; word-break: break-all;">${inviteLink}</a>
+            </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="margin: 0; font-size: 13px; color: #94a3b8;">
+                נשלח ממערכת Vee.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+`;
+
+
 // --- Users API ---
 const hashPassword = (pw) => crypto.createHash('sha256').update(pw).digest('hex');
 
@@ -75,7 +137,7 @@ app.post('/api/users', (req, res) => {
 
 // POST /api/auth/register
 app.post('/api/auth/register', (req, res) => {
-    const { identifier, password, display_name } = req.body; // identifier = email / phone / username
+    const { identifier, password, display_name, invite_token } = req.body; // identifier = email / phone / username
     if (!identifier || !password) return res.status(400).json({ error: 'חסרים פרטים' });
     const isEmail = /^[^@]+@[^@]+\.[^@]+$/.test(identifier);
     const isPhone = /^[0-9+\-() ]{7,15}$/.test(identifier.replace(/\s/g, ''));
@@ -83,12 +145,37 @@ app.post('/api/auth/register', (req, res) => {
     const email = isEmail ? identifier : null;
     const phone = isPhone && !isEmail ? identifier : null;
     const hash = hashPassword(password);
+
+    // Check invite token if provided
+    let inviterId = null;
+    let inviteId = null;
+    if (invite_token) {
+        const invite = db.prepare('SELECT id, inviter_id, expires_at, used_at FROM invitations WHERE token = ?').get(invite_token);
+        if (invite && !invite.used_at && new Date() <= new Date(invite.expires_at)) {
+            inviterId = invite.inviter_id;
+            inviteId = invite.id;
+        }
+    }
+
     try {
         const result = db.prepare(
-            'INSERT INTO users (username, email, phone, password_hash) VALUES (?, ?, ?, ?)'
-        ).run(username, email, phone, hash);
+            'INSERT INTO users (username, email, phone, password_hash, invited_by) VALUES (?, ?, ?, ?, ?)'
+        ).run(username, email, phone, hash, inviterId);
 
         const newUserId = result.lastInsertRowid;
+
+        db.transaction(() => {
+            // Process invitation acceptance if valid
+            if (inviteId && inviterId) {
+                db.prepare('UPDATE invitations SET used_at = CURRENT_TIMESTAMP WHERE id = ?').run(inviteId);
+                // Create instant friendship
+                const existingFriendship = db.prepare('SELECT id FROM friends WHERE (requester_id = ? AND receiver_id = ?) OR (requester_id = ? AND receiver_id = ?)').get(inviterId, newUserId, newUserId, inviterId);
+                if (!existingFriendship) {
+                    db.prepare("INSERT INTO friends (requester_id, receiver_id, status) VALUES (?, ?, 'accepted')").run(inviterId, newUserId);
+                }
+            }
+        })();
+
         try {
             db.prepare('INSERT INTO user_logs (user_id, admin_id, action, details) VALUES (?, ?, ?, ?)').run(
                 newUserId, null, 'ACCOUNT_CREATED', 'חשבון המשתמש נוצר בהצלחה'
@@ -98,6 +185,7 @@ app.post('/api/auth/register', (req, res) => {
         }
 
         const user = db.prepare('SELECT id, username, email, phone, profile_image FROM users WHERE id = ?').get(newUserId);
+        user.invited_users = [];
         res.json({ success: true, user });
     } catch (err) {
         if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -109,7 +197,7 @@ app.post('/api/auth/register', (req, res) => {
 
 // POST /api/auth/login
 app.post('/api/auth/login', (req, res) => {
-    const { identifier, password } = req.body;
+    const { identifier, password, invite_token } = req.body;
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
 
     if (!identifier || !password) return res.status(400).json({ error: 'חסרים פרטים' });
@@ -118,7 +206,7 @@ app.post('/api/auth/login', (req, res) => {
     const potentialUser = db.prepare('SELECT id FROM users WHERE email = ? OR phone = ? OR username = ?').get(identifier, identifier, identifier);
 
     const user = db.prepare(
-        `SELECT id, username, email, phone, profile_image FROM users
+        `SELECT id, username, email, phone, profile_image, invited_by FROM users
          WHERE password_hash = ? AND (email = ? OR phone = ? OR username = ?)`
     ).get(hash, identifier, identifier, identifier);
 
@@ -143,6 +231,33 @@ app.post('/api/auth/login', (req, res) => {
             'success',
             ip
         );
+
+        // Process invite if logging in using a link
+        let inviterId = null;
+        if (invite_token) {
+            const invite = db.prepare('SELECT id, inviter_id, expires_at, used_at FROM invitations WHERE token = ?').get(invite_token);
+            if (invite && !invite.used_at && new Date() <= new Date(invite.expires_at)) {
+                inviterId = invite.inviter_id;
+
+                db.transaction(() => {
+                    db.prepare('UPDATE invitations SET used_at = CURRENT_TIMESTAMP WHERE id = ?').run(invite.id);
+
+                    // Update user's affiliation if they don't have one
+                    if (!user.invited_by) {
+                        db.prepare('UPDATE users SET invited_by = ? WHERE id = ?').run(inviterId, user.id);
+                    }
+
+                    // Create instant friendship
+                    const existingFriendship = db.prepare('SELECT id FROM friends WHERE (requester_id = ? AND receiver_id = ?) OR (requester_id = ? AND receiver_id = ?)').get(inviterId, user.id, user.id, inviterId);
+                    if (!existingFriendship) {
+                        db.prepare("INSERT INTO friends (requester_id, receiver_id, status) VALUES (?, ?, 'accepted')").run(inviterId, user.id);
+                    } else {
+                        // Upgrade to accepted if it was pending
+                        db.prepare("UPDATE friends SET status = 'accepted' WHERE id = ?").run(existingFriendship.id);
+                    }
+                })();
+            }
+        }
 
         let updateQuery = 'UPDATE users SET last_active_at = CURRENT_TIMESTAMP';
         const params = [];
@@ -172,6 +287,12 @@ app.post('/api/auth/login', (req, res) => {
 
     } catch (e) {
         console.error('Error logging successful login or updating user', e);
+    }
+
+    try {
+        user.invited_users = db.prepare('SELECT id, username, profile_image, created_at FROM users WHERE invited_by = ? ORDER BY created_at DESC').all(user.id);
+    } catch (e) {
+        user.invited_users = [];
     }
 
     res.json({ success: true, user });
@@ -228,6 +349,13 @@ const adminAuth = (req, res, next) => {
 app.get('/api/users/:id', (req, res) => {
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
+
+    try {
+        user.invited_users = db.prepare('SELECT id, username, profile_image, created_at FROM users WHERE invited_by = ? ORDER BY created_at DESC').all(req.params.id);
+    } catch (e) {
+        user.invited_users = [];
+    }
+
     res.json(user);
 });
 
@@ -373,6 +501,122 @@ app.delete('/api/friends/:requestId', (req, res) => {
         res.status(500).json({ error: 'Failed to remove friend or request' });
     }
 });
+
+// --- Invitations API ---
+app.post('/api/invitations', async (req, res) => {
+    const { inviter_id, emails } = req.body;
+    if (!inviter_id || !emails || !Array.isArray(emails) || emails.length === 0) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (emails.length > 10) {
+        return res.status(400).json({ error: 'ניתן לשלוח עד 10 הזמנות בכל פעם' });
+    }
+
+    try {
+        const inviter = db.prepare('SELECT username FROM users WHERE id = ?').get(inviter_id);
+        if (!inviter) return res.status(404).json({ error: 'User not found' });
+
+        const baseUrl = req.headers.origin || 'http://localhost:5173'; // Fallback for local dev
+        const successfulEmails = [];
+        const failedEmails = [];
+
+        // Note: For production Resend free tier we might need a verified domain to use as 'from'.
+        // By default Resend let's us use 'onboarding@resend.dev' for testing purposes, but only to our own verified email address.
+        // Assuming the user verified their domain in Resend to send to anyone, we use a generic from address.
+        // If not, Resend will throw an error and we catch it below.
+
+        for (const email of emails) {
+            // Trim and basic validate
+            const cleanEmail = email.trim();
+            if (!/^[^@]+@[^@]+\.[^@]+$/.test(cleanEmail)) {
+                failedEmails.push({ email: cleanEmail, reason: 'Invalid email format' });
+                continue;
+            }
+
+            // Check if already registered
+            const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(cleanEmail);
+            if (existingUser) {
+                failedEmails.push({ email: cleanEmail, reason: 'Already registered' });
+                continue;
+            }
+
+            const token = crypto.randomBytes(32).toString('hex');
+            // Expire in 7 days
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 7);
+
+            // DB insertion
+            db.prepare('INSERT INTO invitations (inviter_id, email, token, expires_at) VALUES (?, ?, ?, ?)').run(
+                inviter_id,
+                cleanEmail,
+                token,
+                expiresAt.toISOString()
+            );
+
+            const inviteLink = `${baseUrl}/?invite_token=${token}`;
+            const html = generateInvitationEmailHtml(inviter.username, inviteLink);
+
+            try {
+                await transporter.sendMail({
+                    from: 'Vee <onboarding@resend.dev>', // Change to verified domain when available e.g. hello@yourdomain.com
+                    to: cleanEmail,
+                    subject: `${inviter.username} הזמין/ה אותך להצטרף ל-Vee!`,
+                    html: html
+                });
+                successfulEmails.push(cleanEmail);
+            } catch (emailErr) {
+                console.error('Nodemailer send failed for', cleanEmail, emailErr);
+                failedEmails.push({ email: cleanEmail, reason: 'Email delivery failed' });
+            }
+        }
+
+        res.json({ success: true, sent: successfulEmails.length, successful: successfulEmails, failed: failedEmails });
+    } catch (err) {
+        console.error('Invitation generation error:', err);
+        res.status(500).json({ error: 'שגיאת שרת ביצירת ההזמנות' });
+    }
+});
+
+app.get('/api/invitations/verify/:token', (req, res) => {
+    const { token } = req.params;
+    try {
+        const invite = db.prepare(`
+            SELECT i.*, u.username as inviter_name, u.profile_image as inviter_image 
+            FROM invitations i
+            JOIN users u ON i.inviter_id = u.id
+            WHERE i.token = ?
+        `).get(token);
+
+        if (!invite) {
+            return res.status(404).json({ error: 'הזמנה זו לא קיימת או שגויה.' });
+        }
+
+        if (invite.used_at) {
+            return res.status(400).json({ error: 'כבר נעשה שימוש בהזמנה זו.' });
+        }
+
+        const now = new Date();
+        const expires = new Date(invite.expires_at);
+        if (now > expires) {
+            return res.status(400).json({ error: 'פג תוקפה של ההזמנה.' });
+        }
+
+        res.json({
+            valid: true,
+            email: invite.email,
+            inviter: {
+                id: invite.inviter_id,
+                name: invite.inviter_name,
+                image: invite.inviter_image
+            }
+        });
+    } catch (err) {
+        console.error('Verify token err:', err);
+        res.status(500).json({ error: 'שגיאת שרת בבדיקת ההזמנה' });
+    }
+});
+
 
 // --- File Upload API ---
 app.post('/api/upload', (req, res) => {
@@ -772,15 +1016,15 @@ app.delete('/api/checklists/:id', (req, res) => {
 // Add / Update / Delete single checklist item
 app.post('/api/checklists/:checklistId/items', (req, res) => {
     const { checklistId } = req.params;
-    let { content, order_index, parent_item_id, target_date, description, repeat_rule, time, duration } = req.body;
+    let { content, order_index, parent_item_id, target_date, description, repeat_rule, time, duration, priority } = req.body;
     try {
         if (order_index === undefined || order_index === null) {
             const maxOrder = db.prepare('SELECT MAX(order_index) as maxIdx FROM checklist_items WHERE checklist_id = ?').get(checklistId);
             order_index = (maxOrder && maxOrder.maxIdx !== null) ? maxOrder.maxIdx + 1 : 0;
         }
 
-        const result = db.prepare('INSERT INTO checklist_items (checklist_id, content, order_index, parent_item_id, target_date, description, repeat_rule, time, duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-            .run(checklistId, content, order_index, parent_item_id || null, target_date || null, description || null, repeat_rule || null, time || null, duration || 15);
+        const result = db.prepare('INSERT INTO checklist_items (checklist_id, content, order_index, parent_item_id, target_date, description, repeat_rule, time, duration, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+            .run(checklistId, content, order_index, parent_item_id || null, target_date || null, description || null, repeat_rule || null, time || null, duration || 15, priority || 4);
         const item = db.prepare('SELECT * FROM checklist_items WHERE id = ?').get(result.lastInsertRowid);
         res.json(item);
     } catch (err) {
@@ -823,7 +1067,7 @@ app.delete('/api/items/:itemId', (req, res) => {
     }
 });
 app.put('/api/items/:itemId', (req, res) => {
-    const { content, target_date, checklist_id, description, repeat_rule, time, duration } = req.body;
+    const { content, target_date, checklist_id, description, repeat_rule, time, duration, priority } = req.body;
     try {
         const updates = [];
         const params = [];
@@ -855,6 +1099,10 @@ app.put('/api/items/:itemId', (req, res) => {
         if (duration !== undefined) {
             updates.push('duration = ?');
             params.push(duration);
+        }
+        if (priority !== undefined) {
+            updates.push('priority = ?');
+            params.push(priority);
         }
 
         if (updates.length > 0) {

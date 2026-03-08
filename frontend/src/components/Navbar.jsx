@@ -18,14 +18,18 @@ const Navbar = () => {
     ];
 
     return (
-        <nav className="glass-panel" style={{
-            padding: '0.4rem 0.75rem',
-            marginBottom: '0.5rem',
+        <nav style={{
+            padding: '0.6rem 1.2rem',
+            margin: '0.5rem 0.5rem 1rem 0.5rem',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            width: '100%',
+            width: 'calc(100% - 1rem)',
             boxSizing: 'border-box',
+            background: 'var(--bg-secondary)',
+            borderRadius: 'var(--radius-full)',
+            boxShadow: 'var(--card-shadow)',
+            border: '1px solid var(--border-color)',
         }}>
             {/* LEFT icons — pushed to far left */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -47,12 +51,13 @@ const Navbar = () => {
                             key={link.path}
                             to={link.path}
                             style={{
-                                display: 'flex', alignItems: 'center', gap: '0.4rem',
-                                padding: '0.35rem 0.75rem', borderRadius: 'var(--radius-full)',
+                                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                padding: '0.45rem 1rem', borderRadius: 'var(--radius-full)',
                                 background: isActive ? 'var(--primary-color)' : 'transparent',
-                                color: isActive ? '#fff' : 'var(--text-primary)',
-                                fontWeight: isActive ? 600 : 400,
-                                fontSize: '0.88rem',
+                                color: isActive ? 'var(--bg-secondary)' : 'var(--text-primary)',
+                                fontWeight: isActive ? 600 : 500,
+                                fontSize: '0.92rem',
+                                transition: 'var(--transition)'
                             }}
                         >
                             <Icon size={16} />
@@ -65,9 +70,11 @@ const Navbar = () => {
             {/* RIGHT — username pushed to far right */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <div style={{
-                    background: 'var(--bg-secondary)', padding: '0.2rem 0.75rem',
+                    padding: '0.35rem 1rem',
                     borderRadius: 'var(--radius-full)', border: '1px solid var(--border-color)',
-                    fontSize: '0.82rem', color: 'var(--text-secondary)'
+                    fontSize: '0.88rem', color: 'var(--text-secondary)',
+                    background: 'var(--bg-color)',
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
                 }}>
                     שלום, <b style={{ color: 'var(--text-primary)' }}>{user.username}</b>
                 </div>

@@ -41,6 +41,10 @@ function App() {
 
   return (
     <>
+      {/* Background Orbs for overall theme aesthetic */}
+      <div className="bg-orb bg-orb-1"></div>
+      <div className="bg-orb bg-orb-2"></div>
+
       <DynamicTitle />
       <Toaster position="bottom-right" />
       <Routes>

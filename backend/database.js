@@ -136,6 +136,17 @@ const initDb = () => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS invitations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      inviter_id INTEGER NOT NULL,
+      email TEXT NOT NULL,
+      token TEXT UNIQUE NOT NULL,
+      expires_at DATETIME NOT NULL,
+      used_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (inviter_id) REFERENCES users (id) ON DELETE CASCADE
+    );
   `);
 
   // Migration: Add profile_image to users if missing
@@ -190,6 +201,12 @@ const initDb = () => {
     db.exec('ALTER TABLE checklists ADD COLUMN project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE');
   }
 
+  // Migration: Add invited_by to users
+  const hasInvitedBy = tableInfoUsers.some(col => col.name === 'invited_by');
+  if (!hasInvitedBy) {
+    db.exec('ALTER TABLE users ADD COLUMN invited_by INTEGER REFERENCES users(id) ON DELETE SET NULL');
+  }
+
   // Migration: Add order_index to checklists
   const hasChecklistOrderIndex = tableInfoChecklists.some(col => col.name === 'order_index');
   if (!hasChecklistOrderIndex) {
@@ -231,6 +248,12 @@ const initDb = () => {
   const hasDuration = tableInfoItems.some(col => col.name === 'duration');
   if (!hasDuration) {
     db.exec('ALTER TABLE checklist_items ADD COLUMN duration INTEGER DEFAULT 15');
+  }
+
+  // Migration: Add priority to checklist_items if missing
+  const hasPriority = tableInfoItems.some(col => col.name === 'priority');
+  if (!hasPriority) {
+    db.exec('ALTER TABLE checklist_items ADD COLUMN priority INTEGER DEFAULT 4');
   }
 
   // Migration: Add active_days to projects if missing

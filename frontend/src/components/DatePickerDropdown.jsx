@@ -202,7 +202,7 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
                             cursor: 'pointer', color: 'var(--text-primary)', fontSize: '0.87rem',
                             fontFamily: 'inherit', direction: 'rtl',
                         }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
@@ -228,7 +228,7 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
                     {/* ← next month (left side in RTL visual = future) */}
                     <button onClick={goNext} onMouseDown={e => e.stopPropagation()}
                         style={navBtnStyle()}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         title="חודש הבא"
                     >
@@ -236,14 +236,14 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
                     </button>
                     <button onClick={goToday} onMouseDown={e => e.stopPropagation()}
                         style={{ ...navBtnStyle(), fontSize: '10px', width: 20, height: 20, borderRadius: '50%' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         title="חודש נוכחי"
                     >○</button>
                     {/* → prev month (right side in RTL visual = past) */}
                     <button onClick={goPrev} onMouseDown={e => e.stopPropagation()}
                         style={navBtnStyle()}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         title="חודש קודם"
                     >
@@ -284,7 +284,7 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
                                     transition: 'background 0.1s',
                                     fontFamily: 'inherit',
                                 }}
-                                onMouseEnter={e => { if (d && !isSelFn(d)) e.currentTarget.style.background = 'var(--bg-secondary)'; }}
+                                onMouseEnter={e => { if (d && !isSelFn(d)) e.currentTarget.style.background = 'var(--dropdown-hover)'; }}
                                 onMouseLeave={e => { if (d && !isSelFn(d)) e.currentTarget.style.background = 'transparent'; }}
                             >
                                 {d || ''}

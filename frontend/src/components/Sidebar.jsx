@@ -138,27 +138,33 @@ const Sidebar = ({ isOpen, onToggle }) => {
                 <div className="sidebar-header">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '0.5rem' }}>
                         {/* User Selector */}
-                        <div ref={userMenuRef} style={{ position: 'relative', flexGrow: 1, minWidth: 0 }}>
+                        <div ref={userMenuRef} style={{ position: 'relative', flexGrow: 1, minWidth: 0, paddingRight: '0.25rem' }}>
                             <button
                                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                                 style={{
-                                    display: 'flex', alignItems: 'center', gap: '0.65rem',
-                                    background: 'transparent', border: 'none', cursor: 'pointer',
-                                    padding: '0.25rem', borderRadius: 'var(--radius-sm)',
-                                    transition: 'var(--transition)', width: '100%',
-                                    color: 'var(--text-primary)'
+                                    display: 'flex', alignItems: 'center', gap: '0.8rem',
+                                    background: isUserMenuOpen ? 'var(--dropdown-hover)' : 'transparent',
+                                    border: 'none', cursor: 'pointer',
+                                    padding: '0.5rem 0.6rem', borderRadius: 'var(--radius-md)',
+                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', width: '100%',
+                                    color: 'var(--text-primary)',
+                                    boxShadow: isUserMenuOpen ? '0 4px 12px rgba(0,0,0,0.05)' : 'none'
                                 }}
+                                onMouseEnter={e => !isUserMenuOpen && (e.currentTarget.style.background = 'var(--dropdown-hover)')}
+                                onMouseLeave={e => !isUserMenuOpen && (e.currentTarget.style.background = 'transparent')}
                                 className="sidebar-menu-item"
                             >
                                 <div style={{
-                                    width: '26px', height: '26px', borderRadius: '50%',
+                                    width: '32px', height: '32px', borderRadius: '50%',
                                     background: user.profile_image ? `url(${API_URL}${user.profile_image}) center/cover` : 'var(--primary-color)',
-                                    color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
+                                    color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0,
+                                    border: '1.5px solid var(--border-color)',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                                 }}>
-                                    {!user.profile_image && <UserIcon size={14} />}
+                                    {!user.profile_image && <UserIcon size={16} />}
                                 </div>
-                                <span style={{ fontWeight: 600, fontSize: '0.85rem', fontFamily: 'inherit', letterSpacing: '0.2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.username}</span>
-                                <ChevronDown size={14} style={{ opacity: 0.6, transform: isUserMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.2s', marginTop: '1px' }} />
+                                <span style={{ fontWeight: 700, fontSize: '0.9rem', fontFamily: 'inherit', letterSpacing: '-0.2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.username}</span>
+                                <ChevronDown size={14} style={{ opacity: 0.6, transform: isUserMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)', marginTop: '1px', marginRight: 'auto' }} />
                             </button>
 
                             {isUserMenuOpen && (
@@ -176,19 +182,19 @@ const Sidebar = ({ isOpen, onToggle }) => {
                         </div>
 
                         {/* Top Utility Icons */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
-                            <button className="btn-icon-soft" style={{ padding: '0.35rem', color: 'var(--text-secondary)', position: 'relative' }}>
-                                <Bell size={18} strokeWidth={1.8} />
-                                <span style={{ position: 'absolute', top: 5, left: 6, width: 7, height: 7, background: '#f97316', borderRadius: '50%', border: '2px solid var(--bg-secondary)' }}></span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0, paddingLeft: '0.5rem' }}>
+                            <button className="btn-icon-soft" style={{ width: '36px', height: '36px', position: 'relative' }}>
+                                <Bell size={20} strokeWidth={1.8} />
+                                <span style={{ position: 'absolute', top: 8, left: 8, width: 8, height: 8, background: 'var(--primary-color)', borderRadius: '50%', border: '2px solid var(--bg-secondary)', boxShadow: '0 0 0 1px rgba(0,0,0,0.05)' }}></span>
                             </button>
                             {isOpen && (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onToggle(); }}
                                     className="btn-icon-soft"
-                                    style={{ padding: '0.45rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    style={{ width: '36px', height: '36px' }}
                                     title="סגור סרגל"
                                 >
-                                    <img src="/sidebar_is_open.svg" alt="close sidebar" style={{ width: '30px', height: 'auto', filter: 'var(--invert-icon)', display: 'block' }} />
+                                    <img src="/sidebar_is_open.svg" alt="close sidebar" style={{ width: '30px', height: 'auto', filter: 'var(--invert-icon)', display: 'block', transition: 'transform 0.2s ease' }} />
                                 </button>
                             )}
                         </div>
@@ -227,15 +233,16 @@ const Sidebar = ({ isOpen, onToggle }) => {
                                         <div style={{ width: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0 }}>
                                             {link.isAddTask ? (
                                                 <div style={{
-                                                    width: '24px',
-                                                    height: '24px',
-                                                    borderRadius: '50%',
+                                                    width: '26px',
+                                                    height: '26px',
+                                                    borderRadius: 'var(--radius-sm)',
                                                     backgroundColor: 'var(--primary-color)',
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    justifyContent: 'center'
+                                                    justifyContent: 'center',
+                                                    transition: 'transform 0.2s',
                                                 }}>
-                                                    <Plus size={16} color="white" strokeWidth={2} />
+                                                    <Plus size={16} style={{ color: 'var(--bg-secondary)' }} strokeWidth={2.5} />
                                                 </div>
                                             ) : (
                                                 <Icon
@@ -269,13 +276,14 @@ const Sidebar = ({ isOpen, onToggle }) => {
                     <div className="nav-section" style={{ marginTop: '0.2rem' }}>
                         <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0', marginBottom: '0', color: 'var(--text-primary)', position: 'relative' }} ref={addMenuRef}>
                             <Link
+                                autoFocus={false}
                                 to="/projects"
                                 onClick={() => { if (window.innerWidth <= 992) onToggle(); }}
                                 className="nav-link"
-                                style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0', flexGrow: 1, borderRadius: 'var(--radius-sm)', transition: 'background 0.2s' }}
+                                style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.8rem 0.5rem', flexGrow: 1, borderRadius: 'var(--radius-sm)', transition: 'background 0.2s' }}
                             >
-                                <Folder size={20} strokeWidth={1.8} style={{ color: 'var(--primary-color)' }} />
-                                <span style={{ fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}>הפרויקטים שלי</span>
+                                <Folder size={18} strokeWidth={2} style={{ color: 'var(--text-primary)' }} />
+                                <span style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.3px', cursor: 'pointer' }}>הפרויקטים שלי</span>
                             </Link>
                             <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
                                 <button

@@ -198,21 +198,23 @@ const Home = () => {
                 />
 
                 {projects.length === 0 ? (
-                    <div className="card" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
-                        <Folder size={64} style={{ color: 'var(--text-secondary)', margin: '0 auto 1.5rem', opacity: 0.5 }} />
-                        <h3 style={{ marginBottom: '1rem' }}>אין לך פרויקטים עדיין</h3>
-                        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>התחל על ידי יצירת פרויקט חדש לדוגמה &quot;Vee&quot;.</p>
-                        <button onClick={() => setIsAddMenuOpen(true)} className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem' }}>
+                    <div className="card" style={{ padding: '4rem 2rem', textAlign: 'center', border: 'none', borderRadius: 'var(--radius-lg)', background: 'var(--bg-secondary)', boxShadow: 'var(--card-shadow)', transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
+                        <div style={{ width: '80px', height: '80px', background: 'var(--sidebar-active-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', transform: 'scale(1.1)' }}>
+                            <Folder size={40} style={{ color: 'var(--primary-color)', strokeWidth: 2 }} />
+                        </div>
+                        <h3 style={{ marginBottom: '1rem', fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>אין לך פרויקטים עדיין</h3>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '1rem', maxWidth: '400px', margin: '0 auto 2.5rem' }}>התחיל/י על ידי יצירת פרויקט חדש לדוגמה "Vee".</p>
+                        <button onClick={() => setIsAddMenuOpen(true)} className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', padding: '0.8rem 2rem', borderRadius: 'var(--radius-full)', fontWeight: 600, boxShadow: '0 4px 12px rgba(226, 123, 88, 0.3)' }}>
                             הוסף פרויקט חדש <ChevronDown size={16} />
                         </button>
                     </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ paddingBottom: '0.5rem', borderBottom: '1px solid rgba(150,150,150,0.2)', marginBottom: '1rem' }}>
-                            <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{projects.length} פרויקטים</span>
+                        <div style={{ paddingBottom: '0.8rem', borderBottom: '2px dashed var(--border-color)', marginBottom: '1.5rem' }}>
+                            <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-secondary)', letterSpacing: '0.5px' }}>{projects.length} פרויקטים</span>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                             {projects.map((project) => (
                                 <Link
                                     key={project.id}
@@ -220,18 +222,42 @@ const Home = () => {
                                     style={{
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '0.75rem',
-                                        padding: '0.6rem 0.5rem',
+                                        justifyContent: 'space-between',
+                                        padding: '1.25rem 1.5rem',
                                         textDecoration: 'none',
                                         color: 'var(--text-primary)',
-                                        transition: 'background 0.2s',
-                                        borderRadius: 'var(--radius-sm)'
+                                        transition: 'var(--transition)',
+                                        borderRadius: 'var(--radius-md)',
+                                        background: 'var(--bg-secondary)',
+                                        boxShadow: 'var(--card-shadow)',
+                                        border: '1px solid transparent'
                                     }}
-                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
-                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                    onMouseEnter={e => {
+                                        e.currentTarget.style.transform = 'translateY(-3px)';
+                                        e.currentTarget.style.boxShadow = 'var(--float-hover-shadow)';
+                                        e.currentTarget.style.borderColor = 'rgba(79, 70, 229, 0.15)';
+                                        e.currentTarget.querySelector('.project-arrow').style.transform = 'translateX(-4px)';
+                                        e.currentTarget.querySelector('.project-arrow').style.opacity = '1';
+                                        e.currentTarget.querySelector('.project-icon').style.color = 'var(--primary-color)';
+                                        e.currentTarget.querySelector('.project-icon').style.background = 'var(--sidebar-active-bg)';
+                                    }}
+                                    onMouseLeave={e => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = 'var(--card-shadow)';
+                                        e.currentTarget.style.borderColor = 'transparent';
+                                        e.currentTarget.querySelector('.project-arrow').style.transform = 'translateX(0)';
+                                        e.currentTarget.querySelector('.project-arrow').style.opacity = '0';
+                                        e.currentTarget.querySelector('.project-icon').style.color = 'var(--text-secondary)';
+                                        e.currentTarget.querySelector('.project-icon').style.background = 'transparent';
+                                    }}
                                 >
-                                    <Hash size={18} style={{ color: '#b3b3b3' }} />
-                                    <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>{project.title}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <div className="project-icon" style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', transition: 'all 0.3s ease' }}>
+                                            <Folder size={18} strokeWidth={2} />
+                                        </div>
+                                        <span style={{ fontSize: '1rem', fontWeight: 600 }}>{project.title}</span>
+                                    </div>
+                                    <ArrowRight className="project-arrow" size={18} style={{ color: 'var(--primary-color)', opacity: 0, transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' }} />
                                 </Link>
                             ))}
                         </div>

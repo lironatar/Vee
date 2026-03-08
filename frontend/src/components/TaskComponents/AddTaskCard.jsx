@@ -22,6 +22,8 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
     const [selectedChecklist, setSelectedChecklist] = useState(checklist);
     const [selectedProject, setSelectedProject] = useState(defaultProject || null);
     const [showProjectSelector, setShowProjectSelector] = useState(false);
+    const [priority, setPriority] = useState(4);
+    const [showPriorityMenu, setShowPriorityMenu] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const inputContainerRef = useRef(null);
 
@@ -40,6 +42,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
     const dateBtnRef = useRef(null);
     const timeBtnRef = useRef(null);
     const projectBtnRef = useRef(null);
+    const priorityBtnRef = useRef(null);
 
     useEffect(() => {
         if (initialTime) setTime(initialTime);
@@ -81,6 +84,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
         window.globalNewItemRepeatRule = repeatRule || null;
         window.globalNewItemTime = time || null;
         window.globalNewItemDuration = duration || 15;
+        window.globalNewItemPriority = priority || 4;
 
         // Auto-create inbox if needed
         let targetChecklistId = selectedChecklist?.id || checklist.id;
@@ -122,6 +126,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
         setDuration(15);
         setNewItemDate('');
         setRepeatRule(null);
+        setPriority(4);
         setDynamicPlaceholder(getRandomTaskPlaceholder());
 
         if (inputContainerRef.current) {
@@ -153,7 +158,16 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
     });
 
     return (
-        <div ref={cardRef} className="add-task-card-container" style={{ border: isFocused ? '1px solid #c0c0c0' : '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'visible', position: 'relative', background: 'var(--bg-color)', boxShadow: isFocused ? '0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05)' : '0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.02)', transition: 'var(--transition)' }}>
+        <div ref={cardRef} className="add-task-card-container" style={{
+            border: isFocused ? '1px solid rgba(79, 70, 229, 0.3)' : '1px solid transparent',
+            borderRadius: 'var(--radius-md)',
+            overflow: 'visible',
+            position: 'relative',
+            background: 'var(--bg-secondary)',
+            boxShadow: isFocused ? 'var(--float-hover-shadow)' : 'var(--card-shadow)',
+            transition: 'var(--transition)',
+            transform: isFocused ? 'translateY(-2px)' : 'translateY(0)'
+        }}>
             <div style={{ padding: '0.4rem 0.6rem' }}>
                 <div
                     ref={inputContainerRef}
@@ -382,13 +396,67 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                     </DatePickerDropdown>
                 </div>
 
-                <button type="button" style={{ ...pillStyle(false), transition: 'var(--transition)' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-color)'}
-                >
-                    <Flag size={14} style={{ opacity: 0.8 }} />
-                    עדיפות
-                </button>
+                <div style={{ position: 'relative' }}>
+                    <button
+                        ref={priorityBtnRef}
+                        type="button"
+                        onClick={() => setShowPriorityMenu(!showPriorityMenu)}
+                        style={{
+                            ...pillStyle(priority !== 4, priority === 1 ? 'var(--priority-1)' : priority === 2 ? 'var(--priority-2)' : priority === 3 ? 'var(--priority-3)' : null),
+                            transition: 'var(--transition)'
+                        }}
+                        onMouseEnter={e => !showPriorityMenu && (e.currentTarget.style.background = 'var(--dropdown-hover)')}
+                        onMouseLeave={e => !showPriorityMenu && (e.currentTarget.style.background = priority !== 4 ? 'color-mix(in srgb, var(--primary-color) 8%, transparent)' : 'var(--bg-color)')}
+                    >
+                        <Flag size={14} style={{ opacity: priority !== 4 ? 1 : 0.8 }} />
+                        {priority === 1 ? 'עדיפות 1' : priority === 2 ? 'עדיפות 2' : priority === 3 ? 'עדיפות 3' : 'עדיפות'}
+                    </button>
+
+                    {showPriorityMenu && (
+                        <div style={{
+                            position: 'absolute', top: '100%', right: '0', marginTop: '0.4rem',
+                            background: 'var(--bg-color)', border: '1px solid var(--border-color)',
+                            borderRadius: '8px', boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                            overflow: 'hidden', zIndex: 1000, display: 'flex', flexDirection: 'column',
+                            minWidth: '150px'
+                        }}>
+                            {[
+                                { level: 1, label: 'עדיפות 1', color: 'var(--priority-1)' },
+                                { level: 2, label: 'עדיפות 2', color: 'var(--priority-2)' },
+                                { level: 3, label: 'עדיפות 3', color: 'var(--priority-3)' },
+                                { level: 4, label: 'עדיפות 4', color: 'var(--text-secondary)' }
+                            ].map(p => (
+                                <button
+                                    key={p.level}
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPriority(p.level);
+                                        setShowPriorityMenu(false);
+                                    }}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '0.6rem',
+                                        width: '100%', padding: '0.6rem 0.8rem', border: 'none',
+                                        background: priority === p.level ? 'var(--dropdown-selected)' : 'transparent',
+                                        cursor: 'pointer', textAlign: 'right', fontFamily: 'inherit',
+                                        borderBottom: p.level !== 4 ? '1px solid var(--border-color)' : 'none',
+                                        transition: 'background 0.15s'
+                                    }}
+                                    onMouseEnter={e => {
+                                        if (priority !== p.level) e.currentTarget.style.background = 'var(--dropdown-hover)';
+                                    }}
+                                    onMouseLeave={e => {
+                                        if (priority !== p.level) e.currentTarget.style.background = 'transparent';
+                                        else e.currentTarget.style.background = 'var(--dropdown-selected)';
+                                    }}
+                                >
+                                    <Flag size={14} style={{ color: p.color }} fill={p.level !== 4 ? p.color : 'transparent'} />
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: priority === p.level ? 600 : 400 }}>{p.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
                 {repeatRule && (
                     <span style={{ ...pillStyle(true), cursor: 'default' }}>
@@ -436,7 +504,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                                 transition: 'var(--transition)',
                                 marginLeft: 'auto'
                             }}
-                            onMouseEnter={e => !showProjectSelector && (e.currentTarget.style.background = 'var(--hover-bg)')}
+                            onMouseEnter={e => !showProjectSelector && (e.currentTarget.style.background = 'var(--dropdown-hover)')}
                             onMouseLeave={e => !showProjectSelector && (e.currentTarget.style.background = 'transparent')}
                         >
                             {(() => {
@@ -464,7 +532,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                         ביטול
                     </button>
                     <button type="button" onClick={handleSubmit} disabled={!newItemContent.trim()} className="desktop-only"
-                        style={{ padding: '0.45rem 1.25rem', borderRadius: 'var(--radius-sm)', border: 'none', background: newItemContent.trim() ? '#2f3b4c' : 'rgba(47, 59, 76, 0.4)', color: 'white', cursor: newItemContent.trim() ? 'pointer' : 'default', fontWeight: 700, fontSize: '0.87rem', transition: 'var(--transition)', boxShadow: newItemContent.trim() ? '0 2px 6px rgba(47, 59, 76, 0.2)' : 'none' }}>
+                        style={{ padding: '0.45rem 1.25rem', borderRadius: 'var(--radius-sm)', border: 'none', background: newItemContent.trim() ? 'var(--primary-color)' : 'rgba(79, 70, 229, 0.4)', color: 'white', cursor: newItemContent.trim() ? 'pointer' : 'default', fontWeight: 700, fontSize: '0.87rem', transition: 'var(--transition)', boxShadow: newItemContent.trim() ? '0 2px 6px rgba(79, 70, 229, 0.2)' : 'none' }}>
                         הוסף משימה
                     </button>
                     <button type="button" onClick={() => { if (setAddingToList) setAddingToList(null); }} className="mobile-only" style={{ padding: '0.5rem', border: 'none', background: 'var(--bg-gray-soft)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', transition: 'background 0.2s' }}
@@ -473,7 +541,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                         <X size={20} />
                     </button>
                     <button type="button" onClick={handleSubmit} disabled={!newItemContent.trim()} className="mobile-only"
-                        style={{ padding: '0.5rem', border: 'none', background: newItemContent.trim() ? '#2f3b4c' : 'rgba(47, 59, 76, 0.4)', color: 'white', borderRadius: 'var(--radius-sm)', cursor: newItemContent.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        style={{ padding: '0.5rem', border: 'none', background: newItemContent.trim() ? 'var(--primary-color)' : 'rgba(79, 70, 229, 0.4)', color: 'white', borderRadius: 'var(--radius-sm)', cursor: newItemContent.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <SendHorizontal size={20} style={{ transform: 'scaleX(-1)' }} />
                     </button>
                 </div>

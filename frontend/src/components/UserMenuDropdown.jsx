@@ -25,10 +25,10 @@ const UserMenuDropdown = ({
             top: '100%',
             right: 0,
             marginTop: '0.6rem',
-            background: '#ffffff',
+            background: 'var(--bg-color)',
             border: '1px solid var(--border-color)',
             borderRadius: 'var(--radius-md)',
-            boxShadow: '2px 6px 20px rgba(0,0,0,0.12), 0 -2px 10px rgba(0,0,0,0.03)',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.18)',
             width: '300px',
             zIndex: 1000,
             overflow: 'hidden',
@@ -38,14 +38,16 @@ const UserMenuDropdown = ({
         }}>
             <button
                 onClick={() => handleAction(() => setIsFriendsOpen(true))}
-                className="sidebar-menu-item user-menu-item"
                 style={{
                     display: 'flex', alignItems: 'center', gap: '0.9rem',
-                    padding: '0.85rem 1.25rem', borderBottom: '1px solid #f0f0f0',
+                    padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--border-color)',
                     background: 'transparent', border: 'none', cursor: 'pointer',
-                    textAlign: 'right', width: '100%', color: '#1a1a1a',
-                    fontSize: '1.05rem', fontWeight: 500
+                    textAlign: 'right', width: '100%', color: 'var(--text-primary)',
+                    fontSize: '1.05rem', fontWeight: 500, fontFamily: 'inherit',
+                    transition: 'background 0.15s'
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
                 <Users size={20} opacity={0.8} />
                 <span>חברים</span>
@@ -53,14 +55,16 @@ const UserMenuDropdown = ({
 
             <button
                 onClick={() => handleAction(() => { setInitialSettingsTab('account'); setIsSettingsOpen(true); })}
-                className="sidebar-menu-item user-menu-item"
                 style={{
                     display: 'flex', alignItems: 'center', gap: '0.9rem',
-                    padding: '0.85rem 1.25rem', borderBottom: '1px solid #f0f0f0',
+                    padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--border-color)',
                     background: 'transparent', border: 'none', cursor: 'pointer',
-                    textAlign: 'right', width: '100%', color: '#1a1a1a',
-                    fontSize: '1.05rem', fontWeight: 500
+                    textAlign: 'right', width: '100%', color: 'var(--text-primary)',
+                    fontSize: '1.05rem', fontWeight: 500, fontFamily: 'inherit',
+                    transition: 'background 0.15s'
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
                 <Settings size={20} opacity={0.8} />
                 <span>הגדרות חשבון</span>
@@ -68,31 +72,35 @@ const UserMenuDropdown = ({
 
             <button
                 onClick={() => handleAction(toggleTheme)}
-                className="sidebar-menu-item user-menu-item"
                 style={{
                     display: 'flex', alignItems: 'center', gap: '0.9rem',
                     padding: '0.85rem 1.25rem', background: 'transparent',
                     border: 'none', cursor: 'pointer', textAlign: 'right',
-                    width: '100%', color: '#1a1a1a',
-                    fontSize: '1.05rem', fontWeight: 500
+                    width: '100%', color: 'var(--text-primary)',
+                    fontSize: '1.05rem', fontWeight: 500, fontFamily: 'inherit',
+                    transition: 'background 0.15s'
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
                 {theme === 'light' ? <Moon size={20} opacity={0.8} /> : <Sun size={20} opacity={0.8} />}
                 <span>{theme === 'light' ? 'מצב לילה' : 'מצב יום'}</span>
             </button>
 
-            <div style={{ height: '1px', background: '#f0f0f0', margin: '0.2rem 0' }} />
+            <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.2rem 0' }} />
 
             <button
                 onClick={() => handleAction(logout)}
-                className="sidebar-menu-item user-menu-item"
                 style={{
                     display: 'flex', alignItems: 'center', gap: '0.9rem',
                     padding: '0.85rem 1.25rem', background: 'transparent',
                     border: 'none', cursor: 'pointer', textAlign: 'right',
                     width: '100%', color: 'var(--danger-color)',
-                    fontSize: '1.05rem', fontWeight: 600
+                    fontSize: '1.05rem', fontWeight: 600, fontFamily: 'inherit',
+                    transition: 'background 0.15s'
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
                 <LogOut size={20} opacity={0.8} />
                 <span>התנתקות</span>

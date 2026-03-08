@@ -31,6 +31,34 @@ const SortableTaskItem = ({
         isCompleted = isCompletedFallback;
     }
 
+    // Determine Priority Color
+    // Priority 1: High (Red), 2: Medium (Orange), 3: Low (Blue), 4: Default (Gray)
+    const priority = item.priority || 4;
+    let priorityColor = 'var(--text-secondary)'; // Default P4
+    let priorityHoverColor = '#ccc'; // Default P4 hover
+
+    if (priority === 1) {
+        priorityColor = 'var(--priority-1)';
+        priorityHoverColor = 'var(--priority-1)';
+    } else if (priority === 2) {
+        priorityColor = 'var(--priority-2)';
+        priorityHoverColor = 'var(--priority-2)';
+    } else if (priority === 3) {
+        priorityColor = 'var(--priority-3)';
+        priorityHoverColor = 'var(--priority-3)';
+    }
+
+    const playCompletionSound = () => {
+        try {
+            // A simple, pleasant pop/ding sound for checking off tasks
+            const audio = new Audio('https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3?filename=success-1-6297.mp3');
+            audio.volume = 0.5;
+            audio.play();
+        } catch (error) {
+            console.error('Error playing sound:', error);
+        }
+    };
+
     const isAddingHere = addingToItem === item.id;
 
     const {
@@ -70,24 +98,45 @@ const SortableTaskItem = ({
                     style={{
                         display: 'flex',
                         alignItems: 'flex-start',
-                        background: 'transparent',
+                        background: 'var(--bg-secondary)',
                         cursor: 'pointer',
-                        transition: 'all 0.15s ease',
+                        transition: 'var(--transition)',
                         position: 'relative',
-                        borderBottom: compact ? 'none' : '1px solid var(--border-color)',
-                        padding: compact ? '2px 0' : '8px 0',
+                        border: '1px solid transparent',
+                        borderRadius: compact ? '4px' : 'var(--radius-md)',
+                        padding: compact ? '6px 8px' : '12px 16px',
+                        boxShadow: 'var(--card-shadow)',
+                        marginBottom: compact ? '0' : '8px'
+                    }}
+                    onMouseEnter={(e) => {
+                        if (!compact) {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = 'var(--float-hover-shadow)';
+                            e.currentTarget.style.borderColor = 'rgba(79, 70, 229, 0.15)';
+                        }
+                        const actions = e.currentTarget.querySelector('.task-actions');
+                        if (actions) actions.style.opacity = '1';
+                    }}
+                    onMouseLeave={(e) => {
+                        if (!compact) {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = 'var(--card-shadow)';
+                            e.currentTarget.style.borderColor = 'transparent';
+                        }
+                        const actions = e.currentTarget.querySelector('.task-actions');
+                        if (actions) actions.style.opacity = '0';
                     }}
                 >
                     <div style={{
                         position: 'absolute',
-                        right: '-24px',
+                        right: compact ? '-18px' : '-24px',
                         width: '24px',
                         display: 'flex',
                         alignItems: 'flex-start',
                         justifyContent: 'center',
-                        height: '24px',
+                        height: '100%',
                         zIndex: 10,
-                        marginTop: '0'
+                        top: 0
                     }}>
                         {!isCompleted && depth === 0 && (
                             <div
@@ -121,7 +170,7 @@ const SortableTaskItem = ({
                         <div
                             className="check-circle"
                             style={{
-                                color: isCompleted ? 'var(--success-color)' : 'var(--text-secondary)',
+                                color: isCompleted ? 'var(--success-color)' : priorityColor,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -132,6 +181,9 @@ const SortableTaskItem = ({
                             }}
                             onClick={(e) => {
                                 e.stopPropagation();
+                                if (!isCompleted) {
+                                    playCompletionSound();
+                                }
                                 toggleItem(item.id, isCompleted);
                             }}
                         >
@@ -158,19 +210,27 @@ const SortableTaskItem = ({
                                             width: 18,
                                             height: 18,
                                             borderRadius: '50%',
-                                            border: '1.5px solid #ccc',
-                                            background: 'transparent',
+                                            border: `1.5px solid ${priority === 4 ? '#ccc' : priorityColor}`,
+                                            background: priority !== 4 ? `rgba(${priority === 1 ? '209, 69, 59' : priority === 2 ? '235, 137, 9' : '36, 111, 224'}, 0.08)` : 'transparent',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             transition: 'all 0.2s ease',
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.background = priority !== 4 ? `rgba(${priority === 1 ? '209, 69, 59' : priority === 2 ? '235, 137, 9' : '36, 111, 224'}, 0.15)` : 'rgba(0,0,0,0.05)';
+                                            e.currentTarget.querySelector('.hover-check').style.opacity = 1;
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.background = priority !== 4 ? `rgba(${priority === 1 ? '209, 69, 59' : priority === 2 ? '235, 137, 9' : '36, 111, 224'}, 0.08)` : 'transparent';
+                                            e.currentTarget.querySelector('.hover-check').style.opacity = 0;
                                         }}
                                     >
                                         <Check
                                             className="hover-check"
                                             size={10}
                                             strokeWidth={2.6}
-                                            style={{ color: '#ccc', opacity: 0, transition: 'opacity 0.2s' }}
+                                            style={{ color: priorityHoverColor, opacity: 0, transition: 'opacity 0.2s' }}
                                         />
                                     </div>
                                 )}

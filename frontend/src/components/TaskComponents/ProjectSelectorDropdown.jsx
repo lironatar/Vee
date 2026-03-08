@@ -86,15 +86,15 @@ const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selecte
                     alignItems: 'center',
                     gap: '0.6rem',
                     cursor: 'pointer',
-                    background: isSelected ? 'var(--bg-secondary)' : 'transparent',
+                    background: isSelected ? 'var(--dropdown-selected)' : 'transparent',
                     color: 'var(--text-primary)',
                     fontSize: '0.85rem',
                     borderRadius: 'var(--radius-sm)',
                     margin: '0 0.25rem',
                     transition: 'background 0.15s ease'
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
-                onMouseLeave={e => e.currentTarget.style.background = isSelected ? 'var(--bg-secondary)' : 'transparent'}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
+                onMouseLeave={e => e.currentTarget.style.background = isSelected ? 'var(--dropdown-selected)' : 'transparent'}
             >
                 <List size={14} color={iconColor} style={{ opacity: isInbox ? 0.9 : 0.6 }} />
                 <span style={{ flexGrow: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: isSelected ? 600 : 400 }}>
@@ -136,14 +136,14 @@ const ProjectSelectorDropdown = ({ isOpen, onClose, anchorRef, onSelect, selecte
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.5rem',
-                        background: isProjectSelected ? 'rgba(var(--primary-rgb, 36, 111, 224), 0.08)' : 'transparent',
+                        background: isProjectSelected ? 'var(--dropdown-selected)' : 'transparent',
                         cursor: 'pointer',
                         borderRadius: 'var(--radius-sm)',
                         transition: 'all 0.15s ease',
                         margin: '0 0.25rem'
                     }}
-                    onMouseEnter={e => e.currentTarget.style.background = isProjectSelected ? 'rgba(var(--primary-rgb, 36, 111, 224), 0.12)' : 'var(--bg-secondary)'}
-                    onMouseLeave={e => e.currentTarget.style.background = isProjectSelected ? 'rgba(var(--primary-rgb, 36, 111, 224), 0.08)' : 'transparent'}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--dropdown-hover)'}
+                    onMouseLeave={e => e.currentTarget.style.background = isProjectSelected ? 'var(--dropdown-selected)' : 'transparent'}
                 >
                     <Folder size={14} color={project.color && project.color !== '#ffffff' ? project.color : 'var(--text-secondary)'} style={{ opacity: 1 }} />
                     <span style={{ flexGrow: 1 }}>{project.title}</span>

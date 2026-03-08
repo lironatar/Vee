@@ -7,26 +7,33 @@ const AddTaskButton = ({ onClick, noMarginTop = false }) => {
             className="add-task-btn"
             onClick={onClick}
             style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.6rem',
-                padding: '0.35rem 0',
+                gap: '0.5rem',
+                padding: '0.4rem 0.8rem',
                 background: 'transparent',
-                border: 'none',
+                border: '1px solid transparent',
                 color: 'var(--text-secondary)',
                 cursor: 'pointer',
-                width: '100%',
                 marginTop: noMarginTop ? '0' : '0.5rem',
-                transition: 'color 0.2s, background 0.2s',
-                borderRadius: 'var(--radius-sm)'
+                transition: 'var(--transition)',
+                borderRadius: 'var(--radius-full)'
             }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'var(--bg-secondary)'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'transparent'; }}
+            onMouseEnter={e => {
+                e.currentTarget.style.color = 'var(--primary-color)';
+                e.currentTarget.style.background = 'rgba(79, 70, 229, 0.08)';
+                e.currentTarget.style.borderColor = 'rgba(79, 70, 229, 0.15)';
+            }}
+            onMouseLeave={e => {
+                e.currentTarget.style.color = 'var(--text-secondary)';
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.borderColor = 'transparent';
+            }}
         >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Plus size={20} style={{ color: '#2f3b4c' }} />
+                <Plus size={18} style={{ color: 'var(--primary-color)' }} />
             </div>
-            <span style={{ fontWeight: 500, fontSize: '15px' }}>הוסף משימה</span>
+            <span style={{ fontWeight: 500, fontSize: '14px' }}>הוסף משימה</span>
         </button>
     );
 };

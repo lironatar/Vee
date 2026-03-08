@@ -47,22 +47,25 @@ const Layout = () => {
                 {!isSidebarOpen && (
                     <button
                         onClick={toggleSidebar}
-                        className="btn-icon-soft menu-toggle-btn"
+                        className="btn-icon-soft menu-toggle-btn fade-in"
                         title="פתח סרגל"
                         style={{
                             position: 'fixed',
-                            top: 0,
-                            height: '60px',
+                            top: '0.75rem',
+                            right: '0.75rem',
+                            width: '42px',
+                            height: '42px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            right: '0.5rem',
                             zIndex: 1100,
-                            background: 'transparent',
-                            boxShadow: 'none',
-                            border: 'none',
-                            padding: '0 0.5rem',
-                            transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease, color 0.2s ease',
+                            background: 'var(--bg-secondary)',
+                            backdropFilter: 'blur(8px)',
+                            WebkitBackdropFilter: 'blur(8px)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.05)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '50%',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             color: 'var(--text-primary)',
                         }}
                     >
@@ -70,7 +73,7 @@ const Layout = () => {
                             src="/sidebar_is_closed.svg"
                             alt="sidebar toggle"
                             style={{
-                                width: '32px',
+                                width: '28px',
                                 height: 'auto',
                                 filter: 'var(--invert-icon)',
                                 transition: 'all 0.3s ease',
