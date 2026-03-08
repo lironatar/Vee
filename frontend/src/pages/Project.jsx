@@ -1102,7 +1102,7 @@ const Project = () => {
                                             <div key={member.user_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                                     <div style={{
-                                                        width: '36px', height: '36px', borderRadius: '50%', background: member.profile_image ? `url(/api${member.profile_image}) center/cover`
+                                                        width: '36px', height: '36px', borderRadius: '50%', background: member.profile_image ? `url(${API_URL}${member.profile_image}) center/cover`
                                                             : 'var(--primary-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem'
                                                     }}>
                                                         {!member.profile_image && member.username.charAt(0).toUpperCase()}
@@ -1139,7 +1139,7 @@ const Project = () => {
                                                             <div key={friendId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                                                     <div style={{
-                                                                        width: '32px', height: '32px', borderRadius: '50%', background: f.profile_image ? `url(/api${f.profile_image}) center/cover`
+                                                                        width: '32px', height: '32px', borderRadius: '50%', background: f.profile_image ? `url(${API_URL}${f.profile_image}) center/cover`
                                                                             : 'var(--primary-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem'
                                                                     }}>
                                                                         {!f.profile_image && friendName.charAt(0).toUpperCase()}

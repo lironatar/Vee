@@ -121,7 +121,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
     if (!user) return null;
 
     const navLinks = [
-        { action: () => setShowGlobalAddModal(true), label: 'הוסף משימה', icon: PlusCircle, isAddTask: true },
+        { action: () => setShowGlobalAddModal(true), label: 'הוסף משימה', icon: Plus, isAddTask: true },
         { path: '/inbox', label: 'תיבת המשימות', icon: Inbox, badge: counts.inboxCount > 0 ? counts.inboxCount.toString() : null },
         { path: '/today', label: 'היום', icon: DynamicTodayIcon, badge: counts.todayCount > 0 ? counts.todayCount.toString() : null },
         { path: '/calendar', label: 'לו"ז', icon: Calendar },
@@ -233,13 +233,28 @@ const Sidebar = ({ isOpen, onToggle }) => {
                                             fontWeight: link.isAddTask ? 700 : 500
                                         }}
                                     >
-                                        <Icon
-                                            size={link.isAddTask ? 20 : 18}
-                                            strokeWidth={link.isAddTask ? 2 : 1.8}
-                                            fill={link.isAddTask ? "var(--primary-color)" : "transparent"}
-                                            color={link.isAddTask ? "white" : "currentColor"}
-                                            className="nav-icon"
-                                        />
+                                        <div style={{ width: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0 }}>
+                                            {link.isAddTask ? (
+                                                <div style={{
+                                                    width: '24px',
+                                                    height: '24px',
+                                                    borderRadius: '50%',
+                                                    backgroundColor: 'var(--primary-color)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}>
+                                                    <Plus size={16} color="white" strokeWidth={2} />
+                                                </div>
+                                            ) : (
+                                                <Icon
+                                                    size={18}
+                                                    strokeWidth={1.8}
+                                                    color="currentColor"
+                                                    className="nav-icon"
+                                                />
+                                            )}
+                                        </div>
                                         <span>{link.label}</span>
                                         {link.badge && <span className="sidebar-badge">{link.badge}</span>}
                                     </button>
@@ -248,7 +263,10 @@ const Sidebar = ({ isOpen, onToggle }) => {
                             const isActive = link.path === '/' ? location.pathname === '/' : location.pathname.startsWith(link.path);
                             return (
                                 <Link key={link.path} to={link.path} onClick={() => { if (window.innerWidth <= 992) onToggle(); }} className={`nav-link sidebar-menu-item ${isActive ? 'active' : ''}`}>
-                                    <Icon size={18} strokeWidth={1.8} className="nav-icon" /><span>{link.label}</span>
+                                    <div style={{ width: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0 }}>
+                                        <Icon size={18} strokeWidth={1.8} className="nav-icon" />
+                                    </div>
+                                    <span>{link.label}</span>
                                     {link.badge && <span className="sidebar-badge">{link.badge}</span>}
                                 </Link>
                             );

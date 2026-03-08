@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { X, MessageSquare, Send } from 'lucide-react';
 import EmojiSelector from './EmojiSelector';
 
+const API_URL = '/api';
+
 const ProjectComments = ({
     isOpen,
     onClose,
@@ -152,7 +154,7 @@ const ProjectComments = ({
                                         overflow: 'hidden'
                                     }}>
                                         {comment.profile_image ? (
-                                            <img src={comment.profile_image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            <img src={`${API_URL}${comment.profile_image}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         ) : (
                                             <span style={{ fontWeight: 600, fontSize: isMobile ? '1rem' : '0.7rem' }}>{comment.username ? comment.username.charAt(0).toUpperCase() : '?'}</span>
                                         )}

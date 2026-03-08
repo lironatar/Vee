@@ -113,11 +113,13 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                 method: 'POST',
                 body: formData
             });
+
             if (res.ok) {
                 const data = await res.json();
                 setAvatarPreview(data.url);
             } else {
-                toast.error('שגיאה בהעלאת התמונה');
+                const data = await res.json().catch(() => ({}));
+                toast.error(data.error || 'שגיאה בהעלאת התמונה');
             }
         } catch (err) {
             console.error('Upload Error:', err);
@@ -201,7 +203,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                 background: 'rgba(0,0,0,0.5)', zIndex: 9999,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 padding: window.innerWidth <= 992 ? 0 : '1rem',
-                opacity: isVisible ? 1 : 0, transition: 'opacity 0.2s ease-in-out'
+                opacity: isVisible ? 1 : 0, transition: 'opacity 0.25s ease-out'
             }}
             onClick={onClose}
         >
@@ -233,25 +235,30 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                         height: '100%'
                     }}
                 >
-                    <div style={{ padding: '2.5rem 2rem', borderBottom: '1px solid var(--border-color)' }}>
+                    <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-color)' }}>
                         <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>הגדרות</h2>
                     </div>
 
-                    <nav style={{ flexGrow: 1, padding: '1rem', overflowY: 'auto' }}>
+                    <nav style={{ flexGrow: 1, padding: '0.75rem', overflowY: 'auto' }}>
                         {navItems.map(item => (
                             <button
                                 key={item.id}
                                 onClick={() => { setActiveTab(item.id); setIsMobileViewMode(false); }}
                                 style={{
-                                    width: '100%', display: 'flex', alignItems: 'center', gap: '1rem',
-                                    padding: '1rem 1.5rem', marginBottom: '0.5rem', borderRadius: '12px',
-                                    border: 'none', background: activeTab === item.id ? 'var(--primary-color)' : 'transparent',
-                                    color: activeTab === item.id ? 'white' : 'var(--text-secondary)',
-                                    cursor: 'pointer', transition: 'all 0.2s', textAlign: 'right', fontWeight: activeTab === item.id ? 600 : 500
+                                    width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                    padding: '0.6rem 0.75rem', marginBottom: '4px', borderRadius: 'var(--radius-sm)',
+                                    border: 'none',
+                                    background: activeTab === item.id ? 'var(--sidebar-active-bg)' : 'transparent',
+                                    color: activeTab === item.id ? 'var(--primary-color)' : 'var(--text-secondary)',
+                                    cursor: 'pointer', transition: 'all 0.15s ease', textAlign: 'right',
+                                    fontWeight: activeTab === item.id ? 600 : 500
                                 }}
+                                className="settings-nav-item"
                             >
-                                <item.icon size={20} />
-                                <span style={{ fontSize: '1.05rem' }}>{item.label}</span>
+                                <div style={{ width: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0 }}>
+                                    <item.icon size={18} strokeWidth={activeTab === item.id ? 2 : 1.8} />
+                                </div>
+                                <span style={{ fontSize: '0.95rem' }}>{item.label}</span>
                             </button>
                         ))}
                     </nav>
@@ -295,12 +302,12 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                             flexShrink: 0
                         }}>
                             <button
-                                onClick={() => setIsMobileViewMode(true)}
+                                onClick={onClose}
                                 className="btn-icon-soft"
-                                style={{ padding: '0.45rem', background: 'transparent', color: 'var(--primary-color)' }}
-                                title="תפריט הגדרות"
+                                style={{ padding: '0.45rem', background: 'transparent', border: 'none', color: 'var(--text-primary)' }}
+                                title="סגור"
                             >
-                                <Menu size={22} />
+                                <X size={22} />
                             </button>
 
                             <h2 style={{ fontSize: '1.1rem', margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>
@@ -308,12 +315,12 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                             </h2>
 
                             <button
-                                onClick={onClose}
+                                onClick={() => setIsMobileViewMode(true)}
                                 className="btn-icon-soft"
-                                style={{ padding: '0.45rem', background: 'transparent', border: 'none', color: 'var(--text-primary)' }}
-                                title="סגור"
+                                style={{ padding: '0.45rem', background: 'transparent', color: 'var(--primary-color)' }}
+                                title="תפריט הגדרות"
                             >
-                                <X size={22} />
+                                <Menu size={22} />
                             </button>
                         </div>
                     )}
@@ -324,7 +331,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                             onClick={onClose}
                             className="btn-icon-soft"
                             style={{
-                                position: 'absolute', top: '1.5rem', left: '1.5rem',
+                                position: 'absolute', top: '1.25rem', right: '1.5rem',
                                 padding: '0.5rem', background: 'transparent',
                                 border: 'none', zIndex: 100
                             }}
@@ -376,7 +383,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                                                 </button>
                                                 <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" style={{ display: 'none' }} />
                                             </div>
-                                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>בחר תמונה עד 4MB. תמונה זו תהיה ציבורית.</p>
+                                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>בחר תמונה עד 5MB. תמונה זו תהיה ציבורית.</p>
                                         </div>
                                     </div>
 

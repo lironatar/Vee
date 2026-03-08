@@ -1103,6 +1103,10 @@ a:hover {
   position: relative;
 }
 
+.settings-nav-item:hover {
+  background: var(--hover-bg);
+}
+
 .sidebar-menu-item:hover {
   background-color: var(--hover-bg);
 }

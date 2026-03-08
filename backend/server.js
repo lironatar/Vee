@@ -26,7 +26,7 @@ const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
-app.use('/uploads', express.static(uploadDir));
+app.use('/api/uploads', express.static(uploadDir));
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
@@ -375,12 +375,24 @@ app.delete('/api/friends/:requestId', (req, res) => {
 });
 
 // --- File Upload API ---
-app.post('/api/upload', upload.single('image'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: 'No image file provided' });
-    }
-    const imageUrl = `/uploads/${req.file.filename}`;
-    res.json({ url: imageUrl });
+app.post('/api/upload', (req, res) => {
+    upload.single('image')(req, res, function (err) {
+        if (err instanceof multer.MulterError) {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ error: 'הקובץ גדול מדי (מקסימום 5MB)' });
+            }
+            return res.status(400).json({ error: `שגיאת העלאה: ${err.message}` });
+        } else if (err) {
+            return res.status(400).json({ error: err.message === 'Only images are allowed' ? 'ניתן להעלות קבצי תמונה בלבד' : err.message });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'לא נבחרה תמונה' });
+        }
+
+        const imageUrl = `/uploads/${req.file.filename}`;
+        res.json({ url: imageUrl });
+    });
 });
 
 // --- Templates API ---
