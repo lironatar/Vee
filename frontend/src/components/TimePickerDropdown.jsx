@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useTheme } from '../context/ThemeContext';
 
 const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, onSave, timeOptions }) => {
+    const { theme } = useTheme();
     const getDefaultTime = () => {
         const now = new Date();
         const mins = now.getMinutes();
@@ -97,10 +99,10 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, onSave, t
                 left: `${dropdownPos.left}px`,
                 width: isMobile ? 'calc(100vw - 32px)' : '320px',
                 maxWidth: '320px',
-                background: 'var(--bg-color)',
+                background: theme === 'dark' ? '#1e293b' : '#ffffff',
                 border: '1px solid var(--border-color)',
                 borderRadius: '12px',
-                boxShadow: '0 4px 24px rgba(0,0,0,0.15)',
+                boxShadow: theme === 'dark' ? '0 15px 50px rgba(0,0,0,0.6)' : '0 10px 30px rgba(0,0,0,0.12)',
                 zIndex: 99999,
                 display: 'flex',
                 flexDirection: 'column',
@@ -123,9 +125,9 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, onSave, t
                             alignItems: 'center',
                             gap: '0.5rem',
                             padding: '0.4rem 0.6rem',
-                            border: '1px solid #ddd',
+                            border: '1px solid var(--border-color)',
                             borderRadius: '6px',
-                            background: '#fff',
+                            background: theme === 'dark' ? 'rgba(255,255,255,0.03)' : '#fff',
                             width: '100%',
                             boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)'
                         }}>
@@ -176,10 +178,10 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, onSave, t
                                     position: 'absolute',
                                     top: '100%',
                                     right: 0,
-                                    background: 'var(--bg-color)',
+                                    background: theme === 'dark' ? '#1e293b' : '#ffffff',
                                     border: '1px solid var(--border-color)',
                                     borderRadius: '6px',
-                                    boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                                    boxShadow: theme === 'dark' ? '0 10px 30px rgba(0,0,0,0.5)' : '0 4px 16px rgba(0,0,0,0.12)',
                                     maxHeight: '180px',
                                     overflowY: 'auto',
                                     zIndex: 10,
@@ -252,23 +254,23 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, onSave, t
             <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '0' }} />
 
             {/* Actions */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.75rem', padding: '0.75rem 1rem', background: '#FAFAFA', borderRadius: '0 0 12px 12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.75rem', padding: '0.75rem 1rem', background: theme === 'dark' ? 'rgba(255,255,255,0.02)' : '#FAFAFA', borderRadius: '0 0 12px 12px' }}>
                 <button
                     type="button"
                     onClick={onClose}
                     style={{
                         padding: '0.4rem 1rem',
-                        border: 'none',
+                        border: '1px solid var(--border-color)',
                         borderRadius: '6px',
-                        background: '#F5F5F5',
+                        background: theme === 'dark' ? 'transparent' : '#F5F5F5',
                         color: 'var(--text-primary)',
                         fontWeight: 600,
                         fontSize: '0.9rem',
                         cursor: 'pointer',
                         transition: 'background 0.1s'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#EBEBEB'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = '#F5F5F5'}
+                    onMouseEnter={(e) => e.currentTarget.style.background = theme === 'dark' ? 'rgba(255,255,255,0.05)' : '#EBEBEB'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = theme === 'dark' ? 'transparent' : '#F5F5F5'}
                 >
                     ביטול
                 </button>

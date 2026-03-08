@@ -7,10 +7,12 @@ import { getRandomTaskPlaceholder } from '../../utils/taskPlaceholders';
 import ProjectSelectorDropdown from './ProjectSelectorDropdown';
 import { hebrewDayNames, hebrewMonthNames, TIME_OPTIONS, getDateDisplayInfo } from './utils.jsx';
 import { useUser } from '../../context/UserContext';
+import { useTheme } from '../../context/ThemeContext';
 import { toast } from 'sonner';
 
 const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewItemDate, checklist, defaultProject, setAddingToList, handleAddItem, suppressDateSpan = false, initialTime = '' }) => {
     const { user } = useUser();
+    const { theme } = useTheme();
     const [description, setDescription] = useState('');
     const [showDateDropdown, setShowDateDropdown] = useState(false);
     const [showRepeatMenu, setShowRepeatMenu] = useState(false);
@@ -24,6 +26,8 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
     const [showProjectSelector, setShowProjectSelector] = useState(false);
     const [priority, setPriority] = useState(4);
     const [showPriorityMenu, setShowPriorityMenu] = useState(false);
+    const [reminderMinutes, setReminderMinutes] = useState(null);
+    const [showReminderMenu, setShowReminderMenu] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const inputContainerRef = useRef(null);
 
@@ -38,6 +42,20 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
         setSelectedChecklist(checklist);
         setSelectedProject(defaultProject || null);
     }, [checklist, defaultProject]);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (cardRef.current && !cardRef.current.contains(e.target)) {
+                setShowPriorityMenu(false);
+                setShowReminderMenu(false);
+                setShowDateDropdown(false);
+                setShowProjectSelector(false);
+                setShowRepeatMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const dateBtnRef = useRef(null);
     const timeBtnRef = useRef(null);
@@ -57,6 +75,16 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
         { label: `כל חודש בתאריך ${today.getDate()} `, value: 'monthly' },
         { label: `כל שנה ב - ${today.getDate()} ב${hebrewMonthNames[today.getMonth()]} `, value: 'yearly' },
         { label: 'מותאם אישית...', value: 'custom' },
+    ];
+
+    const reminderOptions = [
+        { label: 'ללא תזכורת', value: null },
+        { label: 'בזמן האירוע', value: 0 },
+        { label: '5 דקות לפני', value: 5 },
+        { label: '15 דקות לפני', value: 15 },
+        { label: '30 דקות לפני', value: 30 },
+        { label: 'שעה לפני', value: 60 },
+        { label: 'יום לפני', value: 1440 },
     ];
 
     const repeatLabels = { daily: 'כל יום', weekly: 'שבועי', weekdays: 'ימי חול', monthly: 'חודשי', yearly: 'שנתי', custom: 'מותאם' };
@@ -79,12 +107,13 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
 
         if (e) e.preventDefault();
         window.globalNewItemContent = plainText;
-        window.globalNewItemDesc = description;
+        window.globalNewItemDescription = description;
         window.globalNewItemDate = newItemDate || null;
         window.globalNewItemRepeatRule = repeatRule || null;
         window.globalNewItemTime = time || null;
         window.globalNewItemDuration = duration || 15;
         window.globalNewItemPriority = priority || 4;
+        window.globalNewItemReminderMinutes = reminderMinutes;
 
         // Auto-create inbox if needed
         let targetChecklistId = selectedChecklist?.id || checklist.id;
@@ -127,6 +156,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
         setNewItemDate('');
         setRepeatRule(null);
         setPriority(4);
+        setReminderMinutes(null);
         setDynamicPlaceholder(getRandomTaskPlaceholder());
 
         if (inputContainerRef.current) {
@@ -166,7 +196,8 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
             background: 'var(--bg-secondary)',
             boxShadow: isFocused ? 'var(--float-hover-shadow)' : 'var(--card-shadow)',
             transition: 'var(--transition)',
-            transform: isFocused ? 'translateY(-2px)' : 'translateY(0)'
+            transform: isFocused ? 'translateY(-2px)' : 'translateY(0)',
+            zIndex: (isFocused || showPriorityMenu || showReminderMenu || showDateDropdown || showProjectSelector) ? 1000 : 1
         }}>
             <div style={{ padding: '0.4rem 0.6rem' }}>
                 <div
@@ -179,6 +210,22 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                 >
+                    <div style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: '50%',
+                        border: `1.8px solid ${priority === 4 ? 'var(--border-color)' :
+                            priority === 1 ? 'var(--priority-1)' :
+                                priority === 2 ? 'var(--priority-2)' : 'var(--priority-3)'}`,
+                        background: priority !== 4 ? `rgba(${priority === 1 ? '209, 69, 59' :
+                            priority === 2 ? '235, 137, 9' :
+                                '36, 111, 224'
+                            }, 0.12)` : 'transparent',
+                        flexShrink: 0,
+                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: priority !== 4 ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'
+                    }} />
+
                     {newItemDate && !suppressDateSpan && (
                         <div style={{
                             display: 'inline-flex', alignItems: 'center', gap: '4px',
@@ -231,7 +278,12 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                     <button
                         ref={dateBtnRef}
                         type="button"
-                        onClick={() => setShowDateDropdown(!showDateDropdown)}
+                        onClick={() => {
+                            setShowDateDropdown(!showDateDropdown);
+                            setShowPriorityMenu(false);
+                            setShowReminderMenu(false);
+                            setShowProjectSelector(false);
+                        }}
                         style={{
                             display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
                             padding: newItemDate ? '0.3rem 0.6rem 0.3rem 0.2rem' : '0.3rem 0.6rem',
@@ -330,9 +382,13 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                                 {showRepeatMenu && (
                                     <div style={{
                                         position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, right: 0,
-                                        background: 'var(--bg-color)', border: '1px solid var(--border-color)',
-                                        borderRadius: '10px', boxShadow: '0 -6px 24px rgba(0,0,0,0.12)',
-                                        overflow: 'hidden', zIndex: 220,
+                                        background: theme === 'dark' ? '#1e293b' : '#ffffff',
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: '10px',
+                                        boxShadow: theme === 'dark' ? '0 10px 40px rgba(0,0,0,0.4)' : '0 10px 30px rgba(0,0,0,0.12)',
+                                        overflow: 'hidden', zIndex: 1000,
+                                        backdropFilter: 'blur(10px)',
+                                        WebkitBackdropFilter: 'blur(10px)',
                                     }}>
                                         {repeatOptions.map((opt, i) => (
                                             <button key={i} onClick={() => { setRepeatRule(opt.value === 'custom' ? null : opt.value); setShowRepeatMenu(false); }}
@@ -400,7 +456,12 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                     <button
                         ref={priorityBtnRef}
                         type="button"
-                        onClick={() => setShowPriorityMenu(!showPriorityMenu)}
+                        onClick={() => {
+                            setShowPriorityMenu(!showPriorityMenu);
+                            setShowReminderMenu(false);
+                            setShowDateDropdown(false);
+                            setShowProjectSelector(false);
+                        }}
                         style={{
                             ...pillStyle(priority !== 4, priority === 1 ? 'var(--priority-1)' : priority === 2 ? 'var(--priority-2)' : priority === 3 ? 'var(--priority-3)' : null),
                             transition: 'var(--transition)'
@@ -415,10 +476,14 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                     {showPriorityMenu && (
                         <div style={{
                             position: 'absolute', top: '100%', right: '0', marginTop: '0.4rem',
-                            background: 'var(--bg-color)', border: '1px solid var(--border-color)',
-                            borderRadius: '8px', boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                            overflow: 'hidden', zIndex: 1000, display: 'flex', flexDirection: 'column',
-                            minWidth: '150px'
+                            background: theme === 'dark' ? '#1e293b' : '#ffffff',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '8px',
+                            boxShadow: theme === 'dark' ? '0 15px 45px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.12)',
+                            overflow: 'hidden', zIndex: 2000, display: 'flex', flexDirection: 'column',
+                            minWidth: '150px',
+                            backdropFilter: 'blur(10px)',
+                            WebkitBackdropFilter: 'blur(10px)',
                         }}>
                             {[
                                 { level: 1, label: 'עדיפות 1', color: 'var(--priority-1)' },
@@ -458,6 +523,71 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                     )}
                 </div>
 
+                <div style={{ position: 'relative' }}>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setShowReminderMenu(!showReminderMenu);
+                            setShowPriorityMenu(false);
+                            setShowDateDropdown(false);
+                            setShowProjectSelector(false);
+                        }}
+                        style={{
+                            ...pillStyle(reminderMinutes !== null, null),
+                            transition: 'var(--transition)'
+                        }}
+                        onMouseEnter={e => !showReminderMenu && (e.currentTarget.style.background = 'var(--dropdown-hover)')}
+                        onMouseLeave={e => !showReminderMenu && (e.currentTarget.style.background = reminderMinutes !== null ? 'color-mix(in srgb, var(--primary-color) 8%, transparent)' : 'var(--bg-color)')}
+                    >
+                        <Clock size={14} style={{ opacity: reminderMinutes !== null ? 1 : 0.8 }} />
+                        {reminderMinutes === null ? 'תזכורת' : reminderOptions.find(o => o.value === reminderMinutes)?.label}
+                    </button>
+
+                    {showReminderMenu && (
+                        <div style={{
+                            position: 'absolute', top: '100%', right: '0', marginTop: '0.4rem',
+                            background: theme === 'dark' ? '#1e293b' : '#ffffff',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '8px',
+                            boxShadow: theme === 'dark' ? '0 15px 45px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.12)',
+                            overflow: 'hidden', zIndex: 2000, display: 'flex', flexDirection: 'column',
+                            minWidth: '150px',
+                            backdropFilter: 'blur(10px)',
+                            WebkitBackdropFilter: 'blur(10px)',
+                        }}>
+                            {reminderOptions.map(opt => (
+                                <button
+                                    key={opt.value === null ? 'null' : opt.value}
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setReminderMinutes(opt.value);
+                                        setShowReminderMenu(false);
+                                    }}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '0.6rem',
+                                        width: '100%', padding: '0.6rem 0.8rem', border: 'none',
+                                        background: reminderMinutes === opt.value ? 'var(--dropdown-selected)' : 'transparent',
+                                        cursor: 'pointer', textAlign: 'right', fontFamily: 'inherit',
+                                        borderBottom: opt.value !== 1440 ? '1px solid var(--border-color)' : 'none',
+                                        transition: 'background 0.15s'
+                                    }}
+                                    onMouseEnter={e => {
+                                        if (reminderMinutes !== opt.value) e.currentTarget.style.background = 'var(--dropdown-hover)';
+                                    }}
+                                    onMouseLeave={e => {
+                                        if (reminderMinutes !== opt.value) e.currentTarget.style.background = 'transparent';
+                                        else e.currentTarget.style.background = 'var(--dropdown-selected)';
+                                    }}
+                                >
+                                    <Clock size={14} style={{ color: reminderMinutes === opt.value ? 'var(--primary-color)' : 'var(--text-secondary)' }} />
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: reminderMinutes === opt.value ? 600 : 400 }}>{opt.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 {repeatRule && (
                     <span style={{ ...pillStyle(true), cursor: 'default' }}>
                         <RefreshCw size={12} />
@@ -476,6 +606,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                 onSelect={(cl, proj) => {
                     setSelectedChecklist(cl);
                     setSelectedProject(proj);
+                    setShowProjectSelector(false);
                 }}
             />
 
@@ -487,7 +618,12 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', flexGrow: 1 }}>
                         <button
                             ref={projectBtnRef}
-                            onClick={() => setShowProjectSelector(!showProjectSelector)}
+                            onClick={() => {
+                                setShowProjectSelector(!showProjectSelector);
+                                setShowPriorityMenu(false);
+                                setShowReminderMenu(false);
+                                setShowDateDropdown(false);
+                            }}
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',

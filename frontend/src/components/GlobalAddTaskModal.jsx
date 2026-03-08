@@ -67,11 +67,9 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
         if (e) e.preventDefault();
 
         const content = explicitContent || window.globalNewItemContent;
-        const description = window.globalNewItemDesc;
-        const targetDate = window.globalNewItemDate;
-        const time = window.globalNewItemTime;
-        const repeatRule = window.globalNewItemRepeatRule;
-        const duration = window.globalNewItemDuration;
+        const description = window.globalNewItemDescription;
+        const priority = window.globalNewItemPriority;
+        const reminderMinutes = window.globalNewItemReminderMinutes;
 
         if (!content) return;
 
@@ -117,7 +115,9 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
                     time: time || null,
                     duration: duration || 15,
                     repeat_rule: repeatRule || null,
-                    parent_item_id: parentItemId || null
+                    parent_item_id: parentItemId || null,
+                    priority: priority || 4,
+                    reminder_minutes: reminderMinutes
                 })
             });
 
@@ -125,6 +125,14 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
                 toast.success('המשימה נוספה בהצלחה');
                 window.dispatchEvent(new CustomEvent('refreshCalendarTasks'));
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
+                window.globalNewItemContent = null;
+                window.globalNewItemDescription = null;
+                window.globalNewItemDate = null;
+                window.globalNewItemRepeatRule = null;
+                window.globalNewItemTime = null;
+                window.globalNewItemDuration = 15;
+                window.globalNewItemPriority = 4;
+                window.globalNewItemReminderMinutes = null;
             } else {
                 toast.error('שגיאה בהוספת משימה');
             }

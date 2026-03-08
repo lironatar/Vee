@@ -36,6 +36,13 @@ function App() {
     pingServer(); // Initial ping on mount/login
     const interval = setInterval(pingServer, 3 * 60 * 1000); // Ping every 3 minutes
 
+    // Pre-register service worker for push notifications
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(() => console.log('Service Worker pre-registered'))
+        .catch(err => console.error('SW pre-registration failed', err));
+    }
+
     return () => clearInterval(interval);
   }, [user]);
 

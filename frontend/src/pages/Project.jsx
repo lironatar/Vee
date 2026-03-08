@@ -532,7 +532,9 @@ const Project = () => {
                     description: descriptionInput,
                     repeat_rule: repeatRuleInput,
                     time: timeInput,
-                    duration: durationInput
+                    duration: durationInput,
+                    priority: window.globalNewItemPriority || 4,
+                    reminder_minutes: window.globalNewItemReminderMinutes
                 })
             });
 
@@ -561,6 +563,8 @@ const Project = () => {
                 window.globalNewItemRepeatRule = null;
                 window.globalNewItemTime = null;
                 window.globalNewItemDuration = 15;
+                window.globalNewItemPriority = 4;
+                window.globalNewItemReminderMinutes = null;
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
             }
         } catch (err) {
@@ -899,36 +903,6 @@ const Project = () => {
                         </div>
                     ) : (
                         <>
-                            {isCreatingList === true && (
-                                <div className="fade-in" style={{ padding: '0.75rem 1rem', marginBottom: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
-                                    <form onSubmit={handleCreateCustomList} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'nowrap' }}>
-                                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexGrow: 1, minWidth: 0 }}>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                placeholder="שם הרשימה החדשה..."
-                                                value={newListTitle}
-                                                onChange={(e) => setNewListTitle(e.target.value)}
-                                                autoFocus
-                                                style={{ flexGrow: 1, minWidth: '50px', border: 'none', background: 'transparent', fontSize: '1.05rem', padding: 0, outline: 'none', boxShadow: 'none' }}
-                                            />
-                                        </div>
-
-                                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
-                                            <button type="button" onClick={() => { setIsCreatingList(false); setNewListTitle(''); }} className="desktop-only" style={{ padding: '0.4rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 500, fontSize: '0.85rem' }}>ביטול</button>
-                                            <button type="submit" disabled={!newListTitle.trim()} className="desktop-only" style={{ padding: '0.4rem 1rem', borderRadius: 'var(--radius-md)', border: 'none', background: newListTitle.trim() ? '#d1453b' : 'rgba(209,69,59,0.5)', color: 'white', cursor: newListTitle.trim() ? 'pointer' : 'default', fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap' }}>הוסף רשימה</button>
-
-                                            {/* Mobile Icon Buttons */}
-                                            <button type="button" onClick={() => { setIsCreatingList(false); setNewListTitle(''); }} className="mobile-only" style={{ padding: '0.5rem', border: 'none', background: 'var(--border-color)', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)' }}>
-                                                <X size={18} />
-                                            </button>
-                                            <button type="submit" disabled={!newListTitle.trim()} className="mobile-only" style={{ padding: '0.5rem', border: 'none', background: newListTitle.trim() ? '#d1453b' : 'rgba(209,69,59,0.5)', color: 'white', borderRadius: '8px', cursor: newListTitle.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <Plus size={18} />
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            )}
 
                             {activeChecklists.length === 0 ? (
                                 <div className="checklist-minimal" style={{ padding: '0.5rem 0', display: 'flex', flexDirection: 'column', border: 'none' }}>
@@ -1049,30 +1023,6 @@ const Project = () => {
 
 
 
-                                    <button
-                                        type="button"
-                                        className="add-section-divider"
-                                        onMouseDown={(e) => { e.stopPropagation(); setIsCreatingList(true); }}
-                                    >
-                                        הוסף רשימה (Section)
-                                    </button>
-
-                                    {isCreatingList === true && (
-                                        <form className="add-section-form" onSubmit={handleCreateCustomList}>
-                                            <input
-                                                type="text"
-                                                className="add-section-input"
-                                                placeholder="שם הרשימה... (לדוגמה: פרוייקט חדש)"
-                                                value={newListTitle}
-                                                onChange={(e) => setNewListTitle(e.target.value)}
-                                                autoFocus
-                                            />
-                                            <div className="add-section-actions">
-                                                <button type="submit" className="btn-add-section" disabled={!newListTitle.trim()}>הוסף רשימה</button>
-                                                <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(false); setNewListTitle(''); }}>ביטול</button>
-                                            </div>
-                                        </form>
-                                    )}
                                 </div>
                             )}
                         </>

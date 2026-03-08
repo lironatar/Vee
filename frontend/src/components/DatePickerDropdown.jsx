@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar as CalendarIcon, Sun, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 import DynamicTodayIcon from './DynamicTodayIcon';
 
 const hebrewMonthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
@@ -28,6 +29,7 @@ function buildCalRows(year, month) {
 }
 
 export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selectedDate, selectedTime, onSelectDate, children }) {
+    const { theme } = useTheme();
     const dropRef = useRef(null);
     const [pos, setPos] = useState({ top: 0, left: 0, width: 300, visible: false });
     const [calMonth, setCalMonth] = useState(new Date().getMonth());
@@ -164,11 +166,11 @@ export default function DatePickerDropdown({ isOpen, onClose, anchorRef, selecte
                 top: pos.top,
                 left: pos.left,
                 width: pos.width,
-                zIndex: 10000,
-                background: 'var(--bg-color)',
+                zIndex: 20000,
+                background: theme === 'dark' ? '#1e293b' : '#ffffff',
                 border: '1px solid var(--border-color)',
                 borderRadius: '14px',
-                boxShadow: 'none',
+                boxShadow: theme === 'dark' ? '0 15px 50px rgba(0,0,0,0.6)' : '0 10px 30px rgba(0,0,0,0.1)',
                 direction: 'rtl',
                 visibility: pos.visible ? 'visible' : 'hidden',
                 animation: 'fadeIn 0.12s ease',

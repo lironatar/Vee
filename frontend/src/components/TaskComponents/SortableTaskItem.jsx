@@ -174,10 +174,11 @@ const SortableTaskItem = ({
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                height: '18px',
-                                width: '18px',
+                                height: '20px', // slightly larger for easier click
+                                width: '20px',
                                 flexShrink: 0,
-                                marginTop: '0'
+                                marginTop: '0',
+                                position: 'relative'
                             }}
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -199,9 +200,10 @@ const SortableTaskItem = ({
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             color: 'white',
+                                            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
                                         }}
                                     >
-                                        <CheckCircle size={10} strokeWidth={2.4} />
+                                        <Check size={10} strokeWidth={3} />
                                     </div>
                                 ) : (
                                     <div
@@ -210,27 +212,35 @@ const SortableTaskItem = ({
                                             width: 18,
                                             height: 18,
                                             borderRadius: '50%',
-                                            border: `1.5px solid ${priority === 4 ? '#ccc' : priorityColor}`,
-                                            background: priority !== 4 ? `rgba(${priority === 1 ? '209, 69, 59' : priority === 2 ? '235, 137, 9' : '36, 111, 224'}, 0.08)` : 'transparent',
+                                            border: `1.8px solid ${priority === 4 ? 'var(--border-color)' : priorityColor}`,
+                                            background: priority !== 4 ? `rgba(${priority === 1 ? '209, 69, 59' :
+                                                    priority === 2 ? '235, 137, 9' :
+                                                        '36, 111, 224'
+                                                }, 0.12)` : 'transparent',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            transition: 'all 0.2s ease',
+                                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            boxShadow: priority !== 4 ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'
                                         }}
                                         onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = priority !== 4 ? `rgba(${priority === 1 ? '209, 69, 59' : priority === 2 ? '235, 137, 9' : '36, 111, 224'}, 0.15)` : 'rgba(0,0,0,0.05)';
-                                            e.currentTarget.querySelector('.hover-check').style.opacity = 1;
+                                            e.currentTarget.style.transform = 'scale(1.1)';
+                                            e.currentTarget.style.background = priority !== 4 ? `rgba(${priority === 1 ? '209, 69, 59' : priority === 2 ? '235, 137, 9' : '36, 111, 224'}, 0.2)` : 'rgba(0,0,0,0.05)';
+                                            const check = e.currentTarget.querySelector('.hover-check');
+                                            if (check) check.style.opacity = 1;
                                         }}
                                         onMouseLeave={(e) => {
-                                            e.currentTarget.style.background = priority !== 4 ? `rgba(${priority === 1 ? '209, 69, 59' : priority === 2 ? '235, 137, 9' : '36, 111, 224'}, 0.08)` : 'transparent';
-                                            e.currentTarget.querySelector('.hover-check').style.opacity = 0;
+                                            e.currentTarget.style.transform = 'scale(1)';
+                                            e.currentTarget.style.background = priority !== 4 ? `rgba(${priority === 1 ? '209, 69, 59' : priority === 2 ? '235, 137, 9' : '36, 111, 224'}, 0.12)` : 'transparent';
+                                            const check = e.currentTarget.querySelector('.hover-check');
+                                            if (check) check.style.opacity = 0;
                                         }}
                                     >
                                         <Check
                                             className="hover-check"
                                             size={10}
-                                            strokeWidth={2.6}
-                                            style={{ color: priorityHoverColor, opacity: 0, transition: 'opacity 0.2s' }}
+                                            strokeWidth={3}
+                                            style={{ color: priorityColor, opacity: 0, transition: 'opacity 0.2s' }}
                                         />
                                     </div>
                                 )}

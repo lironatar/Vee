@@ -138,14 +138,14 @@ const Sidebar = ({ isOpen, onToggle }) => {
                 <div className="sidebar-header">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '0.5rem' }}>
                         {/* User Selector */}
-                        <div ref={userMenuRef} style={{ position: 'relative', flexGrow: 1, minWidth: 0, paddingRight: '0.25rem' }}>
+                        <div ref={userMenuRef} style={{ position: 'relative', flexGrow: 1, minWidth: 0, paddingRight: '0.25rem', zIndex: 50 }}>
                             <button
                                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                                 style={{
-                                    display: 'flex', alignItems: 'center', gap: '0.8rem',
+                                    display: 'flex', alignItems: 'center', gap: '0.75rem',
                                     background: isUserMenuOpen ? 'var(--dropdown-hover)' : 'transparent',
                                     border: 'none', cursor: 'pointer',
-                                    padding: '0.5rem 0.6rem', borderRadius: 'var(--radius-md)',
+                                    padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-md)',
                                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', width: '100%',
                                     color: 'var(--text-primary)',
                                     boxShadow: isUserMenuOpen ? '0 4px 12px rgba(0,0,0,0.05)' : 'none'
@@ -154,14 +154,16 @@ const Sidebar = ({ isOpen, onToggle }) => {
                                 onMouseLeave={e => !isUserMenuOpen && (e.currentTarget.style.background = 'transparent')}
                                 className="sidebar-menu-item"
                             >
-                                <div style={{
-                                    width: '32px', height: '32px', borderRadius: '50%',
-                                    background: user.profile_image ? `url(${API_URL}${user.profile_image}) center/cover` : 'var(--primary-color)',
-                                    color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0,
-                                    border: '1.5px solid var(--border-color)',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                }}>
-                                    {!user.profile_image && <UserIcon size={16} />}
+                                <div style={{ width: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0 }}>
+                                    <div style={{
+                                        width: '30px', height: '30px', borderRadius: '50%',
+                                        background: user.profile_image ? `url(${API_URL}${user.profile_image}) center/cover` : 'var(--primary-color)',
+                                        color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0,
+                                        border: '1.5px solid var(--border-color)',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}>
+                                        {!user.profile_image && <UserIcon size={14} />}
+                                    </div>
                                 </div>
                                 <span style={{ fontWeight: 700, fontSize: '0.9rem', fontFamily: 'inherit', letterSpacing: '-0.2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.username}</span>
                                 <ChevronDown size={14} style={{ opacity: 0.6, transform: isUserMenuOpen ? 'rotate(180deg)' : 'none', transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)', marginTop: '1px', marginRight: 'auto' }} />

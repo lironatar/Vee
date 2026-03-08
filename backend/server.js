@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -8,6 +9,8 @@ const db = require('./database');
 const http = require('http');
 const { Server } = require('socket.io');
 const nodemailer = require('nodemailer');
+const webpush = require('web-push');
+const cron = require('node-cron');
 
 const app = express();
 const server = http.createServer(app);
@@ -52,6 +55,11 @@ const upload = multer({
     }
 });
 
+// --- Web Push Configuration ---
+const publicVapidKey = process.env.VAPID_PUBLIC_KEY;
+const privateVapidKey = process.env.VAPID_PRIVATE_KEY;
+webpush.setVapidDetails(`mailto:${process.env.EMAIL_FROM_ADDRESS || 'test@example.com'}`, publicVapidKey, privateVapidKey);
+
 // --- Email Sending Service ---
 const transporter = nodemailer.createTransport({
     host: 'smtp.resend.com',
@@ -59,7 +67,7 @@ const transporter = nodemailer.createTransport({
     secure: true,
     auth: {
         user: 'resend',
-        pass: 're_5jpHQcuv_MZqLjjY9n2mGmFeNaHy3bXEX'
+        pass: process.env.RESEND_API_KEY
     }
 });
 
@@ -517,7 +525,7 @@ app.post('/api/invitations', async (req, res) => {
         const inviter = db.prepare('SELECT username FROM users WHERE id = ?').get(inviter_id);
         if (!inviter) return res.status(404).json({ error: 'User not found' });
 
-        const baseUrl = req.headers.origin || 'http://localhost:5173'; // Fallback for local dev
+        const baseUrl = process.env.FRONTEND_URL || req.headers.origin || 'http://localhost:5173';
         const successfulEmails = [];
         const failedEmails = [];
 
@@ -559,7 +567,7 @@ app.post('/api/invitations', async (req, res) => {
 
             try {
                 await transporter.sendMail({
-                    from: 'Vee <onboarding@resend.dev>', // Change to verified domain when available e.g. hello@yourdomain.com
+                    from: process.env.EMAIL_FROM || 'Vee <onboarding@resend.dev>',
                     to: cleanEmail,
                     subject: `${inviter.username} הזמין/ה אותך להצטרף ל-Vee!`,
                     html: html
@@ -1016,15 +1024,15 @@ app.delete('/api/checklists/:id', (req, res) => {
 // Add / Update / Delete single checklist item
 app.post('/api/checklists/:checklistId/items', (req, res) => {
     const { checklistId } = req.params;
-    let { content, order_index, parent_item_id, target_date, description, repeat_rule, time, duration, priority } = req.body;
+    let { content, order_index, parent_item_id, target_date, description, repeat_rule, time, duration, priority, reminder_minutes } = req.body;
     try {
         if (order_index === undefined || order_index === null) {
             const maxOrder = db.prepare('SELECT MAX(order_index) as maxIdx FROM checklist_items WHERE checklist_id = ?').get(checklistId);
             order_index = (maxOrder && maxOrder.maxIdx !== null) ? maxOrder.maxIdx + 1 : 0;
         }
 
-        const result = db.prepare('INSERT INTO checklist_items (checklist_id, content, order_index, parent_item_id, target_date, description, repeat_rule, time, duration, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-            .run(checklistId, content, order_index, parent_item_id || null, target_date || null, description || null, repeat_rule || null, time || null, duration || 15, priority || 4);
+        const result = db.prepare('INSERT INTO checklist_items (checklist_id, content, order_index, parent_item_id, target_date, description, repeat_rule, time, duration, priority, reminder_minutes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+            .run(checklistId, content, order_index, parent_item_id || null, target_date || null, description || null, repeat_rule || null, time || null, duration || 15, priority || 4, reminder_minutes !== undefined ? reminder_minutes : null);
         const item = db.prepare('SELECT * FROM checklist_items WHERE id = ?').get(result.lastInsertRowid);
         res.json(item);
     } catch (err) {
@@ -1067,7 +1075,7 @@ app.delete('/api/items/:itemId', (req, res) => {
     }
 });
 app.put('/api/items/:itemId', (req, res) => {
-    const { content, target_date, checklist_id, description, repeat_rule, time, duration, priority } = req.body;
+    const { content, target_date, checklist_id, description, repeat_rule, time, duration, priority, reminder_minutes } = req.body;
     try {
         const updates = [];
         const params = [];
@@ -1103,6 +1111,10 @@ app.put('/api/items/:itemId', (req, res) => {
         if (priority !== undefined) {
             updates.push('priority = ?');
             params.push(priority);
+        }
+        if (reminder_minutes !== undefined) {
+            updates.push('reminder_minutes = ?');
+            params.push(reminder_minutes);
         }
 
         if (updates.length > 0) {
@@ -1412,6 +1424,76 @@ app.get('/api/users/:userId/activity', (req, res) => {
     }
 });
 
+// --- Comments API ---
+
+// Project Comments
+app.get('/api/projects/:projectId/comments', (req, res) => {
+    try {
+        const comments = db.prepare(`
+            SELECT pc.*, u.username, u.profile_image
+            FROM project_comments pc
+            JOIN users u ON pc.user_id = u.id
+            WHERE pc.project_id = ?
+            ORDER BY pc.created_at ASC
+        `).all(req.params.projectId);
+        res.json(comments);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch project comments' });
+    }
+});
+
+app.post('/api/projects/:projectId/comments', (req, res) => {
+    const { user_id, content } = req.body;
+    try {
+        const result = db.prepare('INSERT INTO project_comments (project_id, user_id, content) VALUES (?, ?, ?)').run(req.params.projectId, user_id, content);
+        const newComment = db.prepare(`
+            SELECT pc.*, u.username, u.profile_image
+            FROM project_comments pc
+            JOIN users u ON pc.user_id = u.id
+            WHERE pc.id = ?
+        `).get(result.lastInsertRowid);
+        res.json(newComment);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to post project comment' });
+    }
+});
+
+// Task (Checklist Item) Comments
+app.get('/api/checklist-items/:id/comments', (req, res) => {
+    try {
+        const comments = db.prepare(`
+            SELECT cic.*, u.username, u.profile_image
+            FROM checklist_item_comments cic
+            JOIN users u ON cic.user_id = u.id
+            WHERE cic.checklist_item_id = ?
+            ORDER BY cic.created_at ASC
+        `).all(req.params.id);
+        res.json(comments);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch task comments' });
+    }
+});
+
+app.post('/api/checklist-items/:id/comments', (req, res) => {
+    const { user_id, content } = req.body;
+    try {
+        const result = db.prepare('INSERT INTO checklist_item_comments (checklist_item_id, user_id, content) VALUES (?, ?, ?)').run(req.params.id, user_id, content);
+        const newComment = db.prepare(`
+            SELECT cic.*, u.username, u.profile_image
+            FROM checklist_item_comments cic
+            JOIN users u ON cic.user_id = u.id
+            WHERE cic.id = ?
+        `).get(result.lastInsertRowid);
+        res.json(newComment);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to post task comment' });
+    }
+});
+
 app.get('/api/users/:userId/progress', (req, res) => {
     const { userId } = req.params;
     const { date } = req.query;
@@ -1630,6 +1712,94 @@ app.put('/api/admin/users/:id/status', adminAuth, (req, res) => {
     }
 });
 
+// --- Push Notification API ---
+app.get('/api/notifications/public-key', (req, res) => {
+    res.json({ publicKey: publicVapidKey });
+});
+
+app.post('/api/notifications/subscribe', (req, res) => {
+    const { user_id, subscription } = req.body;
+    if (!user_id || !subscription) return res.status(400).json({ error: 'חסרים פרטים' });
+
+    try {
+        const existing = db.prepare('SELECT id FROM web_push_subscriptions WHERE user_id = ? AND endpoint = ?').get(user_id, subscription.endpoint);
+        if (!existing) {
+            db.prepare('INSERT INTO web_push_subscriptions (user_id, endpoint, p256dh, auth) VALUES (?, ?, ?, ?)').run(
+                user_id, subscription.endpoint, subscription.keys.p256dh, subscription.keys.auth
+            );
+        }
+        res.status(201).json({});
+    } catch (e) {
+        console.error('Error saving subscription', e);
+        res.status(500).json({ error: 'שגיאת שרת' });
+    }
+});
+
+app.post('/api/notifications/unsubscribe', (req, res) => {
+    const { endpoint } = req.body;
+    if (!endpoint) return res.status(400).json({ error: 'חסרים פרטים' });
+
+    try {
+        db.prepare('DELETE FROM web_push_subscriptions WHERE endpoint = ?').run(endpoint);
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Error removing subscription', e);
+        res.status(500).json({ error: 'שגיאת שרת' });
+    }
+});
+
+// --- Cron Job for Reminders ---
+cron.schedule('* * * * *', async () => {
+    try {
+        const now = new Date();
+        const currentHour = now.getHours().toString().padStart(2, '0');
+        const currentMinute = now.getMinutes().toString().padStart(2, '0');
+        const currentDate = now.toISOString().split('T')[0];
+
+        // Items that have a reminder
+        const itemsWithReminders = db.prepare(`
+            SELECT ci.id, ci.content, ci.target_date, ci.time, ci.reminder_minutes, c.user_id 
+            FROM checklist_items ci
+            JOIN checklists c ON ci.checklist_id = c.id
+            WHERE ci.reminder_minutes IS NOT NULL AND ci.target_date IS NOT NULL AND ci.time IS NOT NULL AND ci.target_date >= ?
+        `).all(currentDate);
+
+        for (const item of itemsWithReminders) {
+            // Check if reminder is due
+            const taskDateTime = new Date(`${item.target_date}T${item.time}:00`);
+            const reminderTime = new Date(taskDateTime.getTime() - item.reminder_minutes * 60000);
+
+            if (now.getHours() === reminderTime.getHours() && now.getMinutes() === reminderTime.getMinutes() && now.getDate() === reminderTime.getDate() && now.getMonth() === reminderTime.getMonth() && now.getFullYear() === reminderTime.getFullYear()) {
+                // Send push notification to user
+                const subscriptions = db.prepare('SELECT endpoint, p256dh, auth FROM web_push_subscriptions WHERE user_id = ?').all(item.user_id);
+
+                const payload = JSON.stringify({
+                    title: 'תזכורת למשימה: ' + item.content,
+                    body: `משימה זו מתוכננת לשעה ${item.time}`,
+                    data: { url: '/' }
+                });
+
+                for (const sub of subscriptions) {
+                    const pushSubscription = {
+                        endpoint: sub.endpoint,
+                        keys: { p256dh: sub.p256dh, auth: sub.auth }
+                    };
+                    try {
+                        await webpush.sendNotification(pushSubscription, payload);
+                    } catch (error) {
+                        console.error('Error sending push notification', error);
+                        if (error.statusCode === 410) {
+                            db.prepare('DELETE FROM web_push_subscriptions WHERE endpoint = ?').run(sub.endpoint);
+                        }
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Cron job error', e);
+    }
+});
+
 // Serve static frontend files in production
 const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
 app.use(express.static(frontendDistPath));
@@ -1638,6 +1808,7 @@ app.use(express.static(frontendDistPath));
 app.use((req, res) => {
     res.sendFile(path.join(frontendDistPath, 'index.html'));
 });
+
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {

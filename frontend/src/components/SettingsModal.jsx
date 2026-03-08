@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useUser } from '../context/UserContext';
 import { User, Save, X, Settings, Bell, Palette, Layout, CreditCard, Trash2, ShieldCheck, HelpCircle, Users, UserPlus, Check, Search, Menu, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
+import { subscribeToPushNotifications, unsubscribeFromPushNotifications } from '../services/NotificationService';
 
 const API_URL = '/api';
 
@@ -19,7 +20,18 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [isMobileViewMode, setIsMobileViewMode] = useState(window.innerWidth <= 992);
+    const [pushEnabled, setPushEnabled] = useState(false);
     const fileInputRef = useRef(null);
+
+    useEffect(() => {
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+            navigator.serviceWorker.ready.then(registration => {
+                registration.pushManager.getSubscription().then(subscription => {
+                    setPushEnabled(!!subscription);
+                });
+            });
+        }
+    }, [isOpen]);
 
     // Sync input when modal opens/user loads
     useEffect(() => {
@@ -94,6 +106,26 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
             }
         } catch (error) {
             toast.error('שגיאה באישור חברות');
+        }
+    };
+
+    const handleTogglePushNotifications = async () => {
+        if (pushEnabled) {
+            const result = await unsubscribeFromPushNotifications();
+            if (result.success) {
+                setPushEnabled(false);
+                toast.success('קבלת התראות הופסקה');
+            } else {
+                toast.error('שגיאה בהפסקת התראות: ' + result.error);
+            }
+        } else {
+            const result = await subscribeToPushNotifications(user.id);
+            if (result.success) {
+                setPushEnabled(true);
+                toast.success('קבלת התראות הופעלה בהצלחה');
+            } else {
+                toast.error('שגיאה בהפעלת התראות: ' + result.error);
+            }
         }
     };
 
@@ -447,8 +479,45 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'account' }) => {
                                 </div>
                             )}
 
+                            {/* Notifications Tab */}
+                            {activeTab === 'notifications' && (
+                                <div className="fade-in">
+                                    <div style={{ marginBottom: '2.5rem' }}>
+                                        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-primary)' }}>התראות דפדפן (Push)</h3>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                            <div>
+                                                <h4 style={{ margin: '0 0 0.25rem', fontSize: '0.95rem', color: 'var(--text-primary)' }}>קבלת התראות למכשיר</h4>
+                                                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                    קבל התראות מערכת גם כאשר האפליקציה סגורה.
+                                                </p>
+                                            </div>
+
+                                            {/* Beautiful Toggle Switch */}
+                                            <label style={{ position: 'relative', display: 'inline-block', width: '48px', height: '24px', cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={pushEnabled}
+                                                    onChange={handleTogglePushNotifications}
+                                                    style={{ opacity: 0, width: 0, height: 0 }}
+                                                />
+                                                <span style={{
+                                                    position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                                                    background: pushEnabled ? 'var(--primary-color)' : 'var(--border-color)',
+                                                    transition: '.3s', borderRadius: '24px'
+                                                }}></span>
+                                                <span style={{
+                                                    position: 'absolute', content: '""', height: '18px', width: '18px',
+                                                    left: pushEnabled ? '4px' : '26px', bottom: '3px', background: 'white',
+                                                    transition: '.3s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                                }}></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Other Tabs Placeholder */}
-                            {activeTab !== 'account' && (
+                            {activeTab !== 'account' && activeTab !== 'notifications' && (
                                 <div className="fade-in" style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)' }}>
                                     <Settings size={48} opacity={0.2} style={{ margin: '0 auto 1rem' }} />
                                     <h3>אזור בבנייה</h3>

@@ -70,8 +70,19 @@ const initDb = () => {
       duration INTEGER DEFAULT 15,
       order_index INTEGER DEFAULT 0,
       target_date TEXT,
+      reminder_minutes INTEGER,
       FOREIGN KEY (checklist_id) REFERENCES checklists (id) ON DELETE CASCADE,
       FOREIGN KEY (parent_item_id) REFERENCES checklist_items (id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS web_push_subscriptions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      endpoint TEXT NOT NULL,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS daily_progress (
@@ -113,6 +124,16 @@ const initDb = () => {
       content TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS checklist_item_comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      checklist_item_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (checklist_item_id) REFERENCES checklist_items (id) ON DELETE CASCADE,
       FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     );
 
@@ -254,6 +275,12 @@ const initDb = () => {
   const hasPriority = tableInfoItems.some(col => col.name === 'priority');
   if (!hasPriority) {
     db.exec('ALTER TABLE checklist_items ADD COLUMN priority INTEGER DEFAULT 4');
+  }
+
+  // Migration: Add reminder_minutes to checklist_items if missing
+  const hasReminderMinutes = tableInfoItems.some(col => col.name === 'reminder_minutes');
+  if (!hasReminderMinutes) {
+    db.exec('ALTER TABLE checklist_items ADD COLUMN reminder_minutes INTEGER');
   }
 
   // Migration: Add active_days to projects if missing
