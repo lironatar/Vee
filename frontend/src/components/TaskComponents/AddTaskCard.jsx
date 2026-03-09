@@ -193,9 +193,9 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
             borderRadius: 'var(--radius-lg)',
             overflow: 'visible',
             position: 'relative',
-            background: isFocused ? 'rgba(79, 70, 229, 0.03)' : '#FFFFFF',
+            background: isFocused ? 'rgba(79, 70, 229, 0.05)' : 'var(--bg-secondary)',
             boxShadow: isFocused ? 'var(--float-hover-shadow)' : 'var(--card-shadow)',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: 'all 0.05s ease',
             transform: isFocused ? 'translateY(-2px)' : 'translateY(0)',
             zIndex: (isFocused || showPriorityMenu || showReminderMenu || showDateDropdown || showProjectSelector) ? 1000 : 1
         }}>
@@ -341,7 +341,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                                     <button type="button" onClick={(e) => { e.stopPropagation(); setShowTimeMenu(!showTimeMenu); setShowRepeatMenu(false); }}
                                         ref={timeBtnRef}
                                         style={bottomBtn(!!time)}
-                                        onMouseEnter={e => { if (!time) e.currentTarget.style.background = '#F5F5F5'; }}
+                                        onMouseEnter={e => { if (!time) e.currentTarget.style.background = 'var(--hover-bg)'; }}
                                         onMouseLeave={e => { if (!time) e.currentTarget.style.background = 'var(--bg-color)'; }}>
                                         <Clock size={15} />
                                         {time || 'זמן'}
@@ -360,7 +360,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                                 <div style={{ position: 'relative' }}>
                                     <button type="button" onClick={(e) => { e.stopPropagation(); setShowRepeatMenu(!showRepeatMenu); setShowTimeMenu(false); }}
                                         style={bottomBtn(!!repeatRule)}
-                                        onMouseEnter={e => { if (!repeatRule) e.currentTarget.style.background = '#F5F5F5'; }}
+                                        onMouseEnter={e => { if (!repeatRule) e.currentTarget.style.background = 'var(--hover-bg)'; }}
                                         onMouseLeave={e => { if (!repeatRule) e.currentTarget.style.background = 'var(--bg-color)'; }}>
                                         <RefreshCw size={15} />
                                         {repeatRule ? repeatLabels[repeatRule] : 'חזרה'}
@@ -381,11 +381,11 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                                                 <button key={i} onClick={() => { setRepeatRule(opt.value === 'custom' ? null : opt.value); setShowRepeatMenu(false); }}
                                                     style={{
                                                         display: 'block', width: '100%', padding: '0.6rem 1rem', border: 'none',
-                                                        background: repeatRule === opt.value ? '#F5F5F5' : 'transparent',
+                                                        background: repeatRule === opt.value ? 'var(--dropdown-selected)' : 'transparent',
                                                         cursor: 'pointer', color: 'var(--text-primary)', fontSize: '0.87rem',
                                                         textAlign: 'right', fontFamily: 'inherit',
                                                         fontWeight: repeatRule === opt.value ? 600 : 400,
-                                                        transition: 'background 0.12s',
+                                                        transition: 'background 0.1s',
                                                     }}
                                                     onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
                                                     onMouseLeave={e => e.currentTarget.style.background = repeatRule === opt.value ? 'var(--hover-bg)' : 'transparent'}>
@@ -613,7 +613,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.35rem',
-                            padding: '0.25rem 0.5rem',
+                            padding: 0,
                             background: showProjectSelector ? 'var(--hover-bg)' : 'transparent',
                             border: '1px solid transparent',
                             color: 'var(--text-secondary)',

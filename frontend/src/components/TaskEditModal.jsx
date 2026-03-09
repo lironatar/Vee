@@ -212,7 +212,7 @@ export default function TaskEditModal({
         borderRadius: isDesktop ? '12px' : '20px 20px 0 0',
         zIndex: 9999,
         boxShadow: '0 8px 40px rgba(0,0,0,0.22)',
-        animation: isDesktop ? 'fadeIn 0.15s ease' : 'slideUp 0.2s ease',
+        animation: isDesktop ? 'fadeIn 0.05s ease' : 'slideUp 0.05s ease',
         overflowY: 'auto',
         direction: 'rtl',
         display: 'flex',
