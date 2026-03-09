@@ -233,7 +233,7 @@ const SortableChecklistCard = ({
                             className="add-section-divider"
                             onMouseDown={(e) => { e.stopPropagation(); setIsCreatingList(checklist.id); }}
                         >
-                            הוסף רשימה (Section)
+                            + הוסף רשימה
                         </button>
                     )}
                 </div>

@@ -5,7 +5,7 @@ import {
     X, ChevronUp, ChevronDown, MoreHorizontal,
     Calendar as CalendarIcon, AlarmClock, Tag, MapPin,
     Flag, Plus, Trash2, CheckCircle, Circle, RefreshCw, Check,
-    Home, List, MessageSquare, Paperclip, CheckSquare, Bell, Inbox, Hash, Send
+    Home, List, MessageSquare, Paperclip, CheckSquare, Bell, Inbox, Folder, Send
 } from 'lucide-react';
 import DatePickerDropdown from './DatePickerDropdown';
 import TimePickerDropdown from './TimePickerDropdown';
@@ -226,7 +226,7 @@ export default function TaskEditModal({
     ].filter(Boolean).join(' / ');
 
     const isInboxInHeader = !projectTitle || projectTitle === 'כללי' || projectTitle === 'תיבת המשימות';
-    const HeaderIcon = isInboxInHeader ? Inbox : List;
+    const HeaderIcon = isInboxInHeader ? Inbox : Folder;
 
     // Format full date (e.g., 21 עבר 2025) or relative (היום, מחר)
     let formattedDateString = 'הוסף תאריך';

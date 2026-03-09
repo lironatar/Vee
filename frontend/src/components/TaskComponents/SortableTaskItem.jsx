@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CheckCircle, Check, Plus, RefreshCw, GripVertical } from 'lucide-react';
+import { CheckCircle, Check, Plus, RefreshCw, GripVertical, Folder } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import DatePickerDropdown from '../DatePickerDropdown';
@@ -98,21 +98,21 @@ const SortableTaskItem = ({
                     style={{
                         display: 'flex',
                         alignItems: 'flex-start',
-                        background: 'var(--bg-secondary)',
+                        background: '#FFFFFF',
                         cursor: 'pointer',
                         transition: 'var(--transition)',
                         position: 'relative',
-                        border: '1px solid transparent',
-                        borderRadius: compact ? '4px' : 'var(--radius-md)',
-                        padding: compact ? '6px 8px' : '12px 16px',
-                        boxShadow: 'var(--card-shadow)',
-                        marginBottom: compact ? '0' : '8px'
+                        border: '1px solid var(--border-color)',
+                        borderRadius: compact ? '4px' : 'var(--radius-lg)',
+                        padding: compact ? '6px 8px' : '14px 18px',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.03)',
+                        marginBottom: compact ? '0' : '10px'
                     }}
                     onMouseEnter={(e) => {
                         if (!compact) {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = 'var(--float-hover-shadow)';
-                            e.currentTarget.style.borderColor = 'rgba(79, 70, 229, 0.15)';
+                            e.currentTarget.style.transform = 'translateY(-3px)';
+                            e.currentTarget.style.boxShadow = '0 12px 24px -8px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)';
+                            e.currentTarget.style.borderColor = 'var(--primary-color)';
                         }
                         const actions = e.currentTarget.querySelector('.task-actions');
                         if (actions) actions.style.opacity = '1';
@@ -120,8 +120,8 @@ const SortableTaskItem = ({
                     onMouseLeave={(e) => {
                         if (!compact) {
                             e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = 'var(--card-shadow)';
-                            e.currentTarget.style.borderColor = 'transparent';
+                            e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.03)';
+                            e.currentTarget.style.borderColor = 'var(--border-color)';
                         }
                         const actions = e.currentTarget.querySelector('.task-actions');
                         if (actions) actions.style.opacity = '0';
@@ -194,7 +194,7 @@ const SortableTaskItem = ({
                                         style={{
                                             width: 18,
                                             height: 18,
-                                            borderRadius: '50%',
+                                            borderRadius: '6px',
                                             background: 'var(--success-color)',
                                             display: 'flex',
                                             alignItems: 'center',
@@ -211,11 +211,11 @@ const SortableTaskItem = ({
                                         style={{
                                             width: 18,
                                             height: 18,
-                                            borderRadius: '50%',
+                                            borderRadius: '6px',
                                             border: `1.8px solid ${priority === 4 ? 'var(--border-color)' : priorityColor}`,
                                             background: priority !== 4 ? `rgba(${priority === 1 ? '209, 69, 59' :
-                                                    priority === 2 ? '235, 137, 9' :
-                                                        '36, 111, 224'
+                                                priority === 2 ? '235, 137, 9' :
+                                                    '36, 111, 224'
                                                 }, 0.12)` : 'transparent',
                                             display: 'flex',
                                             alignItems: 'center',
@@ -284,7 +284,10 @@ const SortableTaskItem = ({
                                     <div style={{
                                         display: 'flex',
                                         alignItems: 'center',
-                                        justifyContent: 'space-between',
+                                        justifyContent: 'flex-start',
+                                        flexWrap: 'wrap',
+                                        rowGap: '4px',
+                                        columnGap: '8px',
                                         width: '100%',
                                         marginTop: '4px'
                                     }}>
@@ -315,12 +318,12 @@ const SortableTaskItem = ({
                                                 gap: '4px',
                                                 flexShrink: 0
                                             }}>
-                                                <span style={{ maxWidth: '140px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                <span style={{ fontSize: '11px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', textAlign: 'left' }}>
                                                     {item.checklistTitle && item.checklistTitle !== item.projectTitle && item.projectTitle !== 'כללי' && item.checklistTitle !== 'כללי'
                                                         ? `${item.projectTitle} / ${item.checklistTitle}`
                                                         : item.projectTitle === 'כללי' || !item.projectTitle ? 'תיבת המשימות' : item.projectTitle}
                                                 </span>
-                                                {item.projectTitle === 'כללי' || !item.projectTitle ? '🗳️' : '#'}
+                                                {item.projectTitle === 'כללי' || !item.projectTitle ? '🗳️' : <Folder size={12} style={{ opacity: 0.6 }} />}
                                             </div>
                                         )}
                                     </div>

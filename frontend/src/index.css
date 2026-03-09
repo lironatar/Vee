@@ -923,19 +923,22 @@ h2.react-datepicker__current-month {
 }
 
 :root {
-  --app-bg: #F1F5F9;
-  /* The new cool gray background for main content */
+  --app-bg: #FFFFFF;
   --bg-color: #FFFFFF;
-  /* Sidebar and cards are pure white */
   --bg-secondary: #FFFFFF;
-  /* Kept white for consistency in float aesthetic */
+  /* Now pure white for elevation */
+  --bg-inset: #F8F9FA;
+  /* Keeping a very light gray for insets if needed elsewhere */
+  --sidebar-bg: #F8F9FA;
+  /* Keep sidebar same as before for light mode */
   --text-primary: #0F172A;
   --text-secondary: #64748B;
   --primary-color: #4F46E5;
   --primary-hover: #4338CA;
   --accent-color: #0EA5E9;
   --border-color: #E2E8F0;
-  --hover-bg: #F8FAFC;
+  --hover-bg: #F1F5F9;
+  /* Adjusted hover slightly darker than secondary */
   --sidebar-active-bg: #EEF2FF;
   --sidebar-active-text: #4F46E5;
   --sidebar-active-shadow: none;
@@ -955,9 +958,9 @@ h2.react-datepicker__current-month {
   --priority-4: #64748B;
   /* Todoist Priority 4: Default (Gray - text-secondary) */
 
-  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
-  /* More pronounced float shadow */
-  --float-hover-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --card-shadow: 0 8px 30px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02);
+  /* Stronger depth for white cards */
+  --float-hover-shadow: 0 16px 48px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
   /* Hover shadow for cards */
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -978,11 +981,13 @@ h2.react-datepicker__current-month {
 
 [data-theme="dark"] {
   --app-bg: #0B1120;
-  /* Darker than sidebar for contrast */
+  /* Darkest background */
   --bg-color: #0F172A;
-  /* Sidebar background */
+  /* Main area background */
   --bg-secondary: #1E293B;
   /* Card background */
+  --sidebar-bg: #0B1120;
+  /* Sidebar background */
   --text-primary: #F8FAFC;
   --text-secondary: #94A3B8;
   --primary-color: #6366F1;
@@ -1198,22 +1203,30 @@ a:hover {
 }
 
 .sidebar {
-  width: 300px;
-  background: var(--bg-secondary);
-  border-left: 1px solid var(--border-color);
+  width: 280px;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  margin: 16px;
+  height: calc(100vh - 32px);
+  position: sticky;
+  top: 16px;
+  z-index: 40;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+}
+
+[data-theme="dark"] .sidebar {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2), 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-closed .sidebar {
-  margin-right: -300px;
-  border-left-color: transparent;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.6s cubic-bezier(0.4, 0, 0.2, 1), border-left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-right: -312px;
+  /* width(280) + margin(16*2) */
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sidebar-header {
@@ -1301,7 +1314,7 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  background: var(--bg-secondary);
+  background: var(--sidebar-bg);
   border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
@@ -1502,7 +1515,7 @@ textarea.form-control:focus {
 .sidebar-header {
   padding: 0.5rem;
   border-bottom: none;
-  background: var(--bg-secondary);
+  background: var(--sidebar-bg);
   transition: all 0.2s ease;
   margin-bottom: 0.4rem;
   position: relative;
@@ -1510,7 +1523,7 @@ textarea.form-control:focus {
 }
 
 [data-theme="dark"] .sidebar-header {
-  background: rgba(15, 23, 42, 0.8);
+  background: var(--sidebar-bg);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
@@ -1913,19 +1926,22 @@ textarea.form-control:focus {
 .add-section-divider {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
-  padding: 0.2rem 0;
+  padding: 0.5rem 0;
+  margin-top: 0.5rem;
 
   background: transparent;
   border: none;
   color: var(--primary-color);
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-weight: 800;
+  font-size: 1rem;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: all 0.2s ease;
   position: relative;
+  text-align: right;
+  direction: rtl;
 }
 
 .checklist-minimal:hover .add-section-divider,
@@ -1933,14 +1949,9 @@ textarea.form-control:focus {
   opacity: 1;
 }
 
-.add-section-divider::before,
-.add-section-divider::after {
-  content: "";
-  flex-grow: 1;
-  height: 1px;
-  background-color: var(--primary-color);
-  opacity: 0.3;
-  margin: 0 1rem;
+.add-section-divider:hover {
+  opacity: 1;
+  transform: translateX(-4px);
 }
 
 /* Add Section Form UI styles matching the reference */
@@ -2138,13 +2149,13 @@ textarea.form-control:focus {
 
 /* Sidebar Specific Polish */
 .sidebar {
-  background: var(--bg-secondary);
+  background: var(--sidebar-bg);
   border-left: 1px solid var(--border-color);
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.02);
 }
 
 [data-theme="dark"] .sidebar {
-  background: rgba(15, 23, 42, 0.95);
+  background: var(--sidebar-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }

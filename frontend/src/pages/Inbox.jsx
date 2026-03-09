@@ -444,7 +444,7 @@ const Inbox = () => {
                             className="add-section-divider"
                             onMouseDown={(e) => { e.stopPropagation(); setIsCreatingList(true); }}
                         >
-                            הוסף רשימה (Section)
+                            + הוסף רשימה
                         </button>
 
                         {isCreatingList === true && (

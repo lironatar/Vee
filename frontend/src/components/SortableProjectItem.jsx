@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Hash } from 'lucide-react';
+import { Folder } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -34,7 +34,7 @@ const SortableProjectItem = ({ proj, isProjActive, onToggle, getChildren, locati
                     className={`nav-link project-link sidebar-menu-item ${isProjActive ? 'active' : ''}`}
                     style={{ flexGrow: 1 }}
                 >
-                    <Hash size={18} color={projColor} strokeWidth={2} style={{ opacity: 0.7 }} />
+                    <Folder size={18} style={{ color: projColor, opacity: 0.8 }} strokeWidth={2} />
                     <span style={{ fontSize: '1rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{proj.title}</span>
                 </Link>
             </div>
@@ -50,7 +50,7 @@ const SortableProjectItem = ({ proj, isProjActive, onToggle, getChildren, locati
                         const childColor = child.color && child.color !== '#ffffff' ? child.color : 'var(--text-secondary)';
                         return (
                             <Link key={child.id} to={`/project/${child.id}`} onClick={() => { if (window.innerWidth <= 992) onToggle(); }} className={`nav-link project-link sidebar-menu-item ${isChildActive ? 'active' : ''}`} style={{ padding: '0.45rem 0.6rem', fontSize: '0.95rem' }}>
-                                <Hash size={16} color={childColor} strokeWidth={2} style={{ opacity: 0.7 }} />
+                                <Folder size={16} style={{ color: childColor, opacity: 0.8 }} strokeWidth={2} />
                                 <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{child.title}</span>
                             </Link>
                         );

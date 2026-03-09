@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { Folder, Plus, Trash2, Repeat, Target, ListChecks, ArrowRight, ChevronDown, X, Search, ChevronLeft, Hash } from 'lucide-react';
+import { Folder, Plus, Trash2, Repeat, Target, ListChecks, ArrowRight, ChevronDown, X, Search, ChevronLeft } from 'lucide-react';
 import TaskPageLayout from '../components/TaskPageLayout';
 import CreateProjectModal from '../components/CreateProjectModal';
 import TemplateStoreModal from '../components/TemplateStoreModal';

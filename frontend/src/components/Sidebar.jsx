@@ -187,7 +187,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0, paddingLeft: '0.5rem' }}>
                             <button className="btn-icon-soft" style={{ width: '36px', height: '36px', position: 'relative' }}>
                                 <Bell size={20} strokeWidth={1.8} />
-                                <span style={{ position: 'absolute', top: 8, left: 8, width: 8, height: 8, background: 'var(--primary-color)', borderRadius: '50%', border: '2px solid var(--bg-secondary)', boxShadow: '0 0 0 1px rgba(0,0,0,0.05)' }}></span>
+                                <span style={{ position: 'absolute', top: 8, left: 8, width: 8, height: 8, background: 'var(--primary-color)', borderRadius: '50%', border: '2px solid var(--sidebar-bg)', boxShadow: '0 0 0 1px rgba(0,0,0,0.05)' }}></span>
                             </button>
                             {isOpen && (
                                 <button
@@ -244,7 +244,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                                                     justifyContent: 'center',
                                                     transition: 'transform 0.2s',
                                                 }}>
-                                                    <Plus size={16} style={{ color: 'var(--bg-secondary)' }} strokeWidth={2.5} />
+                                                    <Plus size={16} style={{ color: 'var(--sidebar-bg)' }} strokeWidth={2.5} />
                                                 </div>
                                             ) : (
                                                 <Icon
