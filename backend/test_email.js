@@ -1,3 +1,4 @@
+require('dotenv').config();
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
@@ -6,7 +7,7 @@ const transporter = nodemailer.createTransport({
     secure: true,
     auth: {
         user: 'resend',
-        pass: 're_5jpHQcuv_MZqLjjY9n2mGmFeNaHy3bXEX'
+        pass: process.env.RESEND_API_KEY
     }
 });
 
