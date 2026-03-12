@@ -72,7 +72,17 @@ const Sidebar = ({ isOpen, onToggle }) => {
         try {
             const todayStr = new Date().toLocaleDateString('en-CA');
             const res = await fetch(`${API_URL}/users/${user.id}/sidebar-counts?date=${todayStr}`);
-            if (res.ok) setCounts(await res.json());
+            if (res.ok) {
+                const data = await res.json();
+                setCounts(data);
+                // Broadcast granular counts for DynamicTitle component
+                window.dispatchEvent(new CustomEvent('taskCountUpdated', {
+                    detail: {
+                        today: data.todayCount || 0,
+                        inbox: data.inboxCount || 0
+                    }
+                }));
+            }
         } catch (error) {
             console.error('Error fetching counts:', error);
         }
@@ -126,7 +136,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
         { path: '/inbox', label: 'תיבת המשימות', icon: Inbox, badge: counts.inboxCount > 0 ? counts.inboxCount.toString() : null },
         { path: '/today', label: 'היום', icon: DynamicTodayIcon, badge: counts.todayCount > 0 ? counts.todayCount.toString() : null },
         { path: '/calendar', label: 'לו"ז', icon: Calendar },
-        { path: '/history', label: 'הושלמו', icon: CheckCircle },
+        { path: '/history', label: 'פעילות', icon: CheckCircle },
     ];
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);

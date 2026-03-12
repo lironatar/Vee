@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
     PointerSensor,
@@ -19,6 +19,7 @@ const API_URL = '/api';
 const Inbox = () => {
     const { user } = useUser();
     const [checklists, setChecklists] = useState([]);
+    const [activePageTab, setActivePageTab] = useState('tasks'); // 'tasks' or 'activity'
     const [loading, setLoading] = useState(true);
     const [addingToList, setAddingToList] = useState(null);
     const [addingToItem, setAddingToItem] = useState(null);
@@ -56,6 +57,12 @@ const Inbox = () => {
         if (user?.id) {
             fetchInbox();
         }
+    }, [user?.id]);
+
+    useEffect(() => {
+        const handleRefresh = () => fetchInbox();
+        window.addEventListener('refreshTasks', handleRefresh);
+        return () => window.removeEventListener('refreshTasks', handleRefresh);
     }, [user?.id]);
 
     const fetchInbox = async () => {
@@ -110,7 +117,7 @@ const Inbox = () => {
                     target_date: window.globalNewItemDate || null,
                     time: window.globalNewItemTime || null,
                     duration: window.globalNewItemDuration || 15,
-                    description: window.globalNewItemDesc || null,
+                    description: window.globalNewItemDescription || null,
                     repeat_rule: window.globalNewItemRepeatRule || null
                 })
             });
@@ -409,6 +416,18 @@ const Inbox = () => {
                     </h1>
                 </div>
             }
+            headerActions={
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', marginLeft: window.innerWidth <= 768 ? '-1rem' : '0' }}>
+                    <button
+                        onClick={() => setActivePageTab(activePageTab === 'tasks' ? 'activity' : 'tasks')}
+                        className="btn-icon-soft"
+                        title={activePageTab === 'tasks' ? 'הושלמו' : 'משימות'}
+                        style={{ padding: '0.4rem' }}
+                    >
+                        <CheckCircle2 size={20} color={activePageTab === 'activity' ? 'var(--success-color)' : '#666'} />
+                    </button>
+                </div>
+            }
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
@@ -419,33 +438,37 @@ const Inbox = () => {
                 {checklists.length === 0 ? (
                     <div className="checklist-minimal" style={{ padding: '0.1rem 0', display: 'flex', flexDirection: 'column', border: 'none' }}>
                         {/* Add Task Button for empty inbox */}
-                        <AddTaskButton onClick={async () => {
-                            try {
-                                const res = await fetch(`${API_URL}/users/${user.id}/checklists`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        title: '',
-                                        project_id: null,
-                                        active_days: '0,1,2,3,4,5,6'
-                                    })
-                                });
-                                if (res.ok) {
-                                    const newList = await res.json();
-                                    setChecklists([newList]);
-                                    setExpandedChecklists({ [newList.id]: true });
-                                    setAddingToList(newList.id);
-                                }
-                            } catch (e) { console.error(e); }
-                        }} />
+                        {activePageTab === 'tasks' && (
+                            <AddTaskButton onClick={async () => {
+                                try {
+                                    const res = await fetch(`${API_URL}/users/${user.id}/checklists`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            title: '',
+                                            project_id: null,
+                                            active_days: '0,1,2,3,4,5,6'
+                                        })
+                                    });
+                                    if (res.ok) {
+                                        const newList = await res.json();
+                                        setChecklists([newList]);
+                                        setExpandedChecklists({ [newList.id]: true });
+                                        setAddingToList(newList.id);
+                                    }
+                                } catch (e) { console.error(e); }
+                            }} />
+                        )}
 
-                        <button
-                            type="button"
-                            className="add-section-divider"
-                            onMouseDown={(e) => { e.stopPropagation(); setIsCreatingList(true); }}
-                        >
-                            + הוסף רשימה
-                        </button>
+                        {activePageTab === 'tasks' && (
+                            <button
+                                type="button"
+                                className="add-section-divider"
+                                onMouseDown={(e) => { e.stopPropagation(); setIsCreatingList(true); }}
+                            >
+                                + הוסף רשימה
+                            </button>
+                        )}
 
                         {isCreatingList === true && (
                             <form className="add-section-form" onSubmit={handleCreateCustomList}>
@@ -469,52 +492,66 @@ const Inbox = () => {
                         items={checklists.map(c => c.id)}
                         strategy={verticalListSortingStrategy}
                     >
-                        {activeChecklists.map((list) => (
-                            <React.Fragment key={list.id}>
-                                <SortableChecklistCard
-                                    key={list.id}
-                                    checklist={list}
-                                    expanded={expandedChecklists[list.id]}
-                                    onToggleExpand={() => toggleChecklistExpanded(list.id)}
-                                    onAddItem={(e, listId, parentId = null, content = null) => handleAddItem(e, listId, parentId, content)}
-                                    onDeleteItem={handleDeleteItem}
-                                    onUpdateItem={handleUpdateItem}
-                                    onToggleItem={toggleItem}
-                                    addingToList={addingToList}
-                                    setAddingToList={setAddingToList}
-                                    addingToItem={addingToItem}
-                                    setAddingToItem={setAddingToItem}
-                                    newItemContent={newItemContent}
-                                    setNewItemContent={setNewItemContent}
-                                    showDeleteHeader={true}
-                                    onDeleteChecklist={(e) => handleDeleteChecklist(e, list.id)}
-                                    API_URL={API_URL}
-                                    todayProgress={todayProgress}
-                                    isInbox={true}
-                                    useSharedDndContext={true}
-                                    buildHierarchy={buildHierarchy}
-                                    calculateProgress={calculateProgress}
-                                    setIsCreatingList={setIsCreatingList}
-                                    projectTitle="תיבת המשימות"
-                                />
-                                {isCreatingList === list.id && (
-                                    <form className="add-section-form" onSubmit={handleCreateCustomList}>
-                                        <input
-                                            type="text"
-                                            className="add-section-input"
-                                            placeholder="שם הרשימה... (לדוגמה: פרוייקט חדש)"
-                                            value={newListTitle}
-                                            onChange={(e) => setNewListTitle(e.target.value)}
-                                            autoFocus
-                                        />
-                                        <div className="add-section-actions">
-                                            <button type="submit" className="btn-add-section" disabled={!newListTitle.trim()}>הוסף רשימה</button>
-                                            <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(null); setNewListTitle(''); }}>ביטול</button>
-                                        </div>
-                                    </form>
-                                )}
-                            </React.Fragment>
-                        ))}
+                        {activeChecklists.map((list) => {
+                            const filteredItems = (list.items || []).filter(item => {
+                                const p = todayProgress.find(prog => prog.checklist_item_id === item.id);
+                                const isCompleted = p && p.completed === 1;
+                                return activePageTab === 'tasks' ? !isCompleted : isCompleted;
+                            });
+
+                            if (activePageTab === 'activity' && filteredItems.length === 0) return null;
+
+                            const listWithFilteredItems = { ...list, items: filteredItems };
+
+                            return (
+                                <React.Fragment key={list.id}>
+                                    <SortableChecklistCard
+                                        key={list.id}
+                                        checklist={listWithFilteredItems}
+                                        expanded={expandedChecklists[list.id]}
+                                        onToggleExpand={() => toggleChecklistExpanded(list.id)}
+                                        onAddItem={(e, listId, parentId = null, content = null) => handleAddItem(e, listId, parentId, content)}
+                                        onDeleteItem={handleDeleteItem}
+                                        onUpdateItem={handleUpdateItem}
+                                        onToggleItem={toggleItem}
+                                        addingToList={addingToList}
+                                        setAddingToList={setAddingToList}
+                                        addingToItem={addingToItem}
+                                        setAddingToItem={setAddingToItem}
+                                        newItemContent={newItemContent}
+                                        setNewItemContent={setNewItemContent}
+                                        showDeleteHeader={true}
+                                        onDeleteChecklist={(e) => handleDeleteChecklist(e, list.id)}
+                                        API_URL={API_URL}
+                                        todayProgress={todayProgress}
+                                        isInbox={true}
+                                        useSharedDndContext={true}
+                                        buildHierarchy={buildHierarchy}
+                                        calculateProgress={calculateProgress}
+                                        setIsCreatingList={setIsCreatingList}
+                                        useProgressArray={true}
+                                        projectTitle="תיבת המשימות"
+                                        hideAddButton={activePageTab === 'activity'}
+                                    />
+                                    {isCreatingList === list.id && activePageTab === 'tasks' && (
+                                        <form className="add-section-form" onSubmit={handleCreateCustomList}>
+                                            <input
+                                                type="text"
+                                                className="add-section-input"
+                                                placeholder="שם הרשימה... (לדוגמה: פרוייקט חדש)"
+                                                value={newListTitle}
+                                                onChange={(e) => setNewListTitle(e.target.value)}
+                                                autoFocus
+                                            />
+                                            <div className="add-section-actions">
+                                                <button type="submit" className="btn-add-section" disabled={!newListTitle.trim()}>הוסף רשימה</button>
+                                                <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(null); setNewListTitle(''); }}>ביטול</button>
+                                            </div>
+                                        </form>
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
                     </SortableContext>
                 )}
 
@@ -522,8 +559,23 @@ const Inbox = () => {
 
 
             </div>
+
+            {activePageTab === 'activity' && activeChecklists.every(list => {
+                const filtered = (list.items || []).filter(item => {
+                    const p = todayProgress.find(prog => prog.checklist_item_id === item.id);
+                    return p && p.completed === 1;
+                });
+                return filtered.length === 0;
+            }) && (
+                    <div style={{ textAlign: 'center', padding: '5rem 2rem', opacity: 0.6 }}>
+                        <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>אין משימות שהושלמו להצגה</p>
+                    </div>
+                )}
         </TaskPageLayout >
     );
 };
 
 export default Inbox;
+
+
+

@@ -16,16 +16,17 @@ const HOUR_HEIGHT = 80; // pixels per hour
 const MINUTE_HEIGHT = HOUR_HEIGHT / 60;
 
 // Droppable slot for a specific time
-const TimelineSlot = ({ time, dateStr, onAddTaskClick, showLine = false }) => {
+const TimelineSlot = ({ time, dateStr, onAddTaskClick, showLine = false, hideAddButton = false }) => {
     const { isOver, setNodeRef } = useDroppable({
         id: `slot-${dateStr}-${time}`,
-        data: { dateStr, time, type: 'TimelineSlot' }
+        data: { dateStr, time, type: 'TimelineSlot' },
+        disabled: hideAddButton
     });
 
     return (
         <div
             ref={setNodeRef}
-            onClick={() => onAddTaskClick(dateStr, time)}
+            onClick={() => !hideAddButton && onAddTaskClick(dateStr, time)}
             style={{
                 height: `${HOUR_HEIGHT / 4}px`, // 15 minute slots
                 borderTop: showLine ? '1px solid var(--border-color)' : 'none',
@@ -101,6 +102,7 @@ const DailyTimelineView = ({
     onTaskToggle,
     onTaskDelete,
     onAddTaskClick,
+    hideAddButton = false
 }) => {
     const scrollContainerRef = useRef(null);
 
@@ -196,9 +198,9 @@ const DailyTimelineView = ({
                                     checklistId={task.checklist_id || 'inbox'}
                                     toggleItem={onTaskToggle}
                                     handleDeleteItem={onTaskDelete}
-                                    handleUpdateItem={onTaskUpdate}
                                     useProgressArray={false}
                                     isCompletedFallback={task.completed}
+                                    hideAddButton={hideAddButton}
                                 />
                             ))}
                         </div>
@@ -237,10 +239,10 @@ const DailyTimelineView = ({
                                 const hourStr = String(hour).padStart(2, '0');
                                 return (
                                     <React.Fragment key={hour}>
-                                        <TimelineSlot time={`${hourStr}:00`} dateStr={dateStr} onAddTaskClick={onAddTaskClick} showLine={true} />
-                                        <TimelineSlot time={`${hourStr}:15`} dateStr={dateStr} onAddTaskClick={onAddTaskClick} showLine={false} />
-                                        <TimelineSlot time={`${hourStr}:30`} dateStr={dateStr} onAddTaskClick={onAddTaskClick} showLine={false} />
-                                        <TimelineSlot time={`${hourStr}:45`} dateStr={dateStr} onAddTaskClick={onAddTaskClick} showLine={false} />
+                                        <TimelineSlot time={`${hourStr}:00`} dateStr={dateStr} onAddTaskClick={onAddTaskClick} showLine={true} hideAddButton={hideAddButton} />
+                                        <TimelineSlot time={`${hourStr}:15`} dateStr={dateStr} onAddTaskClick={onAddTaskClick} showLine={false} hideAddButton={hideAddButton} />
+                                        <TimelineSlot time={`${hourStr}:30`} dateStr={dateStr} onAddTaskClick={onAddTaskClick} showLine={false} hideAddButton={hideAddButton} />
+                                        <TimelineSlot time={`${hourStr}:45`} dateStr={dateStr} onAddTaskClick={onAddTaskClick} showLine={false} hideAddButton={hideAddButton} />
                                     </React.Fragment>
                                 );
                             })}
@@ -308,10 +310,10 @@ const DailyTimelineView = ({
                                                 checklistId={task.checklist_id || 'inbox'}
                                                 toggleItem={onTaskToggle}
                                                 handleDeleteItem={onTaskDelete}
-                                                handleUpdateItem={onTaskUpdate}
                                                 useProgressArray={false}
                                                 isCompletedFallback={task.completed}
                                                 compact={height < 50}
+                                                hideAddButton={hideAddButton}
                                             />
                                         </div>
                                     </div>
@@ -321,7 +323,7 @@ const DailyTimelineView = ({
                     </div>
                 </div>
 
-                <DraggableFAB />
+                {!hideAddButton && <DraggableFAB />}
             </div>
         </DndContext>
     );

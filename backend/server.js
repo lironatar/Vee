@@ -1194,35 +1194,51 @@ app.get('/api/users/:userId/tasks/by-month', (req, res) => {
         const targetedItems = targetedItemsQuery.all(userId, `${month}-%`);
 
         // 2. Fetch all progress for this month to match with items
+        // We join with checklist_items and projects to handle routine tasks too
         const progressQuery = db.prepare(`
-            SELECT checklist_item_id, date, completed 
-            FROM daily_progress 
-            WHERE user_id = ? AND date LIKE ?
+            SELECT dp.checklist_item_id, dp.date, dp.completed, 
+                   ci.content, ci.checklist_id, ci.priority, ci.time,
+                   c.title as checklistTitle, p.id as project_id, p.title as projectTitle
+            FROM daily_progress dp
+            JOIN checklist_items ci ON dp.checklist_item_id = ci.id
+            JOIN checklists c ON ci.checklist_id = c.id
+            LEFT JOIN projects p ON c.project_id = p.id
+            WHERE dp.user_id = ? AND dp.date LIKE ? AND dp.completed = 1
         `);
         const progressData = progressQuery.all(userId, `${month}-%`);
-        const progressMap = {};
-        progressData.forEach(p => {
-            progressMap[`${p.date}_${p.checklist_item_id}`] = p.completed === 1;
-        });
-
         // 3. Build summary map
         const summary = {};
         const daysInMonth = new Date(year, monthNum + 1, 0).getDate();
 
         for (let d = 1; d <= daysInMonth; d++) {
-            const dateObj = new Date(year, monthNum, d);
             const dateStr = `${year}-${String(monthNum + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const tasks = [];
+            const tasksMap = new Map();
 
-            // Targeted items
+            // First: add one-off targeted items for this day
             targetedItems.filter(i => i.target_date && i.target_date.startsWith(dateStr)).forEach(i => {
-                tasks.push({
+                tasksMap.set(i.id, {
                     ...i,
-                    completed: !!progressMap[`${dateStr}_${i.id}`]
+                    completed: false // Default, will be updated by progress next
                 });
             });
 
-            if (tasks.length > 0) {
+            // Second: add completed items for this day (overwrites with completion state, also adds routine items)
+            progressData.filter(p => p.date === dateStr).forEach(p => {
+                tasksMap.set(p.checklist_item_id, {
+                    id: p.checklist_item_id,
+                    content: p.content,
+                    checklist_id: p.checklist_id,
+                    priority: p.priority,
+                    time: p.time,
+                    checklistTitle: p.checklistTitle,
+                    project_id: p.project_id,
+                    projectTitle: p.projectTitle,
+                    completed: true
+                });
+            });
+
+            if (tasksMap.size > 0) {
+                const tasks = Array.from(tasksMap.values());
                 summary[dateStr] = {
                     total: tasks.length,
                     tasks: tasks

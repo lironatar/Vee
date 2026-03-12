@@ -8,6 +8,7 @@ import { Plus, X } from 'lucide-react';
 import AddTaskCard from '../components/TaskComponents/AddTaskCard';
 import CalendarPageLayout from '../components/CalendarPageLayout';
 import { UpcomingWeeklyView, DailyTimelineView } from '../components/TaskComponents/index.jsx';
+import PageTabs from '../components/PageTabs';
 
 const API_URL = '/api';
 
@@ -15,6 +16,7 @@ const GlobalCalendar = () => {
     const { user } = useUser();
     const navigate = useNavigate();
     const [viewMode, setViewMode] = useState(() => localStorage.getItem('calendarViewMode') || 'monthly');
+    const [activePageTab, setActivePageTab] = useState('tasks'); // 'tasks' or 'activity'
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -185,6 +187,7 @@ const GlobalCalendar = () => {
     }, [user]);
 
     const handleDateClick = (arg) => {
+        if (activePageTab === 'activity') return;
         setSelectedModalDate(arg.dateStr);
         setNewTaskContent('');
         setIsModalOpen(true);
@@ -230,7 +233,7 @@ const GlobalCalendar = () => {
                     target_date: window.globalNewItemDate || selectedModalDate,
                     time: window.globalNewItemTime || null,
                     duration: window.globalNewItemDuration || 15,
-                    description: window.globalNewItemDesc || null,
+                    description: window.globalNewItemDescription || null,
                     repeat_rule: window.globalNewItemRepeatRule || null,
                     parent_item_id: parentId
                 })
@@ -388,6 +391,7 @@ const GlobalCalendar = () => {
             onScroll={setScrollTop}
             externalScrollTop={scrollTop}
         >
+            <PageTabs activeTab={activePageTab} onChange={setActivePageTab} />
             {loading && ((viewMode !== 'monthly' && upcomingEvents.length === 0) || (viewMode === 'monthly' && events.length === 0)) ? (
                 <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--primary-color)' }}>
                     <Loader2 className="animate-spin" size={32} />
@@ -395,7 +399,10 @@ const GlobalCalendar = () => {
             ) : viewMode === 'daily' ? (
                 <div style={{ flex: 1, overflow: 'hidden' }}>
                     <DailyTimelineView
-                        events={upcomingEvents}
+                        events={upcomingEvents.filter(t => {
+                            const isCompleted = !!t.completed;
+                            return activePageTab === 'tasks' ? !isCompleted : isCompleted;
+                        })}
                         date={new Date()}
                         onTaskToggle={handleUpcomingTaskToggle}
                         onTaskDelete={handleUpcomingTaskDelete}
@@ -405,12 +412,16 @@ const GlobalCalendar = () => {
                             setSelectedModalTime(time || '');
                             setIsModalOpen(true);
                         }}
+                        hideAddButton={activePageTab === 'activity'}
                     />
                 </div>
             ) : viewMode === 'weekly' ? (
                 <div style={{ flex: 1, overflow: 'hidden' }}>
                     <UpcomingWeeklyView
-                        events={upcomingEvents}
+                        events={upcomingEvents.filter(t => {
+                            const isCompleted = !!t.completed;
+                            return activePageTab === 'tasks' ? !isCompleted : isCompleted;
+                        })}
                         startDate={new Date()}
                         onTaskToggle={handleUpcomingTaskToggle}
                         onTaskDelete={handleUpcomingTaskDelete}
@@ -420,6 +431,7 @@ const GlobalCalendar = () => {
                             setSelectedModalTime('');
                             setIsModalOpen(true);
                         }}
+                        hideAddButton={activePageTab === 'activity'}
                     />
                 </div>
             ) : (
@@ -430,7 +442,10 @@ const GlobalCalendar = () => {
                         </div>
                     )}
                     <CalendarWrapper
-                        events={events}
+                        events={events.filter(e => {
+                            const isCompleted = !!e.extendedProps?.completed;
+                            return activePageTab === 'tasks' ? !isCompleted : isCompleted;
+                        })}
                         viewMode="dayGridMonth"
                         onDateClick={handleDateClick}
                         onEventClick={handleEventClick}

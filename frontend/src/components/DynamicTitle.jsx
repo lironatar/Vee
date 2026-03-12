@@ -9,6 +9,18 @@ const DynamicTitle = () => {
     const location = useLocation();
     const [isTabActive, setIsTabActive] = useState(true);
     const [customTitle, setCustomTitle] = useState(null);
+    const [taskCounts, setTaskCounts] = useState({ today: 0, inbox: 0 });
+
+    // Listen for granular task count updates from Sidebar
+    useEffect(() => {
+        const handleTaskCount = (event) => {
+            if (event.detail && typeof event.detail === 'object') {
+                setTaskCounts(event.detail);
+            }
+        };
+        window.addEventListener('taskCountUpdated', handleTaskCount);
+        return () => window.removeEventListener('taskCountUpdated', handleTaskCount);
+    }, []);
 
     // Handle visibility change for interactive titles when user leaves the tab
     useEffect(() => {
@@ -40,17 +52,14 @@ const DynamicTitle = () => {
         let baseTitle = 'Vee';
 
         if (!isTabActive) {
-            // Interactive/Creative titles when tab is blurred
-            const inactiveTitles = [
-                'Vee - מחכים לך! ✨',
-                'Vee - חזור אלינו! 🌸',
-                'Vee - המשימות מחכות... 📝',
-                'Vee - געגועים! ❤️',
-                'Vee - אל תשכח אותנו! 🌿',
-                'Vee - זמן להיות פרודוקטיבי? 🚀'
-            ];
-            const randomIndex = Math.floor(Math.random() * inactiveTitles.length);
-            document.title = inactiveTitles[randomIndex];
+            // Progressive/Dynamic titles when tab is blurred
+            if (taskCounts.today > 0) {
+                document.title = `Vee - יש לך ${taskCounts.today} משימות היום`;
+            } else if (taskCounts.inbox > 0) {
+                document.title = `Vee - יש לך ${taskCounts.inbox} משימות בתיבה`;
+            } else {
+                document.title = 'Vee - המשימות שלך מחכות לך ✨';
+            }
             return;
         }
 

@@ -13,10 +13,11 @@ import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { SortableTaskItem } from './index.jsx';
 
 // Component for a single Droppable Day Zone
-const DroppableDayZone = ({ dayObj, onAddTaskClick, onTaskToggle, onTaskDelete, onTaskUpdate, formatDayHeader }) => {
+const DroppableDayZone = ({ dayObj, onAddTaskClick, onTaskToggle, onTaskDelete, onTaskUpdate, formatDayHeader, hideAddButton = false }) => {
     const { isOver, setNodeRef } = useDroppable({
         id: `drop-${dayObj.dateStr}`,
-        data: { dateStr: dayObj.dateStr, type: 'DayZone' }
+        data: { dateStr: dayObj.dateStr, type: 'DayZone' },
+        disabled: hideAddButton
     });
 
     return (
@@ -49,10 +50,10 @@ const DroppableDayZone = ({ dayObj, onAddTaskClick, onTaskToggle, onTaskDelete, 
                                 checklistId={task.checklist_id || 'inbox'}
                                 toggleItem={onTaskToggle}
                                 handleDeleteItem={onTaskDelete}
-                                handleUpdateItem={onTaskUpdate}
                                 useProgressArray={false}
                                 isCompletedFallback={task.completed}
                                 projectTitle={task.project_id ? (task.project_title || 'פרויקט') : 'תיבת המשימות'}
+                                hideAddButton={hideAddButton}
                             />
                         </div>
                     ))
@@ -144,6 +145,7 @@ const UpcomingWeeklyView = ({
     onTaskToggle,
     onTaskDelete,
     onAddTaskClick,
+    hideAddButton = false
 }) => {
     const stripRef = useRef(null);
     const contentRef = useRef(null);
@@ -363,12 +365,13 @@ const UpcomingWeeklyView = ({
                             onTaskToggle={onTaskToggle}
                             onTaskDelete={onTaskDelete}
                             onTaskUpdate={onTaskUpdate}
+                            hideAddButton={hideAddButton}
                         />
                     ))}
                 </div>
 
                 {/* Draggable FAB */}
-                <DraggableFAB />
+                {!hideAddButton && <DraggableFAB />}
 
             </div>
         </DndContext>

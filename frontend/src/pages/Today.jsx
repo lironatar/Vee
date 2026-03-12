@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useUser } from '../context/UserContext';
 import { toast } from 'sonner';
 import { io } from 'socket.io-client';
@@ -29,6 +29,7 @@ const Today = () => {
     const [projectGroups, setProjectGroups] = useState(() => cache.get(`today_tasks_${user.id}`) || []);
     const [todayProgress, setTodayProgress] = useState(() => cache.get(`today_progress_${user.id}`) || []);
     const [loading, setLoading] = useState(!cache.get(`today_tasks_${user.id}`));
+    const [activePageTab, setActivePageTab] = useState('tasks'); // 'tasks' or 'activity'
     const [expandedChecklists, setExpandedChecklists] = useState({ 'today-unified': true });
     const [addingToList, setAddingToList] = useState(null);
     const [addingToItem, setAddingToItem] = useState(null);
@@ -87,6 +88,15 @@ const Today = () => {
             Promise.all([fetchTodayTasks(), fetchTodayProgress()]).finally(() => setLoading(false));
         }
     }, [user, fetchTodayTasks, fetchTodayProgress]);
+
+    useEffect(() => {
+        const handleRefresh = () => {
+            fetchTodayTasks();
+            fetchTodayProgress();
+        };
+        window.addEventListener('refreshTasks', handleRefresh);
+        return () => window.removeEventListener('refreshTasks', handleRefresh);
+    }, [fetchTodayTasks, fetchTodayProgress]);
 
     useEffect(() => {
         const socket = io();
@@ -349,7 +359,8 @@ const Today = () => {
         )
         .filter(item => {
             const p = todayProgress.find(prog => prog.checklist_item_id === item.id);
-            return !(p && p.completed === 1);
+            const isCompleted = p && p.completed === 1;
+            return activePageTab === 'tasks' ? !isCompleted : isCompleted;
         });
 
     const totalTasks = allTasks.length;
@@ -423,6 +434,18 @@ const Today = () => {
                     </div>
                 </div>
             }
+            headerActions={
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', marginLeft: window.innerWidth <= 768 ? '-1rem' : '0' }}>
+                    <button
+                        onClick={() => setActivePageTab(activePageTab === 'tasks' ? 'activity' : 'tasks')}
+                        className="btn-icon-soft"
+                        title={activePageTab === 'tasks' ? 'הושלמו' : 'משימות'}
+                        style={{ padding: '0.4rem' }}
+                    >
+                        <CheckCircle2 size={20} color={activePageTab === 'activity' ? 'var(--success-color)' : '#666'} />
+                    </button>
+                </div>
+            }
             onScroll={setScrollTop}
             externalScrollTop={scrollTop}
             onDragStart={handleDragStart}
@@ -458,13 +481,17 @@ const Today = () => {
                     defaultItemDate={todayDateStr}
                     hideTaskCount={true}
                     useSharedDndContext={true}
+                    useProgressArray={true}
                     overrideChecklistForAdd={getTargetChecklistObj()}
+                    hideAddButton={activePageTab === 'activity'}
                 />
 
                 {allTasks.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '2rem 2rem', opacity: 0.6 }}>
-                        <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>הכל מוכן להיום!</p>
-                        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>לחץ על הוסף משימה כדי להתחיל.</p>
+                    <div style={{ textAlign: 'center', padding: '5rem 2rem', opacity: 0.6 }}>
+                        <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>
+                            {activePageTab === 'tasks' ? 'הכל מוכן להיום!' : 'אין משימות שהושלמו להצגה'}
+                        </p>
+                        {activePageTab === 'tasks' && <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>לחץ על הוסף משימה כדי להתחיל.</p>}
                     </div>
                 )}
             </div>
@@ -473,3 +500,6 @@ const Today = () => {
 };
 
 export default Today;
+
+
+

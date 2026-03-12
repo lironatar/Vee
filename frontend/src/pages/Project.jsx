@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext, useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { CheckCircle, Circle, Trash2, HelpCircle, ArrowRight, Store, Plus, ChevronRight, ChevronDown, Settings, X, Calendar as CalendarIcon, List as ListIcon, GripVertical, MoreVertical, MoreHorizontal, Users, UserPlus, Search, Copy, Edit3, Save, Home, Filter, MessageSquare, Send, Clock } from 'lucide-react';
@@ -47,6 +47,7 @@ const Project = () => {
     const [newItemContent, setNewItemContent] = useState('');
     const [addingToItem, setAddingToItem] = useState(null); // ID of parent item to add subtask to
     const [addingToList, setAddingToList] = useState(null); // ID of checklist to add main task to
+    const [activePageTab, setActivePageTab] = useState('tasks'); // 'tasks' or 'activity'
 
     const [expandedChecklists, setExpandedChecklists] = useState({});
 
@@ -244,6 +245,12 @@ const Project = () => {
         }
     };
 
+
+    useEffect(() => {
+        const handleRefresh = () => fetchProjectData();
+        window.addEventListener('refreshTasks', handleRefresh);
+        return () => window.removeEventListener('refreshTasks', handleRefresh);
+    }, [projectId, user?.id]);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -775,7 +782,8 @@ const Project = () => {
             ...c,
             items: c.items.filter(item => {
                 const p = todayProgress.find(prog => prog.checklist_item_id === item.id);
-                return !(p && p.completed === 1);
+                const isCompleted = p && p.completed === 1;
+                return activePageTab === 'tasks' ? !isCompleted : isCompleted;
             })
         }));
 
@@ -832,6 +840,14 @@ const Project = () => {
             }
             headerActions={
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', marginLeft: window.innerWidth <= 768 ? '-1rem' : '0' }}>
+                    <button
+                        onClick={() => setActivePageTab(activePageTab === 'tasks' ? 'activity' : 'tasks')}
+                        className="btn-icon-soft"
+                        title={activePageTab === 'tasks' ? 'הושלמו' : 'משימות'}
+                        style={{ padding: '0.4rem' }}
+                    >
+                        <CheckCircle size={20} color={activePageTab === 'activity' ? 'var(--success-color)' : '#666'} />
+                    </button>
                     <button onClick={() => setShowTeamModal(true)} className="btn-icon-soft" title="צוות הפרויקט" style={{ padding: '0.4rem' }}>
                         <Users size={20} color="#666" />
                     </button>
@@ -854,7 +870,7 @@ const Project = () => {
                                 <button onClick={() => setShowSettings(true)} className="dropdown-item">
                                     <Settings size={16} /> הגדרות פרויקט
                                 </button>
-                                <button onClick={handleDuplicateProject} className="dropdown-item">
+                    <button onClick={handleDuplicateProject} className="dropdown-item">
                                     <Copy size={16} /> שכפול פרויקט
                                 </button>
                                 <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.5rem' }} />
@@ -907,36 +923,40 @@ const Project = () => {
                             {activeChecklists.length === 0 ? (
                                 <div className="checklist-minimal" style={{ padding: '0.5rem 0', display: 'flex', flexDirection: 'column', border: 'none' }}>
                                     {/* Add Task Button for empty project */}
-                                    <AddTaskButton onClick={async () => {
-                                        // If no list exists, create a default one first
-                                        try {
-                                            const res = await fetch(`${API_URL}/users/${user.id}/checklists`, {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({
-                                                    title: '',
-                                                    project_id: projectId,
-                                                    active_days: '0,1,2,3,4,5,6'
-                                                })
-                                            });
-                                            if (res.ok) {
-                                                const newList = await res.json();
-                                                setChecklists([newList]);
-                                                setExpandedChecklists({ [newList.id]: true });
-                                                setAddingToList(newList.id);
-                                            }
-                                        } catch (e) { console.error(e); }
-                                    }} />
+                                    {activePageTab === 'tasks' && (
+                                        <AddTaskButton onClick={async () => {
+                                            // If no list exists, create a default one first
+                                            try {
+                                                const res = await fetch(`${API_URL}/users/${user.id}/checklists`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        title: '',
+                                                        project_id: projectId,
+                                                        active_days: '0,1,2,3,4,5,6'
+                                                    })
+                                                });
+                                                if (res.ok) {
+                                                    const newList = await res.json();
+                                                    setChecklists([newList]);
+                                                    setExpandedChecklists({ [newList.id]: true });
+                                                    setAddingToList(newList.id);
+                                                }
+                                            } catch (e) { console.error(e); }
+                                        }} />
+                                    )}
 
-                                    <button
-                                        type="button"
-                                        className="add-section-divider"
-                                        onMouseDown={(e) => { e.stopPropagation(); setIsCreatingList(true); }}
-                                    >
-                                        + הוסף רשימה
-                                    </button>
+                                    {activePageTab === 'tasks' && (
+                                        <button
+                                            type="button"
+                                            className="add-section-divider"
+                                            onMouseDown={(e) => { e.stopPropagation(); setIsCreatingList(true); }}
+                                        >
+                                            + הוסף רשימה
+                                        </button>
+                                    )}
 
-                                    {isCreatingList === true && (
+                                    {isCreatingList === true && activePageTab === 'tasks' && (
                                         <form className="add-section-form" onSubmit={handleCreateCustomList}>
                                             <input
                                                 type="text"
@@ -948,7 +968,7 @@ const Project = () => {
                                             />
                                             <div className="add-section-actions">
                                                 <button type="submit" className="btn-add-section" disabled={!newListTitle.trim()}>הוסף רשימה</button>
-                                                <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(false); setNewListTitle(''); }}>ביטול</button>
+                    <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(false); setNewListTitle(''); }}>ביטול</button>
                                             </div>
                                         </form>
                                     )}
@@ -995,12 +1015,14 @@ const Project = () => {
                                                     onDeleteChecklist={(e) => handleDeleteChecklist(e, checklist.id)}
                                                     API_URL={API_URL}
                                                     isInbox={false}
+                                                    useProgressArray={true}
                                                     useSharedDndContext={true}
                                                     className={isWaterfalling && visibleChecklistIds.has(checklist.id) ? 'magic-reveal' : (location.state?.magicReveal ? `slide-down stagger-${(idx % 4) + 1}` : '')}
                                                     visibleTaskIds={visibleTaskIds}
                                                     isWaterfalling={isWaterfalling}
+                                                    hideAddButton={activePageTab === 'activity'}
                                                 />
-                                                {isCreatingList === checklist.id && (
+                                                {isCreatingList === checklist.id && activePageTab === 'tasks' && (
                                                     <form className="add-section-form" onSubmit={handleCreateCustomList}>
                                                         <input
                                                             type="text"
@@ -1012,7 +1034,7 @@ const Project = () => {
                                                         />
                                                         <div className="add-section-actions">
                                                             <button type="submit" className="btn-add-section" disabled={!newListTitle.trim()}>הוסף רשימה</button>
-                                                            <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(null); setNewListTitle(''); }}>ביטול</button>
+                    <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(null); setNewListTitle(''); }}>ביטול</button>
                                                         </div>
                                                     </form>
                                                 )}
@@ -1169,7 +1191,7 @@ const Project = () => {
 
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                                     <button type="button" onClick={() => setShowSettings(false)} className="btn btn-secondary">ביטול</button>
-                                    <button type="submit" className="btn btn-primary" disabled={!settingsTitle.trim() || (project?.is_routine && settingsDays.length === 0)}>שמור שינויים</button>
+                    <button type="submit" className="btn btn-primary" disabled={!settingsTitle.trim() || (project?.is_routine && settingsDays.length === 0)}>שמור שינויים</button>
                                 </div>
                             </form>
                         </div>
@@ -1195,3 +1217,7 @@ const Project = () => {
 };
 
 export default Project;
+
+
+
+

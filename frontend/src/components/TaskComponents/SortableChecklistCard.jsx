@@ -31,7 +31,8 @@ const SortableChecklistCard = ({
     defaultProject = null,
     visibleTaskIds = null,
     isWaterfalling = false,
-    className = ''
+    className = '',
+    hideAddButton = false
 }) => {
     // Local update handler — calls PUT /api/items/:itemId and updates UI eventually via parent reload / socket
     const handleUpdateItem = onUpdateItem || handleUpdateItemProp || ((itemId, updates) => {
@@ -168,9 +169,9 @@ const SortableChecklistCard = ({
                                         handleAddItem={activeAddItem} handleDeleteItem={activeDeleteItem}
                                         newItemContent={newItemContent} setNewItemContent={setNewItemContent}
                                         handleSetTargetDate={handleSetTargetDate}
-                                        handleUpdateItem={handleUpdateItem}
                                         useProgressArray={useProgressArray}
                                         isCompletedFallback={item.completed}
+                                        hideAddButton={hideAddButton}
                                     />
                                 ))}
                             </div>
@@ -198,10 +199,10 @@ const SortableChecklistCard = ({
                                             handleAddItem={activeAddItem} handleDeleteItem={activeDeleteItem}
                                             newItemContent={newItemContent} setNewItemContent={setNewItemContent}
                                             handleSetTargetDate={handleSetTargetDate}
-                                            handleUpdateItem={handleUpdateItem}
                                             useProgressArray={useProgressArray}
                                             isCompletedFallback={item.completed}
                                             isWaterfalling={isWaterfalling}
+                                            hideAddButton={hideAddButton}
                                         />
                                     ))}
                                 </div>
@@ -209,25 +210,27 @@ const SortableChecklistCard = ({
                         </DndContext>
                     )}
 
-                    <div style={{ marginTop: '0rem' }}>
-                        {isAddingRootTask ? (
-                            <AddTaskCard
-                                newItemContent={newItemContent}
-                                setNewItemContent={setNewItemContent}
-                                newItemDate={newItemDate}
-                                setNewItemDate={setNewItemDate}
-                                checklist={overrideChecklistForAdd || checklist}
-                                defaultProject={defaultProject}
-                                setAddingToList={setAddingToList}
-                                handleAddItem={activeAddItem}
-                                suppressDateSpan={newItemDate === defaultItemDate}
-                            />
-                        ) : (
-                            <AddTaskButton noMarginTop={true} onClick={() => { if (setAddingToList) setAddingToList(checklist.id); if (setAddingToItem) setAddingToItem(null); if (setNewItemContent) setNewItemContent(''); }} />
-                        )}
-                    </div>
+                    {!hideAddButton && (
+                        <div style={{ marginTop: '0rem' }}>
+                            {isAddingRootTask ? (
+                                <AddTaskCard
+                                    newItemContent={newItemContent}
+                                    setNewItemContent={setNewItemContent}
+                                    newItemDate={newItemDate}
+                                    setNewItemDate={setNewItemDate}
+                                    checklist={overrideChecklistForAdd || checklist}
+                                    defaultProject={defaultProject}
+                                    setAddingToList={setAddingToList}
+                                    handleAddItem={activeAddItem}
+                                    suppressDateSpan={newItemDate === defaultItemDate}
+                                />
+                            ) : (
+                                <AddTaskButton noMarginTop={true} onClick={() => { if (setAddingToList) setAddingToList(checklist.id); if (setAddingToItem) setAddingToItem(null); if (setNewItemContent) setNewItemContent(''); }} />
+                            )}
+                        </div>
+                    )}
 
-                    {setIsCreatingList && (
+                    {setIsCreatingList && !hideAddButton && (
                         <button
                             type="button"
                             className="add-section-divider"

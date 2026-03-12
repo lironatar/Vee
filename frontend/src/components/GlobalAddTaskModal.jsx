@@ -111,10 +111,10 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
                 body: JSON.stringify({
                     content,
                     description: description || null,
-                    target_date: targetDate || null,
-                    time: time || null,
-                    duration: duration || 15,
-                    repeat_rule: repeatRule || null,
+                    target_date: window.globalNewItemDate || null,
+                    time: window.globalNewItemTime || null,
+                    duration: window.globalNewItemDuration || 15,
+                    repeat_rule: window.globalNewItemRepeatRule || null,
                     parent_item_id: parentItemId || null,
                     priority: priority || 4,
                     reminder_minutes: reminderMinutes
@@ -123,6 +123,7 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
 
             if (res.ok) {
                 toast.success('המשימה נוספה בהצלחה');
+                window.dispatchEvent(new CustomEvent('refreshTasks'));
                 window.dispatchEvent(new CustomEvent('refreshCalendarTasks'));
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
                 window.globalNewItemContent = null;

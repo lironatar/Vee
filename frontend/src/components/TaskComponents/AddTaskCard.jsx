@@ -10,6 +10,8 @@ import { useUser } from '../../context/UserContext';
 import { useTheme } from '../../context/ThemeContext';
 import { toast } from 'sonner';
 
+const API_URL = '/api';
+
 const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewItemDate, checklist, defaultProject, setAddingToList, handleAddItem, suppressDateSpan = false, initialTime = '' }) => {
     const { user } = useUser();
     const { theme } = useTheme();
@@ -123,7 +125,7 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
             const targetProjectId = isProjectInbox ? parseInt(targetChecklistId.split('_')[2]) : null;
 
             try {
-                const listRes = await fetch(`/api/users/${user.id}/checklists`, {
+                const listRes = await fetch(`${API_URL}/users/${user.id}/checklists`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

@@ -11,8 +11,13 @@ const SortableTaskItem = ({
     item, checklistId, depth = 0, isCompletedFallback = false, useProgressArray = true, todayProgress, addingToItem,
     toggleItem, setAddingToItem, setAddingToList, handleAddItem, handleDeleteItem,
     newItemContent, setNewItemContent, handleSetTargetDate, handleUpdateItem,
-    sectionTitle = '', projectTitle = '', allItems = [], isOverlay = false, compact = false,
-    isWaterfalling = false
+    isWaterfalling = false,
+    hideAddButton = false,
+    isOverlay = false,
+    allItems = [],
+    sectionTitle = '',
+    projectTitle = '',
+    compact = false
 }) => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -98,20 +103,20 @@ const SortableTaskItem = ({
                     style={{
                         display: 'flex',
                         alignItems: 'flex-start',
-                        background: '#FFFFFF',
+                        background: 'var(--bg-secondary)',
                         cursor: 'pointer',
                         transition: 'var(--transition)',
                         position: 'relative',
                         border: '1px solid var(--border-color)',
                         borderRadius: compact ? '4px' : 'var(--radius-lg)',
                         padding: compact ? '6px 8px' : '14px 18px',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.03)',
+                        boxShadow: 'var(--card-shadow)',
                         marginBottom: compact ? '0' : '10px'
                     }}
                     onMouseEnter={(e) => {
                         if (!compact) {
                             e.currentTarget.style.transform = 'translateY(-3px)';
-                            e.currentTarget.style.boxShadow = '0 12px 24px -8px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)';
+                            e.currentTarget.style.boxShadow = 'var(--float-hover-shadow)';
                             e.currentTarget.style.borderColor = 'var(--primary-color)';
                         }
                         const actions = e.currentTarget.querySelector('.task-actions');
@@ -120,7 +125,7 @@ const SortableTaskItem = ({
                     onMouseLeave={(e) => {
                         if (!compact) {
                             e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.03)';
+                            e.currentTarget.style.boxShadow = 'var(--card-shadow)';
                             e.currentTarget.style.borderColor = 'var(--border-color)';
                         }
                         const actions = e.currentTarget.querySelector('.task-actions');
@@ -409,7 +414,7 @@ const SortableTaskItem = ({
                             </div>
 
                             <div className="task-actions minimal-actions" style={{ display: 'flex', gap: '2px', alignItems: 'center', flexShrink: 0, opacity: 0, transition: 'opacity 0.15s' }} onClick={e => e.stopPropagation()}>
-                                {depth === 0 && setAddingToItem && setAddingToList && (
+                                {depth === 0 && setAddingToItem && setAddingToList && !hideAddButton && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); setAddingToItem(isAddingHere ? null : item.id); setAddingToList(null); setNewItemContent(''); }}
                                         className="btn-icon-soft" title="הוסף תת-משימה" style={{ padding: '0.15rem', color: 'var(--text-secondary)' }}
@@ -422,7 +427,7 @@ const SortableTaskItem = ({
                     </div>
                 </div>
 
-                {isAddingHere && handleAddItem && (
+                {isAddingHere && handleAddItem && !hideAddButton && (
                     <form onSubmit={(e) => { handleAddItem(e, checklistId, item.id, newItemContent); }} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', paddingRight: '1.5rem' }} onClick={e => e.stopPropagation()}>
                         <input
                             type="text"
@@ -452,6 +457,9 @@ const SortableTaskItem = ({
                                 isCompletedFallback={isCompletedFallback} useProgressArray={useProgressArray}
                                 sectionTitle={sectionTitle} projectTitle={projectTitle}
                                 isWaterfalling={isWaterfalling}
+                                hideAddButton={hideAddButton}
+                                isOverlay={isOverlay}
+                                compact={compact}
                             />
                         ))}
                     </div>
