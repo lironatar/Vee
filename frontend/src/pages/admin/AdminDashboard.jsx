@@ -5,6 +5,8 @@ import UserDetailsModal from '../../components/admin/UserDetailsModal';
 
 const API_URL = '/api';
 
+import Header from '../../components/Header';
+
 const AdminDashboard = () => {
     const [stats, setStats] = useState(null);
     const [users, setUsers] = useState([]);
@@ -57,37 +59,18 @@ const AdminDashboard = () => {
         { label: 'סה"כ משימות שהושלמו', value: stats.totalCompletedTasks, icon: CheckSquare, color: '#8b5cf6' },
     ];
 
+    const isMobile = window.innerWidth <= 768;
+
     return (
         <div className="page-grid" style={{ height: '100dvh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-            {/* Admin Header - Glassmorphism */}
-            <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                zIndex: 100,
-                padding: '0.75rem 1.5rem',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                background: scrollTop > 20 ? 'rgba(var(--bg-secondary-rgb, 255, 255, 255), 0.5)' : 'transparent',
-                backdropFilter: scrollTop > 20 ? 'blur(10px)' : 'none',
-                WebkitBackdropFilter: scrollTop > 20 ? 'blur(10px)' : 'none',
-                borderBottom: scrollTop > 20 ? '1px solid var(--border-color)' : 'none',
-                transition: 'all 0.4s ease',
-                height: '60px'
-            }}>
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    opacity: Math.min(1, Math.max(0, (scrollTop - 20) / 30)),
-                    transform: `translateY(${Math.max(0, 10 - (scrollTop - 20) / 3)}px)`,
-                    transition: 'all 0.3s ease'
-                }}>
-                    <h1 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>פאנל ניהול</h1>
-                </div>
-            </div>
+            <Header 
+                scrollTop={scrollTop}
+                hPadding={isMobile ? '1.5rem' : '2.5rem'}
+                title="פאנל ניהול"
+                isMobile={isMobile}
+                isSidebarOpen={true} // Defaulting for admin for now
+            />
+
 
             <div
                 className="page-content"

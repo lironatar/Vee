@@ -5,11 +5,14 @@ import { Search, Mail, Phone, Calendar, ArrowUpRight, MoreVertical } from 'lucid
 
 const API_URL = '/api';
 
+import Header from '../../components/Header';
+
 const AdminUsers = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedUser, setSelectedUser] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [scrollTop, setScrollTop] = useState(0);
 
     useEffect(() => {
         fetchUsers();
@@ -65,9 +68,23 @@ const AdminUsers = () => {
 
     if (loading) return <div style={{ textAlign: 'center', padding: '3rem' }}>טוען משתמשים...</div>;
 
+    const isMobile = window.innerWidth <= 768;
+
     return (
-        <div className="page-grid" style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}>
-            <div className="page-content" style={{ flex: 1, overflowY: 'auto', padding: '2rem 0' }}>
+        <div className="page-grid" style={{ height: '100dvh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+            <Header 
+                scrollTop={scrollTop}
+                hPadding={isMobile ? '1.5rem' : '2.5rem'}
+                title="ניהול משתמשים"
+                isMobile={isMobile}
+                isSidebarOpen={true}
+            />
+
+            <div 
+                className="page-content" 
+                style={{ flex: 1, overflowY: 'auto', padding: '4rem 0 2rem 0' }}
+                onScroll={(e) => setScrollTop(e.target.scrollTop)}
+            >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                     <div>
                         <h1 style={{ color: 'var(--primary-color)', margin: 0 }}>ניהול משתמשים</h1>
@@ -92,6 +109,7 @@ const AdminUsers = () => {
                         />
                     </div>
                 </div>
+
 
                 <div className="card shadow-lg" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border-color)' }}>
                     <div style={{ overflowX: 'auto' }}>

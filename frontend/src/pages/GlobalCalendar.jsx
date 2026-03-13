@@ -361,6 +361,10 @@ const GlobalCalendar = () => {
             maxWidth="100%"
             padding="0"
             contentPadding="0 0 100px"
+            onCompletedToggle={() => setActivePageTab(activePageTab === 'tasks' ? 'activity' : 'tasks')}
+            isCompletedActive={activePageTab === 'activity'}
+            showCompletedToggle={true}
+
             titleContent={
                 <div style={{
                     transition: 'all 0.35s ease',

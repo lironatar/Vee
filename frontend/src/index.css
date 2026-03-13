@@ -2,6 +2,35 @@
 @import url("https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800&display=swap");
 @import url("./fullcalendar-overrides.css");
 
+/* 
+ * Drag and Drop Custom Classes 
+ */
+.is-dragging-origin {
+  opacity: 0.3 !important;
+  border: 1px dashed var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  background-color: var(--bg-secondary) !important;
+  box-shadow: none !important;
+  transition: opacity 0.2s ease, border 0.2s ease;
+}
+
+.is-drag-overlay {
+  background-color: var(--bg-color) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), 0 5px 10px rgba(0, 0, 0, 0.05) !important;
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--border-color) !important;
+  transform: scale(1.02) rotate(2deg) !important; /* Slight pop and tilt */
+  cursor: grabbing !important;
+  transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.15s ease !important;
+  z-index: 9999 !important;
+  opacity: 1 !important;
+}
+
+[data-theme="dark"] .is-drag-overlay {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), 0 5px 10px rgba(0, 0, 0, 0.2) !important;
+}
+
+
 .react-datepicker__year-read-view--down-arrow,
 .react-datepicker__month-read-view--down-arrow,
 .react-datepicker__month-year-read-view--down-arrow {
@@ -1861,7 +1890,7 @@ textarea.form-control:focus {
 .task-item.is-drag-overlay {
   box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--primary-color) !important;
   background-color: var(--bg-color) !important;
-  transform: scale(1.02) rotate(2deg) !important;
+  transform: scale(1.02) !important;
   border-radius: var(--radius-md) !important;
   z-index: 9999 !important;
   cursor: grabbing !important;

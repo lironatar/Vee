@@ -12,5 +12,28 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('@fullcalendar')) {
+              return 'vendor-calendar';
+            }
+            if (id.includes('emoji-picker-react')) {
+              return 'vendor-emoji';
+            }
+            if (id.includes('lucide-react')) {
+              return 'vendor-lucide';
+            }
+            if (id.includes('@dnd-kit')) {
+              return 'vendor-dnd';
+            }
+            return 'vendor'; // all other dependencies
+          }
+        }
+      }
+    }
+  }
 })
 

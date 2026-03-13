@@ -40,7 +40,7 @@ const Inbox = () => {
     const selectedDate = new Date().toLocaleDateString('en-CA');
 
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
         useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
@@ -90,7 +90,7 @@ const Inbox = () => {
                     return 0;
                 });
                 setChecklists(sortedData);
-                
+
                 // Expand all by default for Inbox if not already saved
                 const expandMap = { ...expandedChecklists };
                 normalizedData.forEach(c => {
@@ -412,6 +412,9 @@ const Inbox = () => {
     return (
         <TaskPageLayout
             title="תיבת המשימות"
+            onCompletedToggle={() => setActivePageTab(activePageTab === 'tasks' ? 'activity' : 'tasks')}
+            isCompletedActive={activePageTab === 'activity'}
+            showCompletedToggle={true}
             titleContent={
                 <div style={{
                     transition: 'all 0.35s ease',
@@ -432,18 +435,8 @@ const Inbox = () => {
                     </h1>
                 </div>
             }
-            headerActions={
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', marginLeft: window.innerWidth <= 768 ? '-1rem' : '0' }}>
-                    <button
-                        onClick={() => setActivePageTab(activePageTab === 'tasks' ? 'activity' : 'tasks')}
-                        className="btn-icon-soft"
-                        title={activePageTab === 'tasks' ? 'הושלמו' : 'משימות'}
-                        style={{ padding: '0.4rem' }}
-                    >
-                        <CheckCircle2 size={20} color={activePageTab === 'activity' ? 'var(--success-color)' : '#666'} />
-                    </button>
-                </div>
-            }
+            headerActions={<div />}
+
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}

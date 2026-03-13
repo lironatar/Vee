@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronLeft } from 'lucide-react';
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { DndContext, closestCenter } from '@dnd-kit/core';
+import { DndContext, pointerWithin } from '@dnd-kit/core';
 import ActionMenu from './ActionMenu';
 import SortableTaskItem from './SortableTaskItem';
 import AddTaskCard from './AddTaskCard';
@@ -258,7 +258,7 @@ const SortableChecklistCard = ({
                     ) : (
                         <DndContext
                             sensors={sensors}
-                            collisionDetection={closestCenter}
+                            collisionDetection={pointerWithin}
                             onDragEnd={(e) => handleDragEnd(e, checklist.id)}
                         >
                             <SortableContext

@@ -737,7 +737,8 @@ const Project = () => {
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 5, // Requires a small move before dragging starts
+                delay: 200,
+                tolerance: 5,
             },
         }),
         useSensor(TouchSensor, {
@@ -751,7 +752,7 @@ const Project = () => {
         })
     );
 
-    const { handleDragStart, handleDragOver, handleDragEnd } = useTaskDnD({
+    const { activeDragItem, handleDragStart, handleDragOver, handleDragEnd } = useTaskDnD({
         checklists,
         setChecklists,
         API_URL,
@@ -805,6 +806,17 @@ const Project = () => {
     return (
         <TaskPageLayout
             title={project?.title}
+            breadcrumb="הפרויקטים שלי"
+            onCompletedToggle={() => setActivePageTab(activePageTab === 'tasks' ? 'activity' : 'tasks')}
+            isCompletedActive={activePageTab === 'activity'}
+            showCompletedToggle={true}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+            activeDragItem={activeDragItem}
+            externalScrollTop={scrollTop}
+            onScroll={setScrollTop}
+            alternateHeaderPadding="1.75rem"
             titleContent={
                 <div style={{
                     transition: 'all 0.35s ease',
@@ -855,27 +867,20 @@ const Project = () => {
             }
             headerActions={
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.05rem', marginLeft: window.innerWidth <= 768 ? '-1rem' : '0' }}>
-                    <button
-                        onClick={() => setActivePageTab(activePageTab === 'tasks' ? 'activity' : 'tasks')}
-                        className="btn-icon-soft"
-                        title={activePageTab === 'tasks' ? 'הושלמו' : 'משימות'}
-                        style={{ padding: '0.4rem' }}
-                    >
-                        <CheckCircle size={20} strokeWidth={1.5} color={activePageTab === 'activity' ? 'var(--success-color)' : '#666'} />
-                    </button>
                     <button onClick={() => setShowTeamModal(true)} className="btn-icon-soft" title="צוות הפרויקט" style={{ padding: '0.4rem' }}>
-                        <Users size={20} strokeWidth={1.5} color="#666" />
+                        <Users size={20} strokeWidth={1.5} color="var(--text-secondary)" />
                     </button>
                     <button onClick={() => setActiveTab(activeTab === 'tasks' ? 'history' : 'tasks')} className="btn-icon-soft" title={activeTab === 'tasks' ? 'יומן היסטוריה' : 'חזור למשימות'} style={{ padding: '0.4rem' }}>
-                        {activeTab === 'tasks' ? <CalendarIcon size={20} strokeWidth={1.5} color="#666" /> : <ListIcon size={20} strokeWidth={1.5} color="#666" />}
+                        {activeTab === 'tasks' ? <CalendarIcon size={20} strokeWidth={1.5} color="var(--text-secondary)" /> : <ListIcon size={20} strokeWidth={1.5} color="var(--text-secondary)" />}
                     </button>
                     <button onClick={() => setShowComments(true)} className="btn-icon-soft" title="תגובות הפרויקט" style={{ padding: '0.4rem' }}>
-                        <MessageSquare size={20} strokeWidth={1.5} color="#666" />
+                        <MessageSquare size={20} strokeWidth={1.5} color="var(--text-secondary)" />
                     </button>
                     <div style={{ position: 'relative' }} ref={projectMenuRef}>
                         <button onClick={() => setShowProjectMenu(!showProjectMenu)} className="btn-icon-soft" style={{ padding: '0.4rem' }}>
-                            <MoreHorizontal size={20} strokeWidth={1.5} color="#666" />
+                            <MoreHorizontal size={20} strokeWidth={1.5} color="var(--text-secondary)" />
                         </button>
+
                         {showProjectMenu && (
                             <div className="card fade-in" style={{
                                 position: 'absolute', top: 'calc(100% + 8px)', left: 0,
@@ -897,14 +902,8 @@ const Project = () => {
                     </div>
                 </div>
             }
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
-            externalScrollTop={scrollTop}
-            onScroll={setScrollTop}
-            alternateHeaderPadding="1.75rem"
-            breadcrumb="הפרויקטים שלי"
         >
+
             {activeTab === 'history' ? (
                 <ProjectCalendar projectId={project.id} API_URL={API_URL} onDayClick={(date) => { setSelectedDate(date); setActiveTab('tasks'); }} />
             ) : (

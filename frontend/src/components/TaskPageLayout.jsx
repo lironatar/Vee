@@ -1,18 +1,31 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useOutletContext } from 'react-router-dom';
 import Header from './Header';
 import {
     DndContext,
-    closestCenter,
+    pointerWithin,
     PointerSensor,
     TouchSensor,
     KeyboardSensor,
     useSensor,
     useSensors,
-    DragOverlay
+    DragOverlay,
+    defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { SortableTaskItem } from './TaskComponents/index.jsx';
+
+const dropAnimation = {
+    sideEffects: defaultDropAnimationSideEffects({
+        styles: {
+            active: {
+                opacity: '0.5',
+            },
+        },
+    }),
+};
 
 const TaskPageLayout = ({
     title,
@@ -28,15 +41,21 @@ const TaskPageLayout = ({
     padding = '0',
     externalScrollTop = null,
     onScroll = null,
-    alternateHeaderPadding = "1.5rem"
+    alternateHeaderPadding = "1.5rem",
+    onCompletedToggle = null,
+    isCompletedActive = false,
+    showCompletedToggle = false
 }) => {
+
+
     const [internalScrollTop, setInternalScrollTop] = useState(0);
     const rawScrollTop = externalScrollTop !== null ? externalScrollTop : internalScrollTop;
     const scrollTop = Math.max(0, rawScrollTop);
     const { isSidebarOpen } = useOutletContext() || { isSidebarOpen: false };
 
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+
         useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
@@ -55,13 +74,13 @@ const TaskPageLayout = ({
     return (
         <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={pointerWithin}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDragEnd={onDragEnd}
         >
             <div className="page-grid" style={{ height: '100dvh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                <Header 
+                <Header
                     scrollTop={scrollTop}
                     hPadding={hPadding}
                     breadcrumb={breadcrumb}
@@ -69,17 +88,21 @@ const TaskPageLayout = ({
                     isMobile={isMobile}
                     isSidebarOpen={isSidebarOpen}
                     headerActions={headerActions}
+                    onCompletedToggle={onCompletedToggle}
+                    isCompletedActive={isCompletedActive}
+                    showCompletedToggle={showCompletedToggle}
                 />
+
 
                 {/* Main Content Area (Title + Tasks/Lists) */}
                 <div
                     className="page-content"
-                    style={{ 
-                        flexGrow: 1, 
-                        overflowY: 'auto', 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        alignItems: 'center', 
+                    style={{
+                        flexGrow: 1,
+                        overflowY: 'auto',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
                         overscrollBehavior: 'contain',
                         marginTop: '54px', // Keeps scrollbar below the absolute header
                         height: 'calc(100vh - 54px)' // Ensures proper height for scrolling
@@ -102,19 +125,24 @@ const TaskPageLayout = ({
                 </div>
             </div>
 
-            <DragOverlay>
-                {activeDragItem ? (
-                    activeDragItem.data?.type === 'Task' ? (
-                        <SortableTaskItem
-                            item={activeDragItem.data.item}
-                            checklistId={activeDragItem.data.checklistId}
-                            isCompletedFallback={false}
-                            useProgressArray={false}
-                            isOverlay={true}
-                        />
-                    ) : null
-                ) : null}
-            </DragOverlay>
+            {createPortal(
+                <DragOverlay modifiers={[restrictToWindowEdges]} dropAnimation={dropAnimation} zIndex={9999}>
+                    {activeDragItem ? (
+                        activeDragItem.data?.current?.type === 'Task' ? (
+                            <div style={{ opacity: 1, cursor: 'grabbing', width: activeDragItem.rect?.current?.initial?.width || 'auto' }}>
+                                <SortableTaskItem
+                                    item={activeDragItem.data.current.item}
+                                    checklistId={activeDragItem.data.current.checklistId}
+                                    isCompletedFallback={false}
+                                    useProgressArray={false}
+                                    isOverlay={true}
+                                />
+                            </div>
+                        ) : null
+                    ) : null}
+                </DragOverlay>,
+                document.body
+            )}
         </DndContext>
     );
 };

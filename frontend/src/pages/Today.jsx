@@ -55,7 +55,7 @@ const Today = () => {
     };
 
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
         useSensor(TouchSensor),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
@@ -412,6 +412,9 @@ const Today = () => {
     return (
         <TaskPageLayout
             title="היום"
+            onCompletedToggle={() => setActivePageTab(activePageTab === 'tasks' ? 'activity' : 'tasks')}
+            isCompletedActive={activePageTab === 'activity'}
+            showCompletedToggle={true}
             titleContent={
                 <div style={{
                     transition: 'all 0.35s ease',
@@ -445,15 +448,17 @@ const Today = () => {
             headerActions={
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', marginLeft: window.innerWidth <= 768 ? '-1rem' : '0' }}>
                     <button
-                        onClick={() => setActivePageTab(activePageTab === 'tasks' ? 'activity' : 'tasks')}
+                        onClick={fetchTodayTasks}
                         className="btn-icon-soft"
-                        title={activePageTab === 'tasks' ? 'הושלמו' : 'משימות'}
+                        title="רענן"
                         style={{ padding: '0.4rem' }}
                     >
-                        <CheckCircle2 size={20} color={activePageTab === 'activity' ? 'var(--success-color)' : '#666'} />
+                        <RotateCcw size={20} strokeWidth={1.5} color="var(--text-secondary)" />
                     </button>
                 </div>
             }
+
+
             onScroll={setScrollTop}
             externalScrollTop={scrollTop}
             onDragStart={handleDragStart}

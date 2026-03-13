@@ -84,18 +84,21 @@ const SortableTaskItem = ({
     }, [item]);
 
     const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
+        transform: isOverlay ? undefined : CSS.Transform.toString(transform),
+        transition: isOverlay ? undefined : transition,
         zIndex: isDragging || isOverlay ? 50 : 'auto',
         position: 'relative'
     };
 
     return (
         <>
-            <div ref={setNodeRef} style={{ ...style, display: 'flex', flexDirection: 'column', paddingRight: `${depth * 1.5}rem` }}>
+            <div ref={setNodeRef} style={{ ...style, display: 'flex', flexDirection: 'column', paddingRight: isOverlay ? 0 : `${depth * 1.5}rem` }}>
                 <div
                     className={`task-item ${isCompleted ? 'is-completed' : ''} ${isOverlay ? 'is-drag-overlay' : isDragging ? 'is-dragging-origin' : ''} ${isWaterfalling ? 'magic-reveal' : ''}`}
+                    {...(!isCompleted && depth === 0 ? { ...attributes, ...listeners } : {})}
                     onClick={(e) => {
+                        // Prevent click if we were just dragging
+                        if (isDragging) return;
                         setAnchorRect(e.currentTarget.getBoundingClientRect());
                         setEditItem(item);
                         setShowEditModal(true);
@@ -104,10 +107,11 @@ const SortableTaskItem = ({
                         display: 'flex',
                         alignItems: 'flex-start',
                         background: 'transparent',
-                        cursor: 'pointer',
+                        cursor: (!isCompleted && depth === 0) ? 'grab' : 'pointer',
                         padding: compact ? '6px 8px' : '10px 0',
                         marginBottom: '0',
-                        position: 'relative'
+                        position: 'relative',
+                        touchAction: 'manipulation' // important for mobile delayed dragging
                     }}
                     onMouseEnter={(e) => {
                         const actions = e.currentTarget.querySelector('.task-actions');
@@ -119,37 +123,6 @@ const SortableTaskItem = ({
                     }}
                 >
                     <div style={{
-                        position: 'absolute',
-                        right: compact ? '-18px' : '-24px',
-                        width: '24px',
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        justifyContent: 'center',
-                        height: '100%',
-                        zIndex: 10,
-                        top: 0
-                    }}>
-                        {!isCompleted && depth === 0 && (
-                            <div
-                                className="drag-handle"
-                                {...attributes}
-                                {...listeners}
-                                style={{
-                                    cursor: 'grab',
-                                    color: 'var(--text-secondary)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '100%',
-                                    height: '20px'
-                                }}
-                            >
-                                <GripVertical size={16} />
-                            </div>
-                        )}
-                    </div>
-
-                    <div style={{
                         flexGrow: 1,
                         display: 'flex',
                         alignItems: 'flex-start',
@@ -158,6 +131,7 @@ const SortableTaskItem = ({
                         padding: 0,
                         margin: 0
                     }}>
+
                         <div
                             className="check-circle"
                             style={{

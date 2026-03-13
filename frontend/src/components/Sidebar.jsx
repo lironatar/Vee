@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useUser } from '../context/UserContext';
 import {
     DndContext,
-    closestCenter,
+    pointerWithin,
     KeyboardSensor,
     PointerSensor,
     useSensor,
@@ -337,7 +337,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                         <div className="projects-list">
                             <DndContext
                                 sensors={sensors}
-                                collisionDetection={closestCenter}
+                                collisionDetection={pointerWithin}
                                 onDragEnd={async (event) => {
                                     const { active, over } = event;
                                     if (active.id !== over?.id) {

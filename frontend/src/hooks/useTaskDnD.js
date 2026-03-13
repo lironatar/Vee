@@ -145,9 +145,10 @@ export const useTaskDnD = ({
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ checklistIds })
                     }).then(res => {
-                        // if (res.ok) toast.success("סדר הרשימות עודכן!");
+                        if (res.ok) toast.success("סדר הרשימות עודכן בהצלחה", { duration: 2500 });
                     }).catch(e => {
                         console.error("Failed to save checklist reorder", e);
+                        toast.error("שגיאה בעדכון סדר הרשימות");
                         if (fetchData) fetchData();
                     });
 
@@ -220,17 +221,17 @@ export const useTaskDnD = ({
                             }
                         };
 
-                        toast('המשימות סודרו מחדש בהצלחה', {
-                            description: `הסדר החדש נשמר`,
+                        toast.success('סדר המשימות עודכן בהצלחה', {
                             action: {
                                 label: 'בטל',
                                 onClick: undoAction
                             },
-                            duration: 5000,
+                            duration: 4000,
                         });
                     }
                 }).catch(e => {
                     console.error("Failed to save reorder", e);
+                    toast.error("שגיאה בעדכון סדר המשימות");
                     if (fetchData) fetchData();
                 });
             }
@@ -280,13 +281,12 @@ export const useTaskDnD = ({
                     }
                 };
 
-                toast('המשימה הועברה בהצלחה', {
-                    description: `המשימה הועברה לרשימה חדשה`,
+                toast.success('המשימה הועברה בהצלחה', {
                     action: {
                         label: 'בטל',
                         onClick: undoAction
                     },
-                    duration: 5000,
+                    duration: 4000,
                 });
 
             } catch (err) {
