@@ -1894,6 +1894,17 @@ textarea.form-control:focus {
   border-radius: var(--radius-md) !important;
   z-index: 9999 !important;
   cursor: grabbing !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+.task-item {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: pan-y;
 }
 
 .task-item.is-drag-overlay .drag-handle {

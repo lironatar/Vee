@@ -111,7 +111,7 @@ const SortableTaskItem = ({
                         padding: compact ? '6px 8px' : '10px 0',
                         marginBottom: '0',
                         position: 'relative',
-                        touchAction: 'manipulation' // important for mobile delayed dragging
+                        touchAction: 'pan-y' // allow scrolling while permitting drag hold
                     }}
                     onMouseEnter={(e) => {
                         const actions = e.currentTarget.querySelector('.task-actions');
