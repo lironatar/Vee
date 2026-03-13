@@ -36,6 +36,7 @@ const TaskPageLayout = ({
     onDragStart,
     onDragOver,
     onDragEnd,
+    onDragCancel,
     activeDragItem,
     maxWidth = '100%',
     padding = '0',
@@ -55,6 +56,7 @@ const TaskPageLayout = ({
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
@@ -76,6 +78,7 @@ const TaskPageLayout = ({
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDragEnd={onDragEnd}
+            onDragCancel={onDragCancel}
         >
             <div className="page-grid" style={{ height: '100dvh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
                 <Header
@@ -123,24 +126,21 @@ const TaskPageLayout = ({
                 </div>
             </div>
 
-            {createPortal(
-                <DragOverlay modifiers={[restrictToWindowEdges]} dropAnimation={dropAnimation} zIndex={9999}>
-                    {activeDragItem ? (
-                        activeDragItem.data?.current?.type === 'Task' ? (
-                            <div style={{ opacity: 1, cursor: 'grabbing', width: activeDragItem.rect?.current?.initial?.width || 'auto' }}>
-                                <SortableTaskItem
-                                    item={activeDragItem.data.current.item}
-                                    checklistId={activeDragItem.data.current.checklistId}
-                                    isCompletedFallback={false}
-                                    useProgressArray={false}
-                                    isOverlay={true}
-                                />
-                            </div>
-                        ) : null
-                    ) : null}
-                </DragOverlay>,
-                document.body
-            )}
+            <DragOverlay modifiers={[restrictToWindowEdges]} dropAnimation={dropAnimation} zIndex={9999}>
+                {activeDragItem ? (
+                    activeDragItem.data?.current?.type === 'Task' ? (
+                        <div style={{ opacity: 1, cursor: 'grabbing', width: activeDragItem.rect?.current?.initial?.width || 'auto' }}>
+                            <SortableTaskItem
+                                item={activeDragItem.data.current.item}
+                                checklistId={activeDragItem.data.current.checklistId}
+                                isCompletedFallback={false}
+                                useProgressArray={false}
+                                isOverlay={true}
+                            />
+                        </div>
+                    ) : null
+                ) : null}
+            </DragOverlay>
         </DndContext>
     );
 };

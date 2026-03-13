@@ -752,7 +752,7 @@ const Project = () => {
         })
     );
 
-    const { activeDragItem, handleDragStart, handleDragOver, handleDragEnd } = useTaskDnD({
+    const { activeDragItem, handleDragStart, handleDragOver, handleDragEnd, handleDragCancel } = useTaskDnD({
         checklists,
         setChecklists,
         API_URL,
@@ -813,6 +813,7 @@ const Project = () => {
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
             activeDragItem={activeDragItem}
             externalScrollTop={scrollTop}
             onScroll={setScrollTop}

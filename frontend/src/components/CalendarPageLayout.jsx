@@ -25,6 +25,7 @@ const CalendarPageLayout = ({
     onDragStart,
     onDragOver,
     onDragEnd,
+    onDragCancel,
     activeDragItem,
     maxWidth = '100%', // Changed default to 100% for Calendar
     padding = null, // Renamed/repurposed to allow custom side padding
@@ -42,6 +43,7 @@ const CalendarPageLayout = ({
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
@@ -101,24 +103,19 @@ const CalendarPageLayout = ({
                 </div>
             </div>
 
-            {createPortal(
-                <DragOverlay modifiers={[restrictToWindowEdges]} dropAnimation={dropAnimation} zIndex={9999}>
-                    {activeDragItem ? (
-                        activeDragItem.data?.current?.type === 'Task' ? (
-                            <div style={{ opacity: 1, cursor: 'grabbing', width: activeDragItem.rect?.current?.initial?.width || 'auto' }}>
-                                <SortableTaskItem
-                                    item={activeDragItem.data.current.item}
-                                    checklistId={activeDragItem.data.current.checklistId}
-                                    isCompletedFallback={false}
-                                    useProgressArray={false}
-                                    isOverlay={true}
-                                />
-                            </div>
-                        ) : null
-                    ) : null}
-                </DragOverlay>,
-                document.body
-            )}
+            <DragOverlay modifiers={[restrictToWindowEdges]} dropAnimation={dropAnimation} zIndex={9999}>
+                {activeDragItem && activeDragItem.data?.current?.type === 'Task' ? (
+                    <div style={{ opacity: 1, cursor: 'grabbing', width: activeDragItem.rect?.current?.initial?.width || 'auto' }}>
+                        <SortableTaskItem
+                            item={activeDragItem.data.current.item}
+                            checklistId={activeDragItem.data.current.checklistId}
+                            isCompletedFallback={false}
+                            useProgressArray={false}
+                            isOverlay={true}
+                        />
+                    </div>
+                ) : null}
+            </DragOverlay>
         </DndContext>
     );
 };

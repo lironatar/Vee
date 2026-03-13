@@ -55,6 +55,12 @@ export const useTaskDnD = ({
     const handleDragStart = (event) => {
         const { active } = event;
         setActiveDragItem(active);
+        document.body.classList.add('is-dragging');
+    };
+
+    const handleDragCancel = () => {
+        setActiveDragItem(null);
+        document.body.classList.remove('is-dragging');
     };
 
     const handleDragOver = (event) => {
@@ -118,8 +124,9 @@ export const useTaskDnD = ({
     const handleDragEnd = async (event, currentProjectId = null) => {
         const { active, over } = event;
 
-        // Always clear active item
+        // Always clear active item and dragging state
         setActiveDragItem(null);
+        document.body.classList.remove('is-dragging');
 
         if (!over || active.id === over.id) return;
 
@@ -301,6 +308,7 @@ export const useTaskDnD = ({
         activeDragItem,
         handleDragStart,
         handleDragOver,
-        handleDragEnd
+        handleDragEnd,
+        handleDragCancel
     };
 };

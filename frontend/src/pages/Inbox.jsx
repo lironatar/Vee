@@ -49,7 +49,8 @@ const Inbox = () => {
         activeDragItem,
         handleDragStart,
         handleDragOver,
-        handleDragEnd: handleDnDUpdate
+        handleDragEnd: handleDnDUpdate,
+        handleDragCancel
     } = useTaskDnD({
         checklists,
         setChecklists,
@@ -440,6 +441,7 @@ const Inbox = () => {
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
             externalScrollTop={scrollTop}
             onScroll={setScrollTop}
         >
