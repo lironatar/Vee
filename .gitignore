@@ -41,3 +41,7 @@ Thumbs.db
 *.bak
 tmp/
 temp/
+
+# Deployment scripts
+push_deploy.ps1
+push_deploy.sh
