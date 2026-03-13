@@ -9,7 +9,7 @@ import {
     DndContext,
     closestCenter,
     KeyboardSensor,
-    PointerSensor,
+    MouseSensor,
     TouchSensor,
     useSensor,
     useSensors,
@@ -735,10 +735,9 @@ const Project = () => {
     };
 
     const sensors = useSensors(
-        useSensor(PointerSensor, {
+        useSensor(MouseSensor, {
             activationConstraint: {
-                delay: 200,
-                tolerance: 5,
+                distance: 5,
             },
         }),
         useSensor(TouchSensor, {

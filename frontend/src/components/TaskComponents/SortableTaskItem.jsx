@@ -95,6 +95,7 @@ const SortableTaskItem = ({
             <div ref={setNodeRef} style={{ ...style, display: 'flex', flexDirection: 'column', paddingRight: isOverlay ? 0 : `${depth * 1.5}rem` }}>
                 <div
                     className={`task-item ${isCompleted ? 'is-completed' : ''} ${isOverlay ? 'is-drag-overlay' : isDragging ? 'is-dragging-origin' : ''} ${isWaterfalling ? 'magic-reveal' : ''}`}
+                    {...(!isCompleted && depth === 0 ? { ...attributes, ...listeners } : {})}
                     onClick={(e) => {
                         // Prevent click if we were just dragging
                         if (isDragging) return;
@@ -129,27 +130,6 @@ const SortableTaskItem = ({
                         padding: 0,
                         margin: 0
                     }}>
-                        {!isCompleted && depth === 0 && (
-                            <div
-                                {...attributes}
-                                {...listeners}
-                                className="drag-handle"
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    padding: '8px',
-                                    margin: '-4px -8px -4px 0',
-                                    cursor: 'grab',
-                                    color: 'var(--text-secondary)',
-                                    opacity: 0.5,
-                                    touchAction: 'none' // Crucial: prevents native scroll ONLY on the handle
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <GripVertical size={16} />
-                            </div>
-                        )}
 
                         <div
                             className="check-circle"

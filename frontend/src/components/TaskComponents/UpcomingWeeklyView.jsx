@@ -164,7 +164,7 @@ const UpcomingWeeklyView = ({
             activationConstraint: { distance: 5 },
         }),
         useSensor(TouchSensor, {
-            activationConstraint: { distance: 5 },
+            activationConstraint: { delay: 250, tolerance: 5 },
         })
     );
 

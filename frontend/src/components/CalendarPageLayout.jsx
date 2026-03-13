@@ -3,8 +3,7 @@ import { createPortal } from 'react-dom';
 import { useOutletContext } from 'react-router-dom';
 import {
     DndContext,
-    pointerWithin,
-    PointerSensor,
+    MouseSensor,
     TouchSensor,
     KeyboardSensor,
     useSensor,
@@ -42,7 +41,7 @@ const CalendarPageLayout = ({
     const { isSidebarOpen } = useOutletContext() || { isSidebarOpen: false };
 
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+        useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
         useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );

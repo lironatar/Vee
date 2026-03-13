@@ -7,7 +7,7 @@ import {
     DndContext,
     pointerWithin,
     KeyboardSensor,
-    PointerSensor,
+    MouseSensor,
     useSensor,
     useSensors,
     TouchSensor
@@ -54,8 +54,8 @@ const Sidebar = ({ isOpen, onToggle }) => {
     const addMenuRef = useRef(null);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-        useSensor(TouchSensor),
+        useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
