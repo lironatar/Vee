@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext, useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { CheckCircle, Circle, Trash2, HelpCircle, ArrowRight, Store, Plus, ChevronRight, ChevronDown, Settings, X, Calendar as CalendarIcon, List as ListIcon, GripVertical, MoreVertical, MoreHorizontal, Users, UserPlus, Search, Copy, Edit3, Save, Home, Filter, MessageSquare, Send, Clock } from 'lucide-react';
@@ -49,7 +49,14 @@ const Project = () => {
     const [addingToList, setAddingToList] = useState(null); // ID of checklist to add main task to
     const [activePageTab, setActivePageTab] = useState('tasks'); // 'tasks' or 'activity'
 
-    const [expandedChecklists, setExpandedChecklists] = useState({});
+    const [expandedChecklists, setExpandedChecklists] = useState(() => {
+        try {
+            const saved = localStorage.getItem('vee_expanded_checklists');
+            return saved ? JSON.parse(saved) : {};
+        } catch (e) {
+            return {};
+        }
+    });
 
     // Magic Reveal States
     const [magicRevealing, setMagicRevealing] = useState(location.state?.magicReveal || false);
@@ -282,9 +289,13 @@ const Project = () => {
             const listsData = await checklistsRes.json();
             setChecklists(listsData);
 
-            // Initialize expanded state for all lists
-            const initExpanded = {};
-            listsData.forEach(list => initExpanded[list.id] = true);
+            // Initialize expanded state for all lists, merging with saved states
+            const initExpanded = { ...expandedChecklists };
+            listsData.forEach(list => {
+                if (initExpanded[list.id] === undefined) {
+                    initExpanded[list.id] = true;
+                }
+            });
             setExpandedChecklists(initExpanded);
 
             if (magicRevealing) {
@@ -436,7 +447,11 @@ const Project = () => {
     };
 
     const toggleChecklistExpanded = (id) => {
-        setExpandedChecklists(prev => ({ ...prev, [id]: !prev[id] }));
+        setExpandedChecklists(prev => {
+            const newState = { ...prev, [id]: !prev[id] };
+            localStorage.setItem('vee_expanded_checklists', JSON.stringify(newState));
+            return newState;
+        });
     };
 
     const handleGlobalAddTask = async () => {
@@ -793,8 +808,8 @@ const Project = () => {
             titleContent={
                 <div style={{
                     transition: 'all 0.35s ease',
-                    opacity: Math.max(0, 1 - scrollTop / 60),
-                    transform: `translateY(${scrollTop * 0.15}px)`
+                    opacity: Math.max(0, 1 - Math.max(0, scrollTop) / 60),
+                    transform: `translateY(${Math.max(0, scrollTop) * 0.15}px)`
                 }}>
                     {isEditingTitle ? (
                         <input
@@ -839,27 +854,27 @@ const Project = () => {
                 </div>
             }
             headerActions={
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', marginLeft: window.innerWidth <= 768 ? '-1rem' : '0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.05rem', marginLeft: window.innerWidth <= 768 ? '-1rem' : '0' }}>
                     <button
                         onClick={() => setActivePageTab(activePageTab === 'tasks' ? 'activity' : 'tasks')}
                         className="btn-icon-soft"
                         title={activePageTab === 'tasks' ? 'הושלמו' : 'משימות'}
                         style={{ padding: '0.4rem' }}
                     >
-                        <CheckCircle size={20} color={activePageTab === 'activity' ? 'var(--success-color)' : '#666'} />
+                        <CheckCircle size={20} strokeWidth={1.5} color={activePageTab === 'activity' ? 'var(--success-color)' : '#666'} />
                     </button>
                     <button onClick={() => setShowTeamModal(true)} className="btn-icon-soft" title="צוות הפרויקט" style={{ padding: '0.4rem' }}>
-                        <Users size={20} color="#666" />
+                        <Users size={20} strokeWidth={1.5} color="#666" />
                     </button>
                     <button onClick={() => setActiveTab(activeTab === 'tasks' ? 'history' : 'tasks')} className="btn-icon-soft" title={activeTab === 'tasks' ? 'יומן היסטוריה' : 'חזור למשימות'} style={{ padding: '0.4rem' }}>
-                        {activeTab === 'tasks' ? <CalendarIcon size={20} color="#666" /> : <ListIcon size={20} color="#666" />}
+                        {activeTab === 'tasks' ? <CalendarIcon size={20} strokeWidth={1.5} color="#666" /> : <ListIcon size={20} strokeWidth={1.5} color="#666" />}
                     </button>
                     <button onClick={() => setShowComments(true)} className="btn-icon-soft" title="תגובות הפרויקט" style={{ padding: '0.4rem' }}>
-                        <MessageSquare size={20} color="#666" />
+                        <MessageSquare size={20} strokeWidth={1.5} color="#666" />
                     </button>
                     <div style={{ position: 'relative' }} ref={projectMenuRef}>
                         <button onClick={() => setShowProjectMenu(!showProjectMenu)} className="btn-icon-soft" style={{ padding: '0.4rem' }}>
-                            <MoreHorizontal size={20} color="#666" />
+                            <MoreHorizontal size={20} strokeWidth={1.5} color="#666" />
                         </button>
                         {showProjectMenu && (
                             <div className="card fade-in" style={{
@@ -870,7 +885,7 @@ const Project = () => {
                                 <button onClick={() => setShowSettings(true)} className="dropdown-item">
                                     <Settings size={16} /> הגדרות פרויקט
                                 </button>
-                    <button onClick={handleDuplicateProject} className="dropdown-item">
+                                <button onClick={handleDuplicateProject} className="dropdown-item">
                                     <Copy size={16} /> שכפול פרויקט
                                 </button>
                                 <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.5rem' }} />
@@ -968,7 +983,7 @@ const Project = () => {
                                             />
                                             <div className="add-section-actions">
                                                 <button type="submit" className="btn-add-section" disabled={!newListTitle.trim()}>הוסף רשימה</button>
-                    <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(false); setNewListTitle(''); }}>ביטול</button>
+                                                <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(false); setNewListTitle(''); }}>ביטול</button>
                                             </div>
                                         </form>
                                     )}
@@ -1034,7 +1049,7 @@ const Project = () => {
                                                         />
                                                         <div className="add-section-actions">
                                                             <button type="submit" className="btn-add-section" disabled={!newListTitle.trim()}>הוסף רשימה</button>
-                    <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(null); setNewListTitle(''); }}>ביטול</button>
+                                                            <button type="button" className="btn-cancel-section" onClick={() => { setIsCreatingList(null); setNewListTitle(''); }}>ביטול</button>
                                                         </div>
                                                     </form>
                                                 )}
@@ -1191,7 +1206,7 @@ const Project = () => {
 
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                                     <button type="button" onClick={() => setShowSettings(false)} className="btn btn-secondary">ביטול</button>
-                    <button type="submit" className="btn btn-primary" disabled={!settingsTitle.trim() || (project?.is_routine && settingsDays.length === 0)}>שמור שינויים</button>
+                                    <button type="submit" className="btn btn-primary" disabled={!settingsTitle.trim() || (project?.is_routine && settingsDays.length === 0)}>שמור שינויים</button>
                                 </div>
                             </form>
                         </div>

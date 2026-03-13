@@ -682,6 +682,17 @@ h2.react-datepicker__current-month {
     opacity 0.3s ease-in-out;
 }
 
+.checklist-minimal {
+  position: relative;
+  overflow: visible !important;
+  margin-bottom: 1.5rem;
+}
+
+/* Subtle line/shadow when list header is sticky */
+.checklist-header {
+  border-bottom: 1px solid transparent;
+}
+
 .react-datepicker__input-container {
   position: relative;
   display: inline-block;
@@ -1032,9 +1043,9 @@ body {
   /* Use new app-bg */
   color: var(--text-primary);
   direction: rtl;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   transition: background-color 0.25s ease, color 0.25s ease;
-  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -1830,9 +1841,12 @@ textarea.form-control:focus {
 
 /* Enhancing task movement and drag overlay UI */
 .task-item {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s auto;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  transition: opacity 0.2s auto;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.task-item:last-child {
+  border-bottom: none;
 }
 
 /* Original item when being dragged (the ghost) */
@@ -2167,10 +2181,10 @@ textarea.form-control:focus {
   z-index: 100;
 }
 
-/* Premium Scrollbar */
+/* Tiny, Premium Auto-hiding Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px; /* Tiny */
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -2178,10 +2192,22 @@ textarea.form-control:focus {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 10px;
+  background: transparent; /* Hidden by default */
+  border-radius: 20px;
+  transition: background 0.5s ease;
+}
+
+.page-content:hover::-webkit-scrollbar-thumb {
+  background: var(--border-color); /* Shows on hover */
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: var(--text-secondary) !important;
+}
+
+/* Ensure scrollbar doesn't overlap header area */
+.page-content {
+  scrollbar-gutter: stable; /* Keeps layout stable */
+  margin-top: 54px; /* Matches header height to push scrollbar down */
+  height: calc(100dvh - 54px) !important;
 }

@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Trash2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Trash2, Edit3, CheckCircle } from 'lucide-react';
 
-const ActionMenu = ({ onDelete, onSetDate, itemDate, label = "אפשרויות" }) => {
+const ActionMenu = ({ onDelete, onSetDate, onEdit, onComplete, onOpenChange, itemDate, label = "אפשרויות" }) => {
     const [isOpen, setIsOpen] = useState(false);
+
+    useEffect(() => {
+        if (onOpenChange) onOpenChange(isOpen);
+    }, [isOpen, onOpenChange]);
     const menuRef = React.useRef(null);
 
     useEffect(() => {
@@ -27,7 +31,7 @@ const ActionMenu = ({ onDelete, onSetDate, itemDate, label = "אפשרויות" 
                 onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
                 className="btn-icon-soft"
                 title={label}
-                style={{ padding: '0.4rem', color: 'var(--text-secondary)', letterSpacing: '1px', fontWeight: 'bold' }}
+                style={{ padding: '0.4rem', borderRadius: '6px', color: 'var(--text-secondary)', letterSpacing: '1px', fontWeight: 'bold' }}
             >
                 ...
             </button>
@@ -35,32 +39,64 @@ const ActionMenu = ({ onDelete, onSetDate, itemDate, label = "אפשרויות" 
             {isOpen && (
                 <div style={{
                     position: 'absolute',
-                    top: '100%',
+                    top: 'calc(100% + 8px)',
                     left: 0,
                     background: 'var(--bg-color)',
                     border: '1px solid var(--border-color)',
-                    borderRadius: 'var(--radius-md)',
-                    boxShadow: 'var(--card-shadow)',
-                    minWidth: '120px',
+                    borderRadius: '12px',
+                    boxShadow: '6px 8px 25px rgba(0,0,0,0.1), 3px 0 10px rgba(0,0,0,0.02)',
+                    minWidth: '200px',
                     zIndex: 1000,
                     overflow: 'hidden',
                     display: 'flex',
-                    flexDirection: 'column'
+                    flexDirection: 'column',
+                    direction: 'rtl',
+                    animation: 'slideDown 0.15s ease-out'
                 }}>
-                    <div style={{ padding: '0.2rem' }}>
+                    <div style={{ padding: '0.4rem' }}>
+                        {onEdit && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setIsOpen(false); onEdit(); }}
+                                className="action-menu-item"
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '0.8rem',
+                                    width: '100%', textAlign: 'right',
+                                    padding: '0.6rem 1rem', background: 'transparent',
+                                    border: 'none', cursor: 'pointer', color: 'var(--text-primary)',
+                                    borderRadius: '8px', fontSize: '0.95rem'
+                                }}
+                            >
+                                <Edit3 size={16} color="var(--text-secondary)" /> עריכה
+                            </button>
+                        )}
+                        {onComplete && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setIsOpen(false); onComplete(); }}
+                                className="action-menu-item"
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '0.8rem',
+                                    width: '100%', textAlign: 'right',
+                                    padding: '0.6rem 1rem', background: 'transparent',
+                                    border: 'none', cursor: 'pointer', color: 'var(--text-primary)',
+                                    borderRadius: '8px', fontSize: '0.95rem'
+                                }}
+                            >
+                                <CheckCircle size={16} color="var(--success-color)" /> סמן הכל כהושלם
+                            </button>
+                        )}
                         {onSetDate && (
                             <div style={{ position: 'relative', width: '100%' }}>
                                 <button
                                     className="action-menu-item"
                                     style={{
-                                        display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                        display: 'flex', alignItems: 'center', gap: '0.8rem',
                                         width: '100%', textAlign: 'right',
-                                        padding: '0.5rem 1rem', background: 'transparent',
+                                        padding: '0.6rem 1rem', background: 'transparent',
                                         border: 'none', cursor: 'pointer', color: 'var(--text-primary)',
-                                        borderRadius: 'var(--radius-sm)'
+                                        borderRadius: '8px', fontSize: '0.95rem'
                                     }}
                                 >
-                                    <CalendarIcon size={14} /> הגדר תאריך יעד
+                                    <CalendarIcon size={16} color="var(--text-secondary)" /> הגדר תאריך יעד
                                 </button>
                                 <input
                                     type="date"
@@ -71,18 +107,21 @@ const ActionMenu = ({ onDelete, onSetDate, itemDate, label = "אפשרויות" 
                                 />
                             </div>
                         )}
+                        {(onEdit || onComplete || onSetDate) && (
+                            <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.3rem 0.5rem' }} />
+                        )}
                         <button
                             onClick={handleDelete}
                             className="action-menu-item action-menu-item-danger"
                             style={{
-                                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                display: 'flex', alignItems: 'center', gap: '0.8rem',
                                 width: '100%', textAlign: 'right',
-                                padding: '0.5rem 1rem', background: 'transparent',
+                                padding: '0.6rem 1rem', background: 'transparent',
                                 border: 'none', cursor: 'pointer', color: 'var(--danger-color)',
-                                borderRadius: 'var(--radius-sm)', marginTop: onSetDate ? '0.25rem' : '0'
+                                borderRadius: '8px', fontSize: '0.95rem'
                             }}
                         >
-                            <Trash2 size={14} /> מחיקה
+                            <Trash2 size={16} /> מחיקה
                         </button>
                     </div>
                 </div>

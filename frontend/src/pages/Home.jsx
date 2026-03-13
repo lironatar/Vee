@@ -94,8 +94,8 @@ const Home = () => {
             titleContent={
                 <div style={{
                     transition: 'all 0.35s ease',
-                    opacity: Math.max(0, 1 - scrollTop / 60),
-                    transform: `translateY(${scrollTop * 0.15}px)`
+                    opacity: Math.max(0, 1 - Math.max(0, scrollTop) / 60),
+                    transform: `translateY(${Math.max(0, scrollTop) * 0.15}px)`
                 }}>
                     <h1
                         style={{

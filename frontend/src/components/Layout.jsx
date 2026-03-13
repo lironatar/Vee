@@ -33,7 +33,7 @@ const Layout = () => {
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
     return (
-        <div className={`app-layout ${!isSidebarOpen ? 'sidebar-closed' : ''}`}>
+        <div className={`app-layout ${!isSidebarOpen ? 'sidebar-closed' : ''}`} style={{ overscrollBehavior: 'none' }}>
             {/* Sidebar Overlay for Mobile/Tablet */}
             <div
                 className={`sidebar-overlay ${isSidebarOpen && isMobile ? 'visible' : ''}`}
@@ -51,20 +51,18 @@ const Layout = () => {
                         title="פתח סרגל"
                         style={{
                             position: 'fixed',
-                            top: '0.75rem',
+                            top: '0.45rem',
                             right: '0.75rem',
-                            width: '42px',
-                            height: '42px',
+                            width: '48px',
+                            height: '48px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             zIndex: 1100,
-                            background: 'var(--bg-secondary)',
-                            backdropFilter: 'blur(8px)',
-                            WebkitBackdropFilter: 'blur(8px)',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.05)',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: '50%',
+                            background: 'transparent',
+                            boxShadow: 'none',
+                            border: 'none',
+                            borderRadius: '0',
                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             color: 'var(--text-primary)',
                         }}
@@ -73,7 +71,7 @@ const Layout = () => {
                             src="/sidebar_is_closed.svg"
                             alt="sidebar toggle"
                             style={{
-                                width: '28px',
+                                width: '32px',
                                 height: 'auto',
                                 filter: 'var(--invert-icon)',
                                 transition: 'all 0.3s ease',

@@ -191,17 +191,17 @@ const AddTaskCard = ({ newItemContent, setNewItemContent, newItemDate, setNewIte
 
     return (
         <div ref={cardRef} className="add-task-card-container" style={{
-            border: isFocused ? '1px solid rgba(79, 70, 229, 0.3)' : '1px solid transparent',
-            borderRadius: 'var(--radius-lg)',
+            border: isFocused ? '1px solid var(--primary-color)' : '1px solid transparent',
+            borderRadius: 'var(--radius-md)',
             overflow: 'visible',
             position: 'relative',
-            background: isFocused ? 'rgba(79, 70, 229, 0.05)' : 'var(--bg-secondary)',
-            boxShadow: isFocused ? 'var(--float-hover-shadow)' : 'var(--card-shadow)',
-            transition: 'all 0.05s ease',
-            transform: isFocused ? 'translateY(-2px)' : 'translateY(0)',
+            background: 'transparent',
+            boxShadow: 'none',
+            transition: 'all 0.15s ease',
+            transform: 'none',
             zIndex: (isFocused || showPriorityMenu || showReminderMenu || showDateDropdown || showProjectSelector) ? 1000 : 1
         }}>
-            <div style={{ padding: '0.4rem 0.6rem' }}>
+            <div style={{ padding: '0.2rem 0.6rem' }}>
                 <div
                     ref={inputContainerRef}
                     style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.2rem', width: '100%', cursor: 'text' }}

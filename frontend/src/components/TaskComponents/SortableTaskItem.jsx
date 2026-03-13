@@ -103,31 +103,17 @@ const SortableTaskItem = ({
                     style={{
                         display: 'flex',
                         alignItems: 'flex-start',
-                        background: 'var(--bg-secondary)',
+                        background: 'transparent',
                         cursor: 'pointer',
-                        transition: 'var(--transition)',
-                        position: 'relative',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: compact ? '4px' : 'var(--radius-lg)',
-                        padding: compact ? '6px 8px' : '14px 18px',
-                        boxShadow: 'var(--card-shadow)',
-                        marginBottom: compact ? '0' : '10px'
+                        padding: compact ? '6px 8px' : '10px 0',
+                        marginBottom: '0',
+                        position: 'relative'
                     }}
                     onMouseEnter={(e) => {
-                        if (!compact) {
-                            e.currentTarget.style.transform = 'translateY(-3px)';
-                            e.currentTarget.style.boxShadow = 'var(--float-hover-shadow)';
-                            e.currentTarget.style.borderColor = 'var(--primary-color)';
-                        }
                         const actions = e.currentTarget.querySelector('.task-actions');
                         if (actions) actions.style.opacity = '1';
                     }}
                     onMouseLeave={(e) => {
-                        if (!compact) {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = 'var(--card-shadow)';
-                            e.currentTarget.style.borderColor = 'var(--border-color)';
-                        }
                         const actions = e.currentTarget.querySelector('.task-actions');
                         if (actions) actions.style.opacity = '0';
                     }}
@@ -216,27 +202,23 @@ const SortableTaskItem = ({
                                         style={{
                                             width: 18,
                                             height: 18,
-                                            borderRadius: '6px',
-                                            border: `1.8px solid ${priority === 4 ? 'var(--border-color)' : priorityColor}`,
-                                            background: priority !== 4 ? `rgba(${priority === 1 ? '209, 69, 59' :
-                                                priority === 2 ? '235, 137, 9' :
-                                                    '36, 111, 224'
-                                                }, 0.12)` : 'transparent',
+                                            borderRadius: '50%',
+                                            border: `1.5px solid ${priority === 4 ? '#d1d1d6' : priorityColor}`,
+                                            background: 'transparent',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                                            boxShadow: priority !== 4 ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'
+                                            transition: 'all 0.15s ease',
                                         }}
                                         onMouseEnter={(e) => {
-                                            e.currentTarget.style.transform = 'scale(1.1)';
-                                            e.currentTarget.style.background = priority !== 4 ? `rgba(${priority === 1 ? '209, 69, 59' : priority === 2 ? '235, 137, 9' : '36, 111, 224'}, 0.2)` : 'rgba(0,0,0,0.05)';
+                                            e.currentTarget.style.background = '#f2f2f7';
+                                            e.currentTarget.style.borderColor = priority === 4 ? '#c7c7cc' : priorityColor;
                                             const check = e.currentTarget.querySelector('.hover-check');
-                                            if (check) check.style.opacity = 1;
+                                            if (check) check.style.opacity = 0.5;
                                         }}
                                         onMouseLeave={(e) => {
-                                            e.currentTarget.style.transform = 'scale(1)';
-                                            e.currentTarget.style.background = priority !== 4 ? `rgba(${priority === 1 ? '209, 69, 59' : priority === 2 ? '235, 137, 9' : '36, 111, 224'}, 0.12)` : 'transparent';
+                                            e.currentTarget.style.background = 'transparent';
+                                            e.currentTarget.style.borderColor = priority === 4 ? '#d1d1d6' : priorityColor;
                                             const check = e.currentTarget.querySelector('.hover-check');
                                             if (check) check.style.opacity = 0;
                                         }}
@@ -245,7 +227,7 @@ const SortableTaskItem = ({
                                             className="hover-check"
                                             size={10}
                                             strokeWidth={3}
-                                            style={{ color: priorityColor, opacity: 0, transition: 'opacity 0.2s' }}
+                                            style={{ color: priority === 4 ? '#8e8e93' : priorityColor, opacity: 0, transition: 'opacity 0.2s' }}
                                         />
                                     </div>
                                 )}
@@ -272,13 +254,13 @@ const SortableTaskItem = ({
                             }}>
                                 <span
                                     style={{
-                                        fontSize: '15.5px',
+                                        fontSize: '16px',
                                         fontWeight: 400,
                                         textDecoration: isCompleted ? 'line-through' : 'none',
-                                        color: 'var(--text-primary)',
+                                        color: isCompleted ? '#8e8e93' : '#1c1c1e',
                                         whiteSpace: 'pre-wrap',
                                         wordBreak: 'break-word',
-                                        lineHeight: '20px',
+                                        lineHeight: '1.4',
                                         display: 'block'
                                     }}
                                     dangerouslySetInnerHTML={{

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useUser } from '../context/UserContext';
 import { toast } from 'sonner';
 import { io } from 'socket.io-client';
@@ -30,7 +30,15 @@ const Today = () => {
     const [todayProgress, setTodayProgress] = useState(() => cache.get(`today_progress_${user.id}`) || []);
     const [loading, setLoading] = useState(!cache.get(`today_tasks_${user.id}`));
     const [activePageTab, setActivePageTab] = useState('tasks'); // 'tasks' or 'activity'
-    const [expandedChecklists, setExpandedChecklists] = useState({ 'today-unified': true });
+    const [expandedChecklists, setExpandedChecklists] = useState(() => {
+        try {
+            const saved = localStorage.getItem('vee_expanded_checklists');
+            const parsed = saved ? JSON.parse(saved) : {};
+            return { 'today-unified': true, ...parsed };
+        } catch (e) {
+            return { 'today-unified': true };
+        }
+    });
     const [addingToList, setAddingToList] = useState(null);
     const [addingToItem, setAddingToItem] = useState(null);
     const [newItemContent, setNewItemContent] = useState('');
@@ -407,8 +415,8 @@ const Today = () => {
             titleContent={
                 <div style={{
                     transition: 'all 0.35s ease',
-                    opacity: Math.max(0, 1 - scrollTop / 60),
-                    transform: `translateY(${scrollTop * 0.15}px)`
+                    opacity: Math.max(0, 1 - Math.max(0, scrollTop) / 60),
+                    transform: `translateY(${Math.max(0, scrollTop) * 0.15}px)`
                 }}>
                     <h1 style={{
                         margin: 0,
@@ -458,7 +466,11 @@ const Today = () => {
                     checklist={unifiedChecklist}
                     idx={0}
                     expandedChecklists={expandedChecklists}
-                    toggleChecklistExpanded={() => setExpandedChecklists(prev => ({ ...prev, 'today-unified': !prev['today-unified'] }))}
+                    toggleChecklistExpanded={() => setExpandedChecklists(prev => {
+                        const newState = { ...prev, 'today-unified': !prev['today-unified'] };
+                        localStorage.setItem('vee_expanded_checklists', JSON.stringify(newState));
+                        return newState;
+                    })}
                     handleDeleteChecklist={() => { }}
                     todayProgress={todayProgress}
                     sensors={sensors}

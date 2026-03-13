@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
 import { Plus, X, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -24,7 +24,14 @@ const Inbox = () => {
     const [addingToList, setAddingToList] = useState(null);
     const [addingToItem, setAddingToItem] = useState(null);
     const [newItemContent, setNewItemContent] = useState('');
-    const [expandedChecklists, setExpandedChecklists] = useState({});
+    const [expandedChecklists, setExpandedChecklists] = useState(() => {
+        try {
+            const saved = localStorage.getItem('vee_expanded_checklists');
+            return saved ? JSON.parse(saved) : {};
+        } catch (e) {
+            return {};
+        }
+    });
     const [todayProgress, setTodayProgress] = useState([]);
     const [isCreatingList, setIsCreatingList] = useState(false);
     const [newListTitle, setNewListTitle] = useState('');
@@ -73,7 +80,7 @@ const Inbox = () => {
             ]);
 
             if (inboxRes.ok) {
-                const data = await inboxRes.json();
+                const data = await inboxRes.ok ? await inboxRes.json() : [];
                 // Normalize: if a checklist is named 'תיבת המשימות', make it headless (empty title)
                 const normalizedData = data.map(c => c.title === 'תיבת המשימות' ? { ...c, title: '' } : c);
                 // Sort: Headless lists (title === '') come first
@@ -83,9 +90,14 @@ const Inbox = () => {
                     return 0;
                 });
                 setChecklists(sortedData);
-                // Expand all by default for Inbox
-                const expandMap = {};
-                normalizedData.forEach(c => expandMap[c.id] = true);
+                
+                // Expand all by default for Inbox if not already saved
+                const expandMap = { ...expandedChecklists };
+                normalizedData.forEach(c => {
+                    if (expandMap[c.id] === undefined) {
+                        expandMap[c.id] = true;
+                    }
+                });
                 setExpandedChecklists(expandMap);
             }
 
@@ -276,7 +288,11 @@ const Inbox = () => {
     };
 
     const toggleChecklistExpanded = (id) => {
-        setExpandedChecklists(prev => ({ ...prev, [id]: !prev[id] }));
+        setExpandedChecklists(prev => {
+            const newState = { ...prev, [id]: !prev[id] };
+            localStorage.setItem('vee_expanded_checklists', JSON.stringify(newState));
+            return newState;
+        });
     };
 
     const handleGlobalAddTask = async () => {
@@ -399,8 +415,8 @@ const Inbox = () => {
             titleContent={
                 <div style={{
                     transition: 'all 0.35s ease',
-                    opacity: Math.max(0, 1 - scrollTop / 60),
-                    transform: `translateY(${scrollTop * 0.15}px)`
+                    opacity: Math.max(0, 1 - Math.max(0, scrollTop) / 60),
+                    transform: `translateY(${Math.max(0, scrollTop) * 0.15}px)`
                 }}>
                     <h1
                         style={{
@@ -576,6 +592,3 @@ const Inbox = () => {
 };
 
 export default Inbox;
-
-
-

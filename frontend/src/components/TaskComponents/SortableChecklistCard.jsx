@@ -75,6 +75,41 @@ const SortableChecklistCard = ({
 
     // Local state for the inline date picker when creating tasks
     const [newItemDate, setNewItemDate] = useState(defaultItemDate);
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [tempTitle, setTempTitle] = useState('');
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    const handleEditTitleSubmit = async () => {
+        setIsEditingTitle(false);
+        if (!tempTitle.trim() || tempTitle === checklist.title) return;
+        try {
+            await fetch(`${API_URL}/checklists/${checklist.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: tempTitle })
+            });
+            window.dispatchEvent(new CustomEvent('refreshTasks'));
+            window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
+        } catch (err) { console.error(err); }
+    };
+
+    const handleCompleteAll = async () => {
+        if (!checklist.items) return;
+        if (!window.confirm("האם כל המשימות ברשימה זו בוצעו?")) return;
+        
+        for (const item of checklist.items) {
+            let isCompleted = false;
+            if (useProgressArray && todayProgress) {
+                isCompleted = todayProgress.some(p => p.checklist_item_id === item.id && p.completed === 1);
+            } else {
+                isCompleted = item.completed;
+            }
+            if (!isCompleted) {
+                if (onToggleItem) onToggleItem(item.id, false);
+                else if (toggleItem) toggleItem(item.id, false);
+            }
+        }
+    };
 
     const handleSetTargetDate = async (itemId, date) => {
         handleUpdateItem(itemId, { target_date: date || null });
@@ -89,31 +124,42 @@ const SortableChecklistCard = ({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'flex-start',
-                        marginBottom: '0.25rem',
+                        paddingTop: '1.25rem', // Added padding to compensate for stickiness
+                        paddingBottom: '0.75rem',
+                        marginTop: '0.5rem',
                         direction: 'rtl',
-                        gap: '0.1rem',
-                        cursor: 'pointer',
-                        position: 'relative',
-                        borderBottom: '1px solid var(--border-color)',
-                        paddingBottom: '0.2rem'
-                    }}
-                    onClick={() => {
-                        if (onToggleExpand) onToggleExpand(checklist.id);
-                        else if (toggleChecklistExpanded) toggleChecklistExpanded(checklist.id);
+                        gap: '0.5rem',
+                        position: 'sticky',
+                        top: '-1px', // Sticky at the very top of page-content
+                        zIndex: isMenuOpen ? 200 : 40, // Lift when menu is open to stay on top
+                        background: 'var(--bg-color)', // Solid background to cover tasks
+                        borderBottom: '1px solid transparent',
+                        transition: 'all 0.2s ease',
+                        marginRight: '-1rem', // Pull out slightly for better alignment if needed
+                        paddingRight: '1rem',
+                        WebkitTapHighlightColor: 'transparent' // Prevent mobile tap background
                     }}
                 >
-                    <span style={{
-                        position: 'absolute',
-                        right: '-24px',
-                        color: 'var(--text-secondary)',
-                        display: 'flex',
-                        width: '24px',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        height: '24px',
-                        opacity: 1,
-                        zIndex: 10
-                    }}>
+                    <span 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onToggleExpand) onToggleExpand(checklist.id);
+                            else if (toggleChecklistExpanded) toggleChecklistExpanded(checklist.id);
+                        }}
+                        style={{
+                            position: 'absolute',
+                            right: '-8px', // Adjusted to stay within the sticky container
+                            color: 'var(--text-secondary)',
+                            display: 'flex',
+                            width: '24px',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            height: '24px',
+                            opacity: 1,
+                            zIndex: 10,
+                            cursor: 'pointer'
+                        }}
+                    >
                         {isExpanded ? <ChevronDown size={14} /> : <ChevronLeft size={14} />}
                     </span>
 
@@ -125,25 +171,58 @@ const SortableChecklistCard = ({
                         padding: '0',
                         margin: 0
                     }}>
-                        <h3 style={{
-                            margin: 0,
-                            fontSize: '15.5px',
-                            fontWeight: 700,
-                            color: 'var(--text-primary)',
-                            flexGrow: 1,
-                            userSelect: 'none'
-                        }}>
-                            {checklist.title}
-                        </h3>
-                        <span style={{ fontSize: '13px', color: '#b3b3b3', fontWeight: 500 }}>
+                        {isEditingTitle ? (
+                            <input
+                                autoFocus
+                                value={tempTitle}
+                                onChange={(e) => setTempTitle(e.target.value)}
+                                onBlur={handleEditTitleSubmit}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleEditTitleSubmit();
+                                    if (e.key === 'Escape') setIsEditingTitle(false);
+                                }}
+                                onClick={e => e.stopPropagation()}
+                                style={{
+                                    margin: 0,
+                                    fontSize: '18px',
+                                    fontWeight: 700,
+                                    color: 'var(--primary-color)',
+                                    letterSpacing: '-0.5px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    outline: 'none',
+                                    width: '100%',
+                                    padding: 0,
+                                    fontFamily: 'inherit'
+                                }}
+                            />
+                        ) : (
+                            <h3 style={{
+                                margin: 0,
+                                fontSize: '18px',
+                                fontWeight: 700,
+                                color: 'var(--primary-color)',
+                                userSelect: 'none',
+                                letterSpacing: '-0.5px'
+                            }}>
+                                {checklist.title}
+                            </h3>
+                        )}
+                        <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                             {!hideTaskCount && hierarchicalItems.length > 0 ? hierarchicalItems.length : ''}
                         </span>
 
-                        <div style={{ display: 'flex', alignItems: 'center', opacity: 0, transition: 'opacity 0.2s', marginRight: 'auto' }} className="checklist-actions">
-                            <ActionMenu onDelete={(e) => {
-                                if (onDeleteChecklist) onDeleteChecklist(e, checklist.id);
-                                else if (handleDeleteChecklist) handleDeleteChecklist(e, checklist.id);
-                            }} size={16} />
+                        <div style={{ display: 'flex', alignItems: 'center', opacity: 1, transition: 'opacity 0.2s', marginRight: 'auto' }} className="checklist-actions">
+                            <ActionMenu 
+                                onDelete={(e) => {
+                                    if (onDeleteChecklist) onDeleteChecklist(e, checklist.id);
+                                    else if (handleDeleteChecklist) handleDeleteChecklist(e, checklist.id);
+                                }} 
+                                onEdit={() => { setIsEditingTitle(true); setTempTitle(checklist.title); }}
+                                onComplete={handleCompleteAll}
+                                onOpenChange={setIsMenuOpen}
+                                size={16} 
+                            />
                         </div>
                     </div>
                 </div>
