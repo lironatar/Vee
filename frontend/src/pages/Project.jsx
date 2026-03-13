@@ -646,21 +646,20 @@ const Project = () => {
     };
 
     const toggleItem = async (itemId, currentCompletedStatus) => {
+        const newStatus = !currentCompletedStatus;
+
+        // 1. Optimistic Update Local UI
+        const delay = newStatus ? 400 : 0;
+        setTimeout(() => {
+            setTodayProgress(prev => {
+                const filtered = prev.filter(p => p.checklist_item_id !== itemId);
+                return [...filtered, { checklist_item_id: itemId, user_id: user.id, date: selectedDate, completed: newStatus ? 1 : 0 }];
+            });
+            window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
+        }, delay);
+
         try {
-            const newStatus = !currentCompletedStatus;
-
-            // Optimistic update for unchecking (immediate)
-            // For checking (completing), we'll do it after a delay in the UI
-            if (!newStatus) {
-                setTodayProgress(prev => {
-                    const existing = prev.find(p => p.checklist_item_id === itemId);
-                    if (existing) {
-                        return prev.map(p => p.checklist_item_id === itemId ? { ...p, completed: 0 } : p);
-                    }
-                    return prev;
-                });
-            }
-
+            // 2. Perform network request
             const res = await fetch(`${API_URL}/users/${user.id}/progress`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -671,19 +670,16 @@ const Project = () => {
                 })
             });
 
-            if (res.ok) {
-                const delay = newStatus ? 400 : 0;
-                setTimeout(() => {
-                    setTodayProgress(prev => {
-                        const filtered = prev.filter(p => p.checklist_item_id !== itemId);
-                        return [...filtered, { checklist_item_id: itemId, user_id: user.id, date: selectedDate, completed: newStatus ? 1 : 0 }];
-                    });
-                    window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
-                }, delay);
-            }
+            if (!res.ok) throw new Error("Server Error");
         } catch (err) {
             console.error(err);
-            fetchProjectData(); // revert on error
+            toast.error("שגיאה בעדכון המשימה - מתבטל");
+            // 3. Revert Optimistic Update on failure
+            setTodayProgress(prev => {
+                const filtered = prev.filter(p => p.checklist_item_id !== itemId);
+                return [...filtered, { checklist_item_id: itemId, user_id: user.id, date: selectedDate, completed: currentCompletedStatus ? 1 : 0 }];
+            });
+            window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
         }
     };
 

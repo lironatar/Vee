@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { CheckCircle, Check, Plus, RefreshCw, GripVertical, Folder } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -450,4 +450,43 @@ const SortableTaskItem = ({
     );
 };
 
-export default SortableTaskItem;
+// Custom comparison function to determine if the component needs to re-render
+const areEqual = (prevProps, nextProps) => {
+    // 1. Check if the core item data has changed (title, completed status, priority, time)
+    if (prevProps.item.id !== nextProps.item.id) return false;
+    if (prevProps.item.content !== nextProps.item.content) return false;
+    if (prevProps.item.priority !== nextProps.item.priority) return false;
+    if (prevProps.item.target_date !== nextProps.item.target_date) return false;
+    if (prevProps.item.time !== nextProps.item.time) return false;
+    if (prevProps.item.projectTitle !== nextProps.item.projectTitle) return false;
+    if (prevProps.item.checklistTitle !== nextProps.item.checklistTitle) return false;
+    if (prevProps.item.repeat_rule !== nextProps.item.repeat_rule) return false;
+    
+    // Check if children lengths changed (simple check for subtasks)
+    if ((prevProps.item.children?.length || 0) !== (nextProps.item.children?.length || 0)) return false;
+
+    // 2. Check if the visual state we care about has changed
+    const prevCompleted = prevProps.useProgressArray && prevProps.todayProgress 
+        ? prevProps.todayProgress.find(p => p.checklist_item_id === prevProps.item.id)?.completed === 1 
+        : prevProps.isCompletedFallback;
+    const nextCompleted = nextProps.useProgressArray && nextProps.todayProgress 
+        ? nextProps.todayProgress.find(p => p.checklist_item_id === nextProps.item.id)?.completed === 1 
+        : nextProps.isCompletedFallback;
+    if (prevCompleted !== nextCompleted) return false;
+
+    // 3. Check UI states
+    if (prevProps.isOverlay !== nextProps.isOverlay) return false;
+    if (prevProps.isWaterfalling !== nextProps.isWaterfalling) return false;
+    if (prevProps.addingToItem !== nextProps.addingToItem) return false;
+    if (prevProps.hideAddButton !== nextProps.hideAddButton) return false;
+    if (prevProps.depth !== nextProps.depth) return false;
+    if (prevProps.compact !== nextProps.compact) return false;
+    
+    // We do NOT check callback functions like toggleItem, since they are often un-memoized 
+    // and would break the optimization. We assume the functions don't change in ways that matter.
+
+    // If we get here, the component doesn't need to visually change
+    return true; 
+};
+
+export default memo(SortableTaskItem, areEqual);

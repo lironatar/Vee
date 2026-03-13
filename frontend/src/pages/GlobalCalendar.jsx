@@ -303,23 +303,32 @@ const GlobalCalendar = () => {
     };
 
     const handleUpcomingTaskToggle = async (taskId, currentStatus) => {
+        const newStatus = !currentStatus ? 1 : 0;
+        
+        // 1. Optimistic Update Local UI
+        const delay = newStatus ? 400 : 0;
+        setTimeout(() => {
+            setUpcomingEvents(prev => prev.map(t =>
+                t.id === taskId ? { ...t, completed: newStatus } : t
+            ));
+        }, delay);
+
         try {
-            // First try updating the item directly
+            // 2. Perform network request
             const res = await fetch(`${API_URL}/items/${taskId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ completed: !currentStatus ? 1 : 0 })
+                body: JSON.stringify({ completed: newStatus })
             });
 
-            if (res.ok) {
-                // Optimistically update UI
-                setUpcomingEvents(prev => prev.map(t =>
-                    t.id === taskId ? { ...t, completed: !currentStatus ? 1 : 0 } : t
-                ));
-            }
+            if (!res.ok) throw new Error("Server error");
         } catch (e) {
             console.error(e);
-            toast.error('שגיאה בעדכון מצב המשימה');
+            toast.error('שגיאה בעדכון מצב המשימה - מתבטל');
+            // 3. Revert Optimistic Update
+            setUpcomingEvents(prev => prev.map(t =>
+                t.id === taskId ? { ...t, completed: currentStatus ? 1 : 0 } : t
+            ));
         }
     };
 

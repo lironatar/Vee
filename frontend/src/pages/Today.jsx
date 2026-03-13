@@ -131,7 +131,18 @@ const Today = () => {
     const toggleItem = async (itemId, currentCompleted) => {
         const newCompleted = !currentCompleted;
 
+        // 1. Optimistic Update Local UI
+        const delay = newCompleted ? 400 : 0; // Wait a bit for the completion animation to play
+        setTimeout(() => {
+            setTodayProgress(prev => {
+                const filtered = prev.filter(p => p.checklist_item_id !== itemId);
+                return [...filtered, { checklist_item_id: itemId, completed: newCompleted ? 1 : 0, date: todayDateStr }];
+            });
+            window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
+        }, delay);
+
         try {
+            // 2. Perform network request
             const res = await fetch(`${API_URL}/users/${user.id}/progress`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -142,20 +153,18 @@ const Today = () => {
                 })
             });
 
-            if (res.ok) {
-                // If completing, wait a bit for the "disappearing" effect
-                const delay = newCompleted ? 400 : 0;
-
-                setTimeout(() => {
-                    setTodayProgress(prev => {
-                        const filtered = prev.filter(p => p.checklist_item_id !== itemId);
-                        return [...filtered, { checklist_item_id: itemId, completed: newCompleted ? 1 : 0, date: todayDateStr }];
-                    });
-                    window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
-                }, delay);
+            if (!res.ok) {
+                throw new Error('Server returned an error');
             }
         } catch (err) {
-            toast.error("שגיאה בעדכון המשימה");
+            console.error(err);
+            toast.error("שגיאה בעדכון המשימה - מתבטל");
+            // 3. Revert Optimistic Update on failure
+            setTodayProgress(prev => {
+                const filtered = prev.filter(p => p.checklist_item_id !== itemId);
+                return [...filtered, { checklist_item_id: itemId, completed: currentCompleted ? 1 : 0, date: todayDateStr }];
+            });
+            window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
         }
     };
 
