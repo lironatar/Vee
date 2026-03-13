@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useUser } from '../context/UserContext';
 import { toast } from 'sonner';
 import { io } from 'socket.io-client';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, RotateCcw } from 'lucide-react';
 import {
     DndContext,
     closestCenter,
@@ -26,9 +26,9 @@ const API_URL = '/api';
 
 const Today = () => {
     const { user } = useUser();
-    const [projectGroups, setProjectGroups] = useState(() => cache.get(`today_tasks_${user.id}`) || []);
-    const [todayProgress, setTodayProgress] = useState(() => cache.get(`today_progress_${user.id}`) || []);
-    const [loading, setLoading] = useState(!cache.get(`today_tasks_${user.id}`));
+    const [projectGroups, setProjectGroups] = useState(() => (user && cache.get(`today_tasks_${user.id}`)) || []);
+    const [todayProgress, setTodayProgress] = useState(() => (user && cache.get(`today_progress_${user.id}`)) || []);
+    const [loading, setLoading] = useState(user ? !cache.get(`today_tasks_${user.id}`) : true);
     const [activePageTab, setActivePageTab] = useState('tasks'); // 'tasks' or 'activity'
     const [expandedChecklists, setExpandedChecklists] = useState(() => {
         try {
