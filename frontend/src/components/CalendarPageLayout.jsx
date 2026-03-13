@@ -83,7 +83,7 @@ const CalendarPageLayout = ({
                 {/* Main Content Area (Title + Tasks/Lists) */}
                 <div
                     className="page-content"
-                    style={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                    style={{ flexGrow: 1, overflowY: activeDragItem ? 'hidden' : 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                     onScroll={handleScroll}
                 >
                     <div style={{ width: '100%', maxWidth: maxWidth, margin: '0 auto' }}>

@@ -100,7 +100,7 @@ const TaskPageLayout = ({
                     className="page-content"
                     style={{
                         flexGrow: 1,
-                        overflowY: 'auto',
+                        overflowY: activeDragItem ? 'hidden' : 'auto',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
