@@ -5,7 +5,7 @@ import {
     X, ChevronUp, ChevronDown, ChevronLeft, MoreHorizontal,
     Calendar as CalendarIcon, Tag, MapPin,
     Flag, Plus, Trash2, CheckCircle, Circle, RefreshCw, Check,
-    Home, List, MessageSquare, Paperclip, CheckSquare, Bell, Inbox, Folder, Send, Layout
+    Home, List, MessageSquare, Paperclip, CheckSquare, Bell, Inbox, Folder, Send, Layout, Clock, AlarmClock
 } from 'lucide-react';
 import DatePickerDropdown from './DatePickerDropdown';
 import TimePickerDropdown from './TimePickerDropdown';
