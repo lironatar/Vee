@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import UserDetailsModal from '../../components/admin/UserDetailsModal';
 import { Search, Mail, Phone, Calendar, ArrowUpRight, MoreVertical } from 'lucide-react';
+import { useHeaderScroll } from '../../context/HeaderContext';
 
 const API_URL = '/api';
 
@@ -13,10 +13,18 @@ const AdminUsers = () => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [scrollTop, setScrollTop] = useState(0);
+    const { setScrollTop: setGlobalScrollTop } = useHeaderScroll();
 
     useEffect(() => {
+        setGlobalScrollTop(0);
         fetchUsers();
     }, []);
+
+    const handleScroll = (e) => {
+        const top = e.target.scrollTop;
+        setScrollTop(top);
+        setGlobalScrollTop(top);
+    };
 
     const fetchUsers = async () => {
         const token = localStorage.getItem('adminToken');
@@ -83,7 +91,7 @@ const AdminUsers = () => {
             <div 
                 className="page-content" 
                 style={{ flex: 1, overflowY: 'auto', padding: '4rem 0 2rem 0' }}
-                onScroll={(e) => setScrollTop(e.target.scrollTop)}
+                onScroll={handleScroll}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                     <div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, ListTodo, CheckSquare, Activity, PieChart, MessageCircle, QrCode, Smartphone, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useHeaderScroll } from '../../context/HeaderContext';
 import UserDetailsModal from '../../components/admin/UserDetailsModal';
 
 const API_URL = '/api';
@@ -14,8 +15,10 @@ const AdminDashboard = () => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [whatsappStatus, setWhatsappStatus] = useState('INITIALIZING');
     const [whatsappQr, setWhatsappQr] = useState(null);
+    const { setScrollTop: setGlobalScrollTop } = useHeaderScroll();
 
     useEffect(() => {
+        setGlobalScrollTop(0);
         fetchAdminData();
         fetchWhatsappStatus();
         
@@ -23,6 +26,12 @@ const AdminDashboard = () => {
         const interval = setInterval(fetchWhatsappStatus, 5000);
         return () => clearInterval(interval);
     }, []);
+
+    const handleScroll = (e) => {
+        const top = e.target.scrollTop;
+        setScrollTop(top);
+        setGlobalScrollTop(top);
+    };
 
     const fetchWhatsappStatus = async () => {
         const token = localStorage.getItem('adminToken');
@@ -99,7 +108,7 @@ const AdminDashboard = () => {
             <div
                 className="page-content"
                 style={{ flex: 1, overflowY: 'auto', padding: '4rem 0 2rem 0' }}
-                onScroll={(e) => setScrollTop(e.target.scrollTop)}
+                onScroll={handleScroll}
             >
                 {/* Removed Large Hero Banner */}
 

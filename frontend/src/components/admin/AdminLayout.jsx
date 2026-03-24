@@ -1,8 +1,9 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
+import { HeaderProvider } from '../../context/HeaderContext';
 
-const AdminLayout = () => {
+const AdminLayoutContent = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 992);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 992);
 
@@ -76,5 +77,11 @@ const AdminLayout = () => {
         </div>
     );
 };
+
+const AdminLayout = () => (
+    <HeaderProvider>
+        <AdminLayoutContent />
+    </HeaderProvider>
+);
 
 export default AdminLayout;
