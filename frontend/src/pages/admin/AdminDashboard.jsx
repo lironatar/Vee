@@ -3,6 +3,7 @@ import { Users, ListTodo, CheckSquare, Activity, PieChart, MessageCircle, QrCode
 import { toast } from 'sonner';
 import { useHeaderScroll } from '../../context/HeaderContext';
 import UserDetailsModal from '../../components/admin/UserDetailsModal';
+import WhatsappTemplateEditor from '../../components/admin/WhatsappTemplateEditor';
 
 const API_URL = '/api';
 
@@ -15,6 +16,7 @@ const AdminDashboard = () => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [whatsappStatus, setWhatsappStatus] = useState('INITIALIZING');
     const [whatsappQr, setWhatsappQr] = useState(null);
+    const [isTemplateEditorOpen, setIsTemplateEditorOpen] = useState(false);
     const { setScrollTop: setGlobalScrollTop } = useHeaderScroll();
 
     useEffect(() => {
@@ -167,6 +169,14 @@ const AdminDashboard = () => {
                         </div>
                         <h2 style={{ fontSize: '1.3rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontWeight: 700 }}>חיבור ל-WhatsApp סנטר</h2>
                         
+                        <button 
+                            className="btn-secondary" 
+                            style={{ margin: '0.5rem 0 1.5rem', fontSize: '0.85rem', padding: '0.4rem 1rem' }}
+                            onClick={() => setIsTemplateEditorOpen(true)}
+                        >
+                            ערוך תבנית הודעה
+                        </button>
+
                         {whatsappStatus === 'INITIALIZING' && (
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
                                 <Loader2 size={24} className="spin" style={{ color: 'var(--text-secondary)' }} />
@@ -215,6 +225,11 @@ const AdminDashboard = () => {
                     onUserUpdated={fetchAdminData}
                 />
             )}
+
+            <WhatsappTemplateEditor 
+                isOpen={isTemplateEditorOpen} 
+                onClose={() => setIsTemplateEditorOpen(false)} 
+            />
         </div>
     );
 };

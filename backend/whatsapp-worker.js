@@ -113,7 +113,17 @@ setInterval(() => {
                 }
                 const chatId = phoneNum + '@c.us';
 
-                const reminderMsg = `*_Vee Reminder_*\nשלום ${task.username},\n\nתזכורת למשימה: *${task.content}*\nנקבע לשעה: ${task.time}\n\nבהצלחה!`;
+                // Fetch dynamic template from settings
+                let templateSetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('whatsapp_template');
+                let templateStr = templateSetting ? templateSetting.value : "*_Vee Reminder_*\nשלום {user_name},\n\nתזכורת למשימה: *{task_name}*\nנקבע לשעה: {task_time}\n\nבהצלחה!";
+
+                // Safe interpolation of dynamic variables
+                const reminderMsg = templateStr
+                    .replace(/{user_name}/g, task.username || '')
+                    .replace(/{task_name}/g, task.content || '')
+                    .replace(/{task_time}/g, task.time || '')
+                    // Support converting literal \n to actual line breaks if saved escaped in some UI
+                    .replace(/\\n/g, '\n');
 
                 client.sendMessage(chatId, reminderMsg).then(() => {
                     console.log(`[WhatsApp Worker] Sent reminder for task ${task.id} to ${phoneNum}`);

@@ -15,6 +15,11 @@ const initDb = () => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS admins (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,
@@ -247,6 +252,11 @@ const initDb = () => {
   if (!hasChecklistOrderIndex) {
     db.exec('ALTER TABLE checklists ADD COLUMN order_index INTEGER DEFAULT 0');
   }
+
+  // Seed default WhatsApp Template
+  const defaultTemplate = "*_Vee Reminder_*\\nשלום {user_name},\\n\\nתזכורת למשימה: *{task_name}*\\nנקבע לשעה: {task_time}\\n\\nבהצלחה!";
+  db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)')
+    .run('whatsapp_template', defaultTemplate);
 
   // Migration: Add parent_item_id to checklist_items if missing
   const tableInfoItems = db.pragma('table_info(checklist_items)');

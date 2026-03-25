@@ -442,6 +442,39 @@ app.get('/api/admin/whatsapp/status', adminAuth, (req, res) => {
     }
 });
 
+app.get('/api/admin/settings/:key', adminAuth, (req, res) => {
+    try {
+        const setting = db.prepare('SELECT value FROM settings WHERE key = ?').get(req.params.key);
+        if (!setting) {
+            return res.status(404).json({ error: 'Setting not found' });
+        }
+        res.json({ key: req.params.key, value: setting.value });
+    } catch (err) {
+        console.error('Error fetching setting:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/api/admin/settings', adminAuth, (req, res) => {
+    const { key, value } = req.body;
+    if (!key || value === undefined) {
+        return res.status(400).json({ error: 'Missing key or value' });
+    }
+
+    try {
+        db.prepare(`
+            INSERT INTO settings (key, value) 
+            VALUES (?, ?) 
+            ON CONFLICT(key) DO UPDATE SET value = ?
+        `).run(key, value, value);
+        
+        res.json({ success: true, key, value });
+    } catch (err) {
+        console.error('Error updating setting:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 app.get('/api/users/:id', (req, res) => {
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
