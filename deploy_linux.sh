@@ -75,13 +75,15 @@ fi
 WORKER_APP_NAME="vee-whatsapp-worker"
 WORKER_ENTRY_POINT="backend/whatsapp-worker.js"
 
-if pm2 list | grep -q "$WORKER_APP_NAME"; then
-    echo -e "${BLUE}Restarting existing worker process '$WORKER_APP_NAME'...${NC}"
-    pm2 restart "$WORKER_APP_NAME"
-else
-    echo -e "${BLUE}Starting new worker process '$WORKER_APP_NAME'...${NC}"
-    pm2 start "$WORKER_ENTRY_POINT" --name "$WORKER_APP_NAME"
-fi
+# Pre-rebuild native modules for the worker to ensure they match current Node environment
+cd backend
+npm install
+npm rebuild better-sqlite3
+cd ..
+
+# Force kill and start to ensure it picks up the latest environment and code
+pm2 delete "$WORKER_APP_NAME" || true
+pm2 start "$WORKER_ENTRY_POINT" --name "$WORKER_APP_NAME"
 
 # 6. Final Sync
 echo -e "${BLUE}Saving PM2 configuration...${NC}"
