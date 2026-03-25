@@ -11,7 +11,6 @@ const { Server } = require('socket.io');
 const nodemailer = require('nodemailer');
 const webpush = require('web-push');
 const cron = require('node-cron');
-const whatsapp = require('./whatsapp');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
@@ -2082,14 +2081,12 @@ app.post('/api/notifications/unsubscribe', (req, res) => {
 cron.schedule('* * * * *', async () => {
     try {
         const now = new Date();
-        const currentHour = now.getHours().toString().padStart(2, '0');
-        const currentMinute = now.getMinutes().toString().padStart(2, '0');
         const currentDate = now.toISOString().split('T')[0];
 
         // Items that have a reminder
         const itemsWithReminders = db.prepare(`
-            SELECT ci.id, ci.content, ci.target_date, ci.time, ci.reminder_minutes, ci.whatsapp_last_sent_date, 
-                   c.user_id, u.phone, u.whatsapp_enabled 
+            SELECT ci.id, ci.content, ci.target_date, ci.time, ci.reminder_minutes, 
+                   c.user_id 
             FROM checklist_items ci
             JOIN checklists c ON ci.checklist_id = c.id
             JOIN users u ON c.user_id = u.id
@@ -2101,7 +2098,12 @@ cron.schedule('* * * * *', async () => {
             const taskDateTime = new Date(`${item.target_date}T${item.time}:00`);
             const reminderTime = new Date(taskDateTime.getTime() - item.reminder_minutes * 60000);
 
-            if (now.getHours() === reminderTime.getHours() && now.getMinutes() === reminderTime.getMinutes() && now.getDate() === reminderTime.getDate() && now.getMonth() === reminderTime.getMonth() && now.getFullYear() === reminderTime.getFullYear()) {
+            if (now.getHours() === reminderTime.getHours() && 
+                now.getMinutes() === reminderTime.getMinutes() && 
+                now.getDate() === reminderTime.getDate() && 
+                now.getMonth() === reminderTime.getMonth() && 
+                now.getFullYear() === reminderTime.getFullYear()) {
+                
                 // Send push notification to user
                 const subscriptions = db.prepare('SELECT endpoint, p256dh, auth FROM web_push_subscriptions WHERE user_id = ?').all(item.user_id);
 
@@ -2123,14 +2125,6 @@ cron.schedule('* * * * *', async () => {
                         if (error.statusCode === 410) {
                             db.prepare('DELETE FROM web_push_subscriptions WHERE endpoint = ?').run(sub.endpoint);
                         }
-                    }
-                }
-
-                if (item.whatsapp_enabled && item.phone && item.whatsapp_last_sent_date !== currentDate) {
-                    const message = `היי! תזכורת ממערכת Vee:\n*${item.content}*\nמתוכננת להיום בשעה ${item.time}.`;
-                    const sent = await whatsapp.sendReminder(item.phone, message);
-                    if (sent) {
-                        db.prepare('UPDATE checklist_items SET whatsapp_last_sent_date = ? WHERE id = ?').run(currentDate, item.id);
                     }
                 }
             }

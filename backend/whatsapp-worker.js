@@ -55,6 +55,20 @@ client.on('disconnected', (reason) => {
     updateStatus('NEEDS_SCAN');
 });
 
+// helper to clean up puppeteer locks on linux
+try {
+    const sessionDir = path.join(__dirname, '.wwebjs_auth', 'session');
+    if (fs.existsSync(sessionDir)) {
+        const lockFile = path.join(sessionDir, 'SingletonLock');
+        if (fs.existsSync(lockFile)) {
+            console.log('[WhatsApp Worker] Removing stale SingletonLock...');
+            fs.unlinkSync(lockFile);
+        }
+    }
+} catch (err) {
+    console.warn('[WhatsApp Worker] Failed to clean up SingletonLock (might not exist):', err.message);
+}
+
 client.initialize();
 
 // --- Cron Scheduler ---
