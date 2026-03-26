@@ -423,7 +423,8 @@ export default function TaskEditModal({
         borderRadius: 0,
         zIndex: 9999,
         boxShadow: isDesktop ? '0 0 50px rgba(0,0,0,0.15)' : 'none',
-        animation: isDesktop ? 'fadeIn 0.15s ease-out' : 'slideUp 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
+        opacity: 0, // Prevent flash before animation
+        animation: isDesktop ? 'fadeIn 0.15s ease-out forwards' : 'slideUp 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         overflowY: 'auto',
         direction: 'rtl',
         display: 'flex',
@@ -475,7 +476,11 @@ export default function TaskEditModal({
     const panel = (
         <>
             {/* Backdrop */}
-            <div style={{ position: 'fixed', inset: 0, zIndex: 9997, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)' }} />
+            <div style={{
+                position: 'fixed', inset: 0, zIndex: 9997, background: 'rgba(0,0,0,0.5)',
+                opacity: 0,
+                animation: 'fadeIn 0.15s ease-out forwards'
+            }} />
 
             {/* Modal Panel */}
             <div ref={panelRef} style={panelStyle} className="hide-scrollbar">

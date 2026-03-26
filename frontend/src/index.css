@@ -38,13 +38,20 @@ body.is-dragging {
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
-  to {
-    opacity: 1;
-  }
+.fade-in {
+  animation: fadeIn 0.15s ease-out forwards;
+}
+
+.slide-down {
+  animation: fadeInDown 0.15s ease-out forwards;
+}
+
+.slide-up {
+  animation: fadeInUp 0.15s ease-out forwards;
 }
 
 @keyframes shake {
@@ -2561,3 +2568,69 @@ textarea.form-control:focus {
     font-size: 17px !important;
   }
 }
+
+/* Calendar Event Priority Styling (Minimalist Text Style) */
+.fc-custom-event-month {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 1px 4px !important;
+  border-radius: 0 !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  /* Instead of a thick pill, it's a gentle transparent block with soft bg and light border */
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  border-radius: 4px !important;
+  color: var(--text-primary) !important;
+  transition: all 0.2s ease !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  margin-bottom: 2px !important;
+}
+
+.fc-custom-event-month:hover {
+  background: var(--hover-bg) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* 
+ * Priority Levels (Gentle Aesthetic)
+ * We use the soft background and matching border defined in themes.css
+ */
+.fc-custom-event-month.priority-1 { background-color: var(--p1-bg) !important; border-color: var(--p1-border) !important; color: var(--p1-accent) !important; }
+.fc-custom-event-month.priority-2 { background-color: var(--p2-bg) !important; border-color: var(--p2-border) !important; color: var(--p2-accent) !important; }
+.fc-custom-event-month.priority-3 { background-color: var(--p3-bg) !important; border-color: var(--p3-border) !important; color: var(--p3-accent) !important; }
+.fc-custom-event-month.priority-4 { background-color: var(--p4-bg) !important; border-color: var(--p4-border) !important; color: var(--p4-accent) !important; }
+
+/* In the reference, time is shown next to the title in the same pill */
+.fc-custom-event-month .event-time {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  margin-left: 4px; /* Space between time and title (RTL means time is on the left) */
+}
+
+.fc-custom-event-month.is-completed {
+  opacity: 0.4 !important;
+  text-decoration: line-through !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+/* Cleanup FullCalendar default event styles to allow our custom ones to shine */
+.fc-v-event {
+  border: none !important;
+  background: none !important;
+}
+.fc-daygrid-event {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 1px 2px !important;
+}
+.fc-event-main {
+  padding: 0 !important;
+}
+.fc-daygrid-block-event {
+  padding: 0 !important;
+}

@@ -3,7 +3,7 @@ import { useUser } from '../context/UserContext';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import CalendarWrapper from '../components/CalendarWrapper';
-import { ChevronDown, Loader2, X } from 'lucide-react';
+import { ChevronDown, Loader2, X, Check } from 'lucide-react';
 import CalendarPageLayout from '../components/CalendarPageLayout';
 import TaskEditModal from '../components/TaskEditModal';
 import cache from '../utils/cache';
@@ -36,7 +36,7 @@ const filterRecurringTasks = (tasks) => {
         }
 
         // It's recurring.
-        // The user wants ONLY the next recurrence, not all of them.
+        // We want ONLY ONE instance to show on the calendar to prevent clutter.
         group.sort((a, b) => {
             const dateA = a.target_date || (a.start ? (typeof a.start === 'string' ? a.start.split('T')[0] : a.start) : '');
             const dateB = b.target_date || (b.start ? (typeof b.start === 'string' ? b.start.split('T')[0] : b.start) : '');
@@ -45,7 +45,18 @@ const filterRecurringTasks = (tasks) => {
             return (strA || '').localeCompare(strB || '');
         });
 
-        // 1. Find the first occurrence that is today or in the future
+        // 1. Find the earliest UNCOMPLETED occurrence
+        const firstUncompleted = group.find(t => {
+            const isCompleted = t.extendedProps ? t.extendedProps.completed : (t.originalTask ? t.originalTask.completed : t.completed);
+            return !isCompleted;
+        });
+
+        if (firstUncompleted) {
+            result.push(firstUncompleted);
+            return;
+        }
+
+        // 2. If all are completed, find the first occurrence that is today or in the future
         const nextOccurrence = group.find(t => {
             const d = t.target_date || (t.start ? (typeof t.start === 'string' ? t.start.split('T')[0] : t.start) : '');
             const strD = typeof d === 'object' ? d.toISOString().split('T')[0] : d;
@@ -55,7 +66,7 @@ const filterRecurringTasks = (tasks) => {
         if (nextOccurrence) {
             result.push(nextOccurrence);
         } else {
-            // Fallback: if all are in the past, pick the latest one
+            // Fallback: if all are in the past (and all completed), pick the latest one
             result.push(group[group.length - 1]);
         }
     });
@@ -68,7 +79,7 @@ const API_URL = '/api';
 const GlobalCalendar = () => {
     const { user } = useUser();
     const navigate = useNavigate();
-    const [viewMode, setViewMode] = useState(() => localStorage.getItem('calendarViewMode') || 'monthly');
+    const [viewMode, setViewMode] = useState(() => localStorage.getItem('calendarViewMode') || 'weekly');
     const [events, setEvents] = useState(() => (user && cache.get(`calendar_events_monthly_${user.id}`)) || []);
     const [loading, setLoading] = useState(user ? !cache.get(`calendar_events_monthly_${user.id}`) : true);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -153,26 +164,28 @@ const GlobalCalendar = () => {
 
     const handleMoreLinkClick = (arg) => {
         const { date, allSegs, jsEvent } = arg;
-
-        // Prevent default browser and FC behavior
         if (jsEvent) {
             jsEvent.preventDefault();
             jsEvent.stopPropagation();
         }
 
         const tasks = allSegs.map(seg => seg.event.extendedProps.originalTask).filter(Boolean);
-
-        // Calculate position relative to window or parent
-        const x = jsEvent.clientX;
-        const y = jsEvent.clientY;
+        
+        const rect = jsEvent.currentTarget.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top;
+        
+        // Smart flip: if button is too high in the screen, show popover below it
+        const spawnBelow = rect.top < 350; 
 
         setDayPopoverData({
-            date: date.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' }),
+            date: date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }),
             tasks,
-            position: { x, y }
+            position: { x, y, rectTop: rect.top, rectBottom: rect.bottom },
+            spawnBelow
         });
         setShowDayPopover(true);
-        return false; // Prevent FC's default popover
+        return false;
     };
 
     const { isSidebarOpen } = useOutletContext();
@@ -183,6 +196,10 @@ const GlobalCalendar = () => {
     }, [viewMode]);
 
     // Format events for FullCalendar
+    const finalEvents = React.useMemo(() => {
+        return events.filter(e => !e.extendedProps?.completed);
+    }, [events]);
+
     const fetchCalendarEvents = async (targetMonth = null) => {
         if (!user) return;
 
@@ -214,7 +231,8 @@ const GlobalCalendar = () => {
                                 start: startVal,
                                 allDay: !task.time,
                                 extendedProps: {
-                                    completed: task.completed
+                                    completed: task.completed,
+                                    priority: task.priority
                                 },
                                 originalTask: task // ADDED: Keep raw task for UpcomingDayView
                             });
@@ -473,7 +491,7 @@ const GlobalCalendar = () => {
             maxWidth="100%"
             padding="0"
             onDragEnd={handleDragEnd}
-            contentPadding="0 0 100px"
+            contentPadding="0"
             onDragStart={handleDragStart}
             onDragCancel={handleDragCancel}
             activeDragItem={activeDragItem}
@@ -518,7 +536,7 @@ const GlobalCalendar = () => {
                             boxShadow: '0 10px 25px -5px rgba(0,0,0,0.12)',
                             overflow: 'hidden',
                             padding: '0.25rem',
-                            backdropFilter: 'blur(10px)'
+                            backdropFilter: 'blur(6px)'
                         }}>
                             {[
                                 { id: 'daily', label: 'יומי' },
@@ -554,22 +572,33 @@ const GlobalCalendar = () => {
                 </div>
             }
         >
-            {loading && events.length === 0 ? (
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--primary-color)' }}>
-                    <Loader2 className="animate-spin" size={32} />
-                </div>
-            ) : (
-                <div className="card" style={{
-                    flex: 1,
-                    padding: isMobile ? '0.5rem' : '1.5rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                    position: 'relative',
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: 'var(--radius-lg)'
-                }}>
+            <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative',
+                height: isMobile ? 'calc(100vh - 160px)' : 'calc(100vh - 180px)', // Fixed height for smoother scrolling
+                overflow: 'hidden'
+            }}>
+                {/* Initial Loading Overlay (Deadlock-safe) */}
+                {loading && events.length === 0 && (
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        zIndex: 100,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        background: 'var(--bg-color)',
+                        backdropFilter: 'blur(4px)',
+                        borderRadius: 'var(--radius-lg)'
+                    }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                            <Loader2 className="animate-spin" size={32} style={{ color: 'var(--primary-color)' }} />
+                            <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 500 }}>טוען לוח שנה...</span>
+                        </div>
+                    </div>
+                )}
                     {isRefreshing && (
                         <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 100, color: 'var(--primary-color)' }}>
                             <Loader2 className="animate-spin" size={20} />
@@ -578,7 +607,7 @@ const GlobalCalendar = () => {
                     <CalendarWrapper
                         ref={calendarWrapperRef}
                         isDraggingFAB={activeDragItem?.id === 'global-fab-draggable'}
-                        events={events.filter(e => !e.extendedProps?.completed)}
+                        events={finalEvents}
                         viewMode={viewMode}
                         onDateClick={(arg) => {
                             const dateStr = arg.dateStr.split('T')[0];
@@ -600,7 +629,7 @@ const GlobalCalendar = () => {
                         onEventResize={handleEventResize}
                         onDatesSet={handleDatesSet}
                         onMoreLinkClick={handleMoreLinkClick}
-                        height="auto"
+                        height="100%"
                         headerToolbar={{
                             left: 'prev,next today',
                             center: 'title',
@@ -608,60 +637,118 @@ const GlobalCalendar = () => {
                         }}
                     />
                 </div>
-            )}
 
             {/* Day Tasks Popover */}
             {showDayPopover && (
                 <div
                     ref={popoverRef}
-                    className="fade-in slide-down"
+                    className={`fade-in ${dayPopoverData.spawnBelow ? 'slide-down' : 'slide-up'}`}
                     style={{
                         position: 'fixed',
-                        top: Math.min(dayPopoverData.position.y, window.innerHeight - 300),
-                        left: Math.max(20, Math.min(dayPopoverData.position.x - 130, window.innerWidth - 320)),
-                        width: '300px',
+                        top: dayPopoverData.spawnBelow ? dayPopoverData.position.rectBottom + 12 : 'auto',
+                        bottom: dayPopoverData.spawnBelow ? 'auto' : window.innerHeight - dayPopoverData.position.rectTop + 12,
+                        left: Math.max(12, Math.min(dayPopoverData.position.x - 140, window.innerWidth - 300)),
+                        width: '280px',
                         background: 'var(--bg-secondary)',
                         border: '1px solid var(--border-color)',
-                        borderRadius: 'var(--radius-lg)',
-                        boxShadow: '0 12px 30px rgba(0,0,0,0.2)',
+                        borderRadius: '16px', // Rounded like image
+                        boxShadow: '0 12px 40px rgba(0,0,0,0.2)',
                         zIndex: 2000,
                         overflow: 'hidden',
                         backdropFilter: 'blur(10px)',
-                        padding: '0.75rem'
+                        padding: '1rem'
                     }}
                 >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{dayPopoverData.date}</span>
-                        <button onClick={() => setShowDayPopover(false)} className="btn-icon-soft" style={{ width: '24px', height: '24px' }}>
-                            <X size={14} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                        <span style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-primary)' }}>{dayPopoverData.date}</span>
+                        <button onClick={() => setShowDayPopover(false)} className="btn-icon-soft" style={{ width: '28px', height: '28px', borderRadius: '50%' }}>
+                            <X size={16} />
                         </button>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '400px', overflowY: 'auto', paddingLeft: '4px' }}>
-                        {dayPopoverData.tasks.map(task => (
-                            <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
-                                <div
-                                    onClick={() => handleUpcomingTaskToggle(task.id, task.completed)}
-                                    style={{
-                                        width: '18px', height: '18px', borderRadius: '50%',
-                                        border: `2px solid ${task.completed ? 'var(--success-color)' : 'var(--text-secondary)'}`,
-                                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                                    }}
-                                >
-                                    {task.completed === 1 && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success-color)' }}></div>}
-                                </div>
-                                <span
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '350px', overflowY: 'auto' }} className="hide-scrollbar">
+                        {dayPopoverData.tasks.map(task => {
+                            const priority = task.priority || 4;
+                            const isCompleted = task.completed === 1;
+                            const priorityColor = priority === 1 ? 'var(--p1-accent)' : priority === 2 ? 'var(--p2-accent)' : priority === 3 ? 'var(--p3-accent)' : 'var(--p4-accent)';
+                            const priorityBg = priority === 1 ? 'var(--p1-bg)' : priority === 2 ? 'var(--p2-bg)' : priority === 3 ? 'var(--p3-bg)' : 'var(--p4-bg)';
+                            const priorityBorder = priority === 1 ? 'var(--p1-border)' : priority === 2 ? 'var(--p2-border)' : priority === 3 ? 'var(--p3-border)' : 'var(--p4-border)';
+
+                            return (
+                                <div 
+                                    key={task.id} 
                                     onClick={() => { setEditItem(task); setShowEditModal(true); setShowDayPopover(false); }}
-                                    style={{
-                                        fontSize: '0.85rem', flexGrow: 1, cursor: 'pointer',
-                                        textDecoration: task.completed ? 'line-through' : 'none',
-                                        opacity: task.completed ? 0.6 : 1,
-                                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                                    style={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: '0.75rem', 
+                                        padding: '0.6rem 0.75rem', 
+                                        borderRadius: '12px', 
+                                        background: isCompleted ? 'transparent' : priorityBg, 
+                                        border: `1px solid ${isCompleted ? 'var(--border-color)' : priorityBorder}`,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s ease',
+                                        opacity: isCompleted ? 0.5 : 1
                                     }}
                                 >
-                                    {task.content}
-                                </span>
-                            </div>
-                        ))}
+                                    {/* Exact Circle/Check Style from SortableTaskItem */}
+                                    <div
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleUpcomingTaskToggle(task.id, isCompleted);
+                                        }}
+                                        className="popover-task-circle"
+                                        style={{
+                                            width: 19,
+                                            height: 19,
+                                            flexShrink: 0,
+                                            borderRadius: isCompleted ? '6px' : '50%',
+                                            border: isCompleted ? 'none' : `1px solid ${priority === 4 ? 'rgba(120, 120, 131, 1)' : priorityColor}`,
+                                            background: isCompleted ? 'var(--success-color)' : 'transparent',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            color: 'white',
+                                            transition: 'all 0.15s ease',
+                                            boxShadow: isCompleted ? '0 2px 4px rgba(16, 185, 129, 0.2)' : 'none',
+                                            position: 'relative'
+                                        }}
+                                        onMouseEnter={e => {
+                                            const check = e.currentTarget.querySelector('.popover-hover-check');
+                                            if (check) check.style.opacity = 0.5;
+                                        }}
+                                        onMouseLeave={e => {
+                                            const check = e.currentTarget.querySelector('.popover-hover-check');
+                                            if (check) check.style.opacity = 0;
+                                        }}
+                                    >
+                                        {isCompleted ? (
+                                            <Check size={11} strokeWidth={3} />
+                                        ) : (
+                                            <Check 
+                                                className="popover-hover-check"
+                                                size={10} 
+                                                strokeWidth={3} 
+                                                style={{ color: priorityColor, opacity: 0, transition: 'opacity 0.2s' }} 
+                                            />
+                                        )}
+                                    </div>
+
+                                    <span style={{ 
+                                        fontSize: '0.9rem', 
+                                        flexGrow: 1, 
+                                        color: 'var(--text-primary)',
+                                        fontWeight: 500,
+                                        overflow: 'hidden', 
+                                        textOverflow: 'ellipsis', 
+                                        whiteSpace: 'nowrap',
+                                        textDecoration: isCompleted ? 'line-through' : 'none'
+                                    }}>
+                                        {task.content}
+                                    </span>
+                                    {task.time && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: 'auto' }}>{task.time.substring(0, 5)}</span>}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}

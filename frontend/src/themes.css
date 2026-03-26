@@ -5,11 +5,11 @@
 
 /* Global Theme Transition */
 html, body, .app-layout, .sidebar, .main-content, .settings-modal-container, .settings-sidebar, .settings-main-area, .card, .task-item, .nav-link, .btn, input, textarea {
-  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-              color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-              border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-              box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-              opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+              color 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+              border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Light Theme (Already defined in index.css :root, but ensuring base) */
@@ -19,6 +19,12 @@ html, body, .app-layout, .sidebar, .main-content, .settings-modal-container, .se
   --bg-inset: #F8F9FA;
   --text-primary: #020617;
   --text-secondary: #475569;
+
+  /* Priority Colors (Light Gentle) */
+  --p1-bg: #FFF1F2; --p1-border: #FFD1D7; --p1-accent: #E11D48;
+  --p2-bg: #FEFCE8; --p2-border: #FDE68A; --p2-accent: #D97706;
+  --p3-bg: #F0F9FF; --p3-border: #BAE6FD; --p3-accent: #0284C7;
+  --p4-bg: #F8FAFC; --p4-border: #E2E8F0; --p4-accent: #475569;
 }
 
 /* Dark Theme (Slate/Indigo) */
@@ -39,6 +45,12 @@ html, body, .app-layout, .sidebar, .main-content, .settings-modal-container, .se
   --glass-bg: rgba(15, 23, 42, 0.8);
   --glass-border: rgba(51, 65, 85, 0.5);
   --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+
+  /* Priority Colors (Dark Slate) */
+  --p1-bg: rgba(225, 29, 72, 0.12); --p1-border: rgba(225, 29, 72, 0.25); --p1-accent: #FB7185;
+  --p2-bg: rgba(217, 119, 6, 0.12); --p2-border: rgba(217, 119, 6, 0.25); --p2-accent: #FBBF24;
+  --p3-bg: rgba(2, 132, 199, 0.12); --p3-border: rgba(2, 132, 199, 0.25); --p3-accent: #38BDF8;
+  --p4-bg: rgba(71, 85, 105, 0.12); --p4-border: rgba(71, 85, 105, 0.25); --p4-accent: #94A3B8;
 }
 
 /* Midnight Theme (Deep Obsidian) */
@@ -58,6 +70,12 @@ html, body, .app-layout, .sidebar, .main-content, .settings-modal-container, .se
   --sidebar-active-text: #FFFFFF;
   --glass-bg: rgba(2, 6, 23, 0.8);
   --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+
+  /* Priority Colors (Midnight) */
+  --p1-bg: rgba(225, 29, 72, 0.15); --p1-border: rgba(225, 29, 72, 0.3); --p1-accent: #FB7185;
+  --p2-bg: rgba(217, 119, 6, 0.15); --p2-border: rgba(217, 119, 6, 0.3); --p2-accent: #FBBF24;
+  --p3-bg: rgba(2, 132, 199, 0.15); --p3-border: rgba(2, 132, 199, 0.3); --p3-accent: #38BDF8;
+  --p4-bg: rgba(71, 85, 105, 0.15); --p4-border: rgba(71, 85, 105, 0.3); --p4-accent: #94A3B8;
 }
 
 /* Forest Theme (Deep Emerald) */
@@ -115,4 +133,10 @@ html, body, .app-layout, .sidebar, .main-content, .settings-modal-container, .se
   --sidebar-active-text: #0F426F;
   --glass-bg: rgba(250, 249, 247, 0.9);
   --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+  /* Priority Colors (Relaxed Gentle) */
+  --p1-bg: #FFF1F2; --p1-border: #FFD1D7; --p1-accent: #E11D48;
+  --p2-bg: #FEFCE8; --p2-border: #FDE68A; --p2-accent: #D97706;
+  --p3-bg: #F0F9FF; --p3-border: #BAE6FD; --p3-accent: #0284C7;
+  --p4-bg: #F8FAFC; --p4-border: #E2E8F0; --p4-accent: #475569;
 }

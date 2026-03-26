@@ -79,12 +79,18 @@ const CalendarWrapper = ({
     useEffect(() => {
         if (viewMode && calendarRef.current) {
             const api = calendarRef.current.getApi();
-            if (viewMode === 'monthly' && api.view.type !== 'dayGridMonth') {
-                api.changeView('dayGridMonth');
-            } else if (viewMode === 'weekly' && api.view.type !== 'timeGridWeek') {
-                api.changeView('timeGridWeek');
-            } else if (viewMode === 'daily' && api.view.type !== 'timeGridDay') {
-                api.changeView('timeGridDay');
+            if (!api) return;
+
+            const targetView = viewMode === 'monthly' ? 'dayGridMonth' : 
+                               viewMode === 'weekly' ? 'timeGridWeek' : 
+                               viewMode === 'daily' ? 'timeGridDay' : null;
+
+            if (targetView && api.view.type !== targetView) {
+                // Use setTimeout to avoid 'flushSync was called from inside a lifecycle method' error
+                // by pushing the imperative update to the next tick.
+                setTimeout(() => {
+                    api.changeView(targetView);
+                }, 0);
             }
         }
     }, [viewMode]);
@@ -154,7 +160,7 @@ const CalendarWrapper = ({
                 unselectAuto={true}
                 longPressDelay={50}
                 dayMaxEvents={3}
-                moreLinkContent={(arg) => `+ עוד ${arg.num} משימות`}
+                moreLinkContent={(arg) => `עוד ${arg.num}`}
                 moreLinkClick={(arg) => {
                     if (onMoreLinkClick) return onMoreLinkClick(arg);
                     return true;
@@ -203,18 +209,13 @@ const CalendarWrapper = ({
                     const { event, timeText, view } = arg;
                     const isCompleted = event.extendedProps.completed;
 
-                    // Month Grid view: Keep the pills with checkbox
+                    // Month Grid view: Minimalist themed pill based on priority
                     if (view.type === 'dayGridMonth') {
+                        const priority = event.extendedProps.priority || 4;
                         return (
-                            <div className={`fc-custom-event-month ${isCompleted ? 'is-completed' : ''}`}>
-                                <div style={{
-                                    width: '12px', height: '12px', borderRadius: '50%',
-                                    border: `2px solid ${isCompleted ? 'var(--success-color)' : 'var(--text-secondary)'}`,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: 0.6
-                                }}>
-                                    {isCompleted && <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success-color)' }}></div>}
-                                </div>
-                                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{event.title}</span>
+                            <div className={`fc-custom-event-month priority-${priority} ${isCompleted ? 'is-completed' : ''}`}>
+                                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{event.title}</span>
+                                {timeText && <span className="event-time">{timeText}</span>}
                             </div>
                         );
                     }
