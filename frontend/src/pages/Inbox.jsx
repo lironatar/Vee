@@ -327,6 +327,7 @@ const Inbox = () => {
                     items: (c.items || []).map(item => item.id === tempId ? newItem : item)
                 })));
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
+                toast.success('משימה 1 נוצרה');
             } else {
                 throw new Error('Failed to create item');
             }

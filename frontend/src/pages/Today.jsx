@@ -334,6 +334,7 @@ const Today = () => {
                 // Background refresh to catch up with server state
                 fetchTodayTasks();
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
+                toast.success('משימה 1 נוצרה');
             } else {
                 throw new Error('Failed to create item');
             }

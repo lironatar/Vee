@@ -354,7 +354,7 @@ const GlobalCalendar = () => {
             });
 
             if (res.ok) {
-                toast.success('משימה נוצרה בהצלחה');
+                toast.success('משימה 1 נוצרה');
                 setAddingToDate(null);
                 setAddingToTime(null);
                 setNewTaskContent('');

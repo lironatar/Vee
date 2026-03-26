@@ -128,7 +128,7 @@ const GlobalAddTaskModal = ({ isOpen, onClose }) => {
             });
 
             if (res.ok) {
-                toast.success('המשימה נוספה בהצלחה');
+                toast.success('משימה 1 נוצרה');
                 window.dispatchEvent(new CustomEvent('refreshTasks'));
                 window.dispatchEvent(new CustomEvent('refreshCalendarTasks'));
                 window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
