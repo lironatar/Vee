@@ -17,7 +17,7 @@ const ReminderBadge = ({ minutes, color = 'var(--text-secondary)', size = 12 }) 
             }}
             title={minutes ? `תזכורת ${minutes} דקות מראש` : 'תזכורת פעילה'}
         >
-            <Bell size={size} fill={minutes !== null ? `${color}33` : 'none'} style={{ strokeWidth: 2.5 }} />
+            <Bell size={size} fill="none" style={{ strokeWidth: 2.5 }} />
             {/* Optional: we could show the number of minutes here if desired, 
                 but for now we keep it minimalist as per user's style */}
         </div>

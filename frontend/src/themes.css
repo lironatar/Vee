@@ -17,7 +17,7 @@ html, body, .app-layout, .sidebar, .main-content, .settings-modal-container, .se
   --bg-color: #FFFFFF;
   --bg-secondary: #FFFFFF;
   --bg-inset: #F8F9FA;
-  --text-primary: #020617;
+  --text-primary: #000000;
   --text-secondary: #475569;
 
   /* Priority Colors (Light Gentle) */

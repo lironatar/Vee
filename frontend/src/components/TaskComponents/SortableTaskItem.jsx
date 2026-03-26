@@ -295,9 +295,9 @@ const SortableTaskItem = ({
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 gap: '4px',
-                                                padding: '1px 6px',
-                                                background: completedSubtasksCount === totalSubtasks ? 'rgba(16, 185, 129, 0.1)' : 'var(--hover-bg)',
-                                                borderRadius: '4px',
+                                                padding: '1px 0',
+                                                background: 'transparent',
+                                                borderRadius: '0',
                                                 color: completedSubtasksCount === totalSubtasks ? 'var(--success-color)' : 'var(--text-secondary)',
                                                 fontWeight: 600,
                                                 flexShrink: 0

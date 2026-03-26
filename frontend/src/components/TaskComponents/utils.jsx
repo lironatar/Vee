@@ -173,8 +173,8 @@ export const renderFormattedDate = (targetDate, repeatRule, lastCompletedDate = 
                         <span style={{ 
                             fontWeight: 600, 
                             color: isToday ? color : 'var(--text-primary)',
-                            background: isToday ? 'transparent' : 'rgba(var(--primary-rgb), 0.1)',
-                            padding: isToday ? '0' : '2px 6px',
+                            background: 'transparent',
+                            padding: '0',
                             borderRadius: '4px'
                         }}>
                             {timeDisplay}

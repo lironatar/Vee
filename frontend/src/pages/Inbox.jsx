@@ -675,7 +675,7 @@ const Inbox = () => {
                                 }}
                             >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <Layout size={18} style={{ color: 'var(--primary-color)', opacity: 0.8 }} />
+                                    <Layout size={18} style={{ color: 'var(--text-secondary)', opacity: 0.8 }} />
                                     <input
                                         type="text"
                                         className="add-section-input"
@@ -789,7 +789,7 @@ const Inbox = () => {
                                             }}
                                         >
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <Layout size={18} style={{ color: 'var(--primary-color)', opacity: 0.8 }} />
+                                                <Layout size={18} style={{ color: 'var(--text-secondary)', opacity: 0.8 }} />
                                                 <input
                                                     type="text"
                                                     className="add-section-input"
