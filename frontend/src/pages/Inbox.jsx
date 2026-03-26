@@ -11,6 +11,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { ActionMenu, SortableChecklistCard, EmptyStateDropZone, ListDropSlot, CompletedTaskList } from '../components/TaskComponents/index.jsx';
+import DeleteTaskModal from '../components/TaskComponents/DeleteTaskModal.jsx';
 import TaskPageLayout from '../components/TaskPageLayout';
 import { useTaskDnD } from '../hooks/useTaskDnD';
 import cache from '../utils/cache';
@@ -37,6 +38,7 @@ const Inbox = () => {
     const [isCreatingList, setIsCreatingList] = useState(false);
     const [newListTitle, setNewListTitle] = useState('');
     const [scrollTop, setScrollTop] = useState(0);
+    const [itemToDelete, setItemToDelete] = useState(null);
 
     const selectedDate = new Date().toLocaleDateString('en-CA');
 
@@ -338,11 +340,33 @@ const Inbox = () => {
         }
     }, [newItemContent, addingAtIndex]);
 
-    const handleDeleteItem = useCallback(async (checklistId, itemId) => {
+    const handleDeleteItem = useCallback(async (e, itemId, checklistId) => {
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        
+        let taskName = '';
+        checklists.some(c => {
+            if (c.id === checklistId) {
+                c.items?.some(i => {
+                    if (i.id === itemId) { taskName = i.content; return true; }
+                    return false;
+                });
+                return true;
+            }
+            return false;
+        });
+
+        setItemToDelete({ itemId, checklistId, taskName });
+    }, [checklists]);
+
+    const confirmDeleteItem = async () => {
+        if (!itemToDelete) return;
+        const { itemId, checklistId } = itemToDelete;
+        setItemToDelete(null);
+
         // Optimistic Deletion
         setChecklists(prev => prev.map(c => {
             if (c.id === checklistId) {
-                return { ...c, items: c.items.filter(i => i.id !== itemId) };
+                return { ...c, items: (c.items || []).filter(i => i.id !== itemId) };
             }
             return c;
         }));
@@ -358,11 +382,10 @@ const Inbox = () => {
         } catch (err) {
             console.error(err);
             toast.error("שגיאה במחיקה, מרענן נתונים...");
-            // If it fails, the best way to recover cleanly is to refetch from the server
             fetchInbox();
             window.dispatchEvent(new CustomEvent('refreshSidebarCounts'));
         }
-    }, [fetchInbox]);
+    };
 
     const toggleItem = useCallback(async (itemId, isCompleted) => {
         const newStatus = !isCompleted;
@@ -830,6 +853,12 @@ const Inbox = () => {
                 )}
             </div>
 
+            <DeleteTaskModal
+                isOpen={!!itemToDelete}
+                onClose={() => setItemToDelete(null)}
+                onConfirm={confirmDeleteItem}
+                taskName={itemToDelete?.taskName}
+            />
         </TaskPageLayout >
     );
 };

@@ -19,6 +19,7 @@ import {
     verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { SortableChecklistCard, EmptyStateDropZone, ListDropSlot, CompletedTaskList } from '../components/TaskComponents/index.jsx';
+import DeleteTaskModal from '../components/TaskComponents/DeleteTaskModal.jsx';
 import TaskPageLayout from '../components/TaskPageLayout';
 import cache from '../utils/cache';
 import PageSkeleton from '../components/PageSkeleton';
@@ -52,6 +53,7 @@ const Today = () => {
     const [activeDragItem, setActiveDragItem] = useState(null);
     const [addingAtIndex, setAddingAtIndex] = useState(null);
     const [isCreatingList, setIsCreatingList] = useState(null);
+    const [itemToDelete, setItemToDelete] = useState(null);
     const todayDateStr = new Date().toLocaleDateString('en-CA');
 
     const getFormattedDate = useCallback(() => {
@@ -349,9 +351,23 @@ const Today = () => {
         }
     };
 
-    const handleDeleteItem = async (e, itemId) => {
-        if (e) e.stopPropagation();
-        if (!window.confirm("האם למחוק את המשימה?")) return;
+    const handleDeleteItem = async (e, itemId, checklistId) => {
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        
+        // Find task name for modal
+        let taskName = '';
+        projectGroups.some(p => p.checklists.some(c => c.items.some(i => {
+            if (i.id === itemId) { taskName = i.content; return true; }
+            return false;
+        })));
+
+        setItemToDelete({ itemId, checklistId, taskName });
+    };
+
+    const confirmDeleteItem = async () => {
+        if (!itemToDelete) return;
+        const { itemId, checklistId } = itemToDelete;
+        setItemToDelete(null);
 
         // Optimistic Deletion
         setProjectGroups(prev => prev.map(proj => ({
@@ -740,6 +756,12 @@ const Today = () => {
                 )}
 
             </div>
+            <DeleteTaskModal
+                isOpen={!!itemToDelete}
+                onClose={() => setItemToDelete(null)}
+                onConfirm={confirmDeleteItem}
+                taskName={itemToDelete?.taskName}
+            />
         </TaskPageLayout>
     );
 };

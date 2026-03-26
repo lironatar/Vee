@@ -28,9 +28,10 @@ import { CSS } from '@dnd-kit/utilities';
 const API_URL = '/api';
 
 import ProjectActionMenu from '../components/ProjectComponents/ProjectActionMenu';
+import DeleteTaskModal from '../components/TaskComponents/DeleteTaskModal.jsx';
+import TaskPageLayout from '../components/TaskPageLayout';
 import ProjectSettingsModal from '../components/ProjectComponents/ProjectSettingsModal';
 import { ActionMenu, SortableChecklistCard, EmptyStateDropZone, ListDropSlot, CompletedTaskList } from '../components/TaskComponents/index.jsx';
-import TaskPageLayout from '../components/TaskPageLayout';
 import { useTaskDnD } from '../hooks/useTaskDnD';
 import ProjectComments from '../components/ProjectComments';
 import ProjectTeamModal from '../components/ProjectTeamModal';
@@ -75,6 +76,7 @@ const Project = () => {
     // New Feature States
     const [activeTab, setActiveTab] = useState('tasks'); // 'tasks' | 'history'
     const [showSettings, setShowSettings] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
 
     // Team & Socket state
     const [projectMembers, setProjectMembers] = useState([]);
@@ -760,17 +762,32 @@ const Project = () => {
     };
 
     const handleDeleteItem = async (e, itemId, checklistId) => {
-        e.stopPropagation();
-        if (!window.confirm('האם למחוק משימה זו ואת תתי המשימות שלה?')) return;
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        
+        // Find task name for modal (potentially deep)
+        let taskName = '';
+        checklists.some(c => {
+            const findDeep = (items) => {
+                return items.some(i => {
+                    if (i.id === itemId) { taskName = i.content; return true; }
+                    if (i.children && i.children.length > 0) return findDeep(i.children);
+                    return false;
+                });
+            };
+            return findDeep(c.items || []);
+        });
+
+        setItemToDelete({ itemId, checklistId, taskName });
+    };
+
+    const confirmDeleteItem = async () => {
+        if (!itemToDelete) return;
+        const { itemId, checklistId } = itemToDelete;
+        setItemToDelete(null);
 
         // Optimistic Deletion
         setChecklists(prev => prev.map(c => {
             if (c.id === checklistId) {
-                // Since items can be nested, the easiest safe optimistic way for nested items 
-                // is a deep filter. A simple flat filter won't work perfectly for hierarchical deletions.
-                // But as a quick optimistic response, we can filter the top level. 
-                // Alternatively, we just refetch afterwards anyway.
-                // Let's implement a deep filter for true optimism:
                 const filterDeep = (items) => {
                     return items
                         .filter(i => i.id !== itemId)
@@ -1504,6 +1521,12 @@ const Project = () => {
                 />
             )}
 
+            <DeleteTaskModal
+                isOpen={!!itemToDelete}
+                onClose={() => setItemToDelete(null)}
+                onConfirm={confirmDeleteItem}
+                taskName={itemToDelete?.taskName}
+            />
 
         </TaskPageLayout>
     );
