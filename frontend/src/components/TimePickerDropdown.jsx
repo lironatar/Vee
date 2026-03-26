@@ -90,25 +90,37 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
     const dynamicTimeOptions = getDynamicOptions();
 
     useEffect(() => {
-        if (isOpen && anchorRef.current && dropdownRef.current) {
+        if (isOpen && anchorRef.current) {
+            const updatePosition = () => {
+                if (dropdownRef.current) {
+                    const anchorRect = anchorRef.current.getBoundingClientRect();
+                    const dropdownRect = dropdownRef.current.getBoundingClientRect();
+
+                    let top = anchorRect.top - dropdownRect.height - 8;
+                    let left = anchorRect.right - dropdownRect.width;
+                    
+                    if (left < 16) left = 16;
+                    if (left + dropdownRect.width > window.innerWidth - 16) {
+                        left = window.innerWidth - dropdownRect.width - 16;
+                    }
+
+                    setDropdownPos({ top, left: Math.max(0, left), visible: true });
+                } else {
+                    // If ref is not ready, check again on next frame
+                    requestAnimationFrame(updatePosition);
+                }
+            };
+            
+            // Set initial state for this open session
             setSelectedTime(initialTime || getNext15Min());
             setDuration(initialDuration || 0);
             setShowFromOptions(false);
             setShowToOptions(false);
             setShowDurationMenu(false);
-
-            const anchorRect = anchorRef.current.getBoundingClientRect();
-            const dropdownRect = dropdownRef.current.getBoundingClientRect();
-
-            let top = anchorRect.top - dropdownRect.height - 8;
-            let left = anchorRect.right - dropdownRect.width;
             
-            if (left < 16) left = 16;
-            if (left + dropdownRect.width > window.innerWidth - 16) {
-                left = window.innerWidth - dropdownRect.width - 16;
-            }
-
-            setDropdownPos({ top, left: Math.max(0, left), visible: true });
+            updatePosition();
+        } else {
+            setDropdownPos(prev => ({ ...prev, visible: false }));
         }
     }, [isOpen, anchorRef, initialTime, initialDuration]);
 
@@ -120,6 +132,7 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
             }
             if (showFromOptions && fromOptionsRef.current && !fromOptionsRef.current.contains(event.target)) setShowFromOptions(false);
             if (showToOptions && toOptionsRef.current && !toOptionsRef.current.contains(event.target)) setShowToOptions(false);
+            if (showDurationMenu && !event.target.closest('.duration-menu')) setShowDurationMenu(false);
         };
         if (isOpen) document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -230,7 +243,7 @@ const TimePickerDropdown = ({ isOpen, onClose, anchorRef, initialTime, initialDu
                         </div>
 
                         {showDurationMenu && (
-                            <div style={{
+                            <div className="duration-menu" style={{
                                 position: 'absolute', top: '100%', left: 0, right: 0,
                                 background: theme === 'dark' ? 'var(--bg-secondary)' : '#ffffff', border: '1px solid var(--border-color)',
                                 borderRadius: '6px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)', zIndex: 110, marginTop: '4px'
