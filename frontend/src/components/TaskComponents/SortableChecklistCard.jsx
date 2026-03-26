@@ -453,7 +453,7 @@ const SortableChecklistCard = ({
                                     margin: 0,
                                     fontSize: '16px',
                                     fontWeight: 700,
-                                    color: 'var(--primary-color)',
+                                    color: 'var(--text-primary)',
                                     letterSpacing: '-0.5px',
                                     background: 'transparent',
                                     border: 'none',
@@ -469,7 +469,7 @@ const SortableChecklistCard = ({
                                 margin: 0,
                                 fontSize: '16px',
                                 fontWeight: 700,
-                                color: 'var(--primary-color)',
+                                color: 'var(--text-primary)',
                                 userSelect: 'none',
                                 letterSpacing: '-0.5px'
                             }}>

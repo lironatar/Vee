@@ -251,7 +251,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                                     style={{ width: '36px', height: '36px' }}
                                     title="סגור סרגל"
                                 >
-                                    <img src="/sidebar_is_open.svg" alt="close sidebar" style={{ width: '30px', height: 'auto', filter: 'var(--invert-icon)', display: 'block', transition: 'transform 0.2s ease' }} />
+                                    <img src="/sidebar_is_open.svg" alt="close sidebar" style={{ width: '30px', height: 'auto', filter: 'brightness(0) saturate(100%) invert(35%) sepia(13%) saturate(1200%) hue-rotate(182deg) brightness(95%) contrast(88%)', opacity: 0.8, display: 'block', transition: 'transform 0.2s ease' }} />
                                 </button>
                             )}
                         </div>

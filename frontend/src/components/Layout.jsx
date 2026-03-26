@@ -142,7 +142,8 @@ const LayoutContent = () => {
                         style={{
                             width: '32px',
                             height: 'auto',
-                            filter: 'var(--invert-icon)',
+                            filter: 'brightness(0) saturate(100%) invert(35%) sepia(13%) saturate(1200%) hue-rotate(182deg) brightness(95%) contrast(88%)',
+                            opacity: 0.8,
                             transition: 'all 0.3s ease',
                             display: 'block'
                         }}

@@ -1070,8 +1070,8 @@ h2.react-datepicker__current-month {
   /* Keeping a very light gray for insets if needed elsewhere */
   --sidebar-bg: #F8F9FA;
   /* Keep sidebar same as before for light mode */
-  --text-primary: #020617;
-  /* Darker, almost black for high contrast */
+  --text-primary: #000000;
+  /* Pure black for main content */
   --text-secondary: #475569;
   /* Darker slate gray for better readability */
   --primary-color: #4F46E5;
